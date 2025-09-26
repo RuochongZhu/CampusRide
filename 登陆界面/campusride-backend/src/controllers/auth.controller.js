@@ -1,0 +1,571 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { validationResult } from 'express-validator';
+import { supabaseAdmin } from '../config/database.js';
+import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
+import { 
+  sendVerificationEmail, 
+  generateEmailVerificationToken, 
+  generateTokenExpiry,
+  isTokenExpired,
+  resendVerificationEmail,
+  sendPasswordResetEmail
+} from '../services/email.service.js';
+
+// 生成JWT token
+const generateToken = (userId) => {
+  return jwt.sign(
+    { userId, type: 'access' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+};
+
+// 用户注册
+export const register = async (req, res, next) => {
+  try {
+    const { nickname, email, password } = req.body;
+
+    // 基础验证
+    if (!nickname || !email || !password) {
+      throw new AppError('Nickname, email and password are required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    // 昵称验证
+    const trimmedNickname = nickname.trim();
+    if (trimmedNickname.length < 2) {
+      throw new AppError('Display name must be at least 2 characters', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+    if (trimmedNickname.length > 50) {
+      throw new AppError('Display name must be less than 50 characters', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Cornell邮箱验证
+    // Gmail support temporarily disabled - uncomment line below to re-enable Gmail testing
+    // if (!email.endsWith('@cornell.edu') && !email.endsWith('@gmail.com')) {
+    if (!email.endsWith('@cornell.edu')) {
+      throw new AppError('Email must end with @cornell.edu', 400, ERROR_CODES.INVALID_FORMAT);
+    }
+
+    // 密码验证: 必须是8位字母和数字的组合
+    if (password.length !== 8) {
+      throw new AppError('Password must be exactly 8 characters', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    const passwordRegex = /^[a-zA-Z0-9]{8}$/;
+    if (!passwordRegex.test(password)) {
+      throw new AppError('Password must contain only letters and numbers', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // 检查用户是否已存在
+    const { data: existingUser } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      throw new AppError('Account already exists with this email address', 400, ERROR_CODES.RESOURCE_ALREADY_EXISTS);
+    }
+
+    // 加密密码
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 从邮箱提取用户标识作为student_id
+    const netid = email.split('@')[0];
+
+    // 生成邮箱验证token和过期时间
+    const emailVerificationToken = generateEmailVerificationToken();
+    const emailVerificationExpires = generateTokenExpiry();
+
+    // 创建用户 - 未验证状态
+    const { data: newUser, error } = await supabaseAdmin
+      .from('users')
+      .insert({
+        student_id: netid,
+        email,
+        password_hash: hashedPassword,
+        first_name: trimmedNickname, // Store nickname in first_name for now
+        last_name: netid,
+        university: 'Cornell University',
+        email_verification_token: emailVerificationToken,
+        email_verification_expires: emailVerificationExpires.toISOString(),
+        is_verified: false
+      })
+      .select('id, email, first_name, last_name, university, student_id, created_at')
+      .single();
+
+    if (error) {
+      throw new AppError('Failed to create user', 500, ERROR_CODES.DATABASE_ERROR, error);
+    }
+
+    // 发送验证邮件
+    try {
+      await sendVerificationEmail(email, emailVerificationToken);
+      console.log(`✅ Verification email sent to ${email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send verification email:', emailError);
+      // 不阻止注册，但记录错误
+    }
+
+    res.status(201).json({
+      success: true,
+      data: {
+        user: newUser,
+        message: 'Registration successful! Please check your email to verify your account.'
+      },
+      message: 'User registered successfully. Please verify your email address.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 用户登录
+export const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      throw new AppError('Invalid credentials', 401, ERROR_CODES.INVALID_CREDENTIALS);
+    }
+
+    try {
+      // 查找用户
+      const { data: user, error } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      // 如果用户不存在，返回统一的错误信息
+      if (error && error.code === 'PGRST116') {
+        throw new AppError('Invalid credentials', 401, ERROR_CODES.INVALID_CREDENTIALS);
+      }
+
+      if (!user) {
+        throw new AppError('Invalid credentials', 401, ERROR_CODES.INVALID_CREDENTIALS);
+      }
+
+      // 验证密码（必须首先验证密码）
+      const isValidPassword = await bcrypt.compare(password, user.password_hash || '');
+      if (!isValidPassword) {
+        throw new AppError('Invalid credentials', 401, ERROR_CODES.INVALID_CREDENTIALS);
+      }
+
+      // 检查账户是否激活
+      const isActive = user.is_active !== undefined ? user.is_active : true;
+      if (!isActive) {
+        throw new AppError('Account is disabled', 401, ERROR_CODES.ACCESS_DENIED);
+      }
+
+      // 检查邮箱是否已验证（只有密码正确后才检查）
+      if (!user.is_verified) {
+        throw new AppError(
+          'Email not verified. Please check your inbox for verification link.',
+          401,
+          'EMAIL_NOT_VERIFIED'
+        );
+      }
+
+      // 生成token
+      const token = generateToken(user.id);
+
+      // 更新最后登录时间
+      try {
+        await supabaseAdmin
+          .from('users')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', user.id);
+      } catch (updateError) {
+        console.error('Failed to update last login time:', updateError);
+      }
+
+      // 移除敏感数据
+      const { password_hash, email_verification_token, ...userWithoutSensitiveData } = user;
+
+      res.json({
+        success: true,
+        data: {
+          user: userWithoutSensitiveData,
+          token,
+          tokenType: 'Bearer'
+        },
+        message: 'Login successful'
+      });
+    } catch (dbError) {
+      // 如果是已知的AppError，直接抛出
+      if (dbError.isOperational) {
+        throw dbError;
+      }
+      // 所有其他数据库错误都返回统一的错误信息
+      console.error('Database error during login:', dbError);
+      throw new AppError('Invalid credentials', 401, ERROR_CODES.INVALID_CREDENTIALS);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 用户登出
+export const logout = async (_req, res, next) => {
+  try {
+    // 在实际应用中，这里可以将token加入黑名单
+    // 目前只是返回成功响应
+    res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 邮箱验证
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      throw new AppError('Verification token is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    // 查找用户
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email, email_verification_token, email_verification_expires, is_verified')
+      .eq('email_verification_token', token)
+      .single();
+
+    if (error || !user) {
+      throw new AppError('Invalid or expired verification token', 400, 'INVALID_TOKEN');
+    }
+
+    // 检查用户是否已经验证过
+    if (user.is_verified) {
+      return res.json({
+        success: true,
+        message: 'Email address is already verified'
+      });
+    }
+
+    // 检查token是否过期
+    if (isTokenExpired(user.email_verification_expires)) {
+      throw new AppError(
+        'Verification token has expired. Please request a new verification email.',
+        400,
+        'TOKEN_EXPIRED'
+      );
+    }
+
+    // 更新用户验证状态
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        is_verified: true,
+        email_verification_token: null,
+        email_verification_expires: null
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      throw new AppError('Failed to verify email', 500, ERROR_CODES.DATABASE_ERROR);
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now log in to your account.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 重新发送验证邮件
+export const resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new AppError('Email is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    // 查找用户
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email, is_verified')
+      .eq('email', email)
+      .single();
+
+    if (error || !user) {
+      // 安全考虑：不透露用户是否存在
+      return res.json({
+        success: true,
+        message: 'If the email address is registered, a verification email will be sent.'
+      });
+    }
+
+    // 检查用户是否已经验证过
+    if (user.is_verified) {
+      return res.json({
+        success: true,
+        message: 'Email address is already verified'
+      });
+    }
+
+    // 生成新的验证token
+    const newToken = generateEmailVerificationToken();
+    const newExpiry = generateTokenExpiry();
+
+    // 更新用户的验证token
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        email_verification_token: newToken,
+        email_verification_expires: newExpiry.toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      throw new AppError('Failed to update verification token', 500, ERROR_CODES.DATABASE_ERROR);
+    }
+
+    // 发送新的验证邮件
+    try {
+      await resendVerificationEmail(email, newToken);
+      console.log(`✅ New verification email sent to ${email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send verification email:', emailError);
+      throw new AppError('Failed to send verification email', 500, 'EMAIL_SEND_FAILED');
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification email sent successfully. Please check your inbox.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 刷新token
+export const refreshToken = async (req, res, next) => {
+  try {
+    const { token: currentToken } = req.body;
+
+    if (!currentToken) {
+      throw new AppError('Token is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    const decoded = jwt.verify(currentToken, process.env.JWT_SECRET);
+    
+    // 验证用户仍然存在且激活
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, is_active')
+      .eq('id', decoded.userId)
+      .single();
+
+    if (error || !user || !user.is_active) {
+      throw new AppError('Invalid token', 401, ERROR_CODES.TOKEN_INVALID);
+    }
+
+    // 生成新token
+    const newToken = generateToken(user.id);
+
+    res.json({
+      success: true,
+      data: {
+        token: newToken,
+        tokenType: 'Bearer'
+      },
+      message: 'Token refreshed successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 忘记密码
+export const forgotPassword = async (req, res, next) => {
+  try {
+    console.log('🚀 Forgot password request:', req.body);
+    const { email } = req.body;
+
+    if (!email) {
+      throw new AppError('Email is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    // Cornell邮箱验证
+    if (!email.endsWith('@cornell.edu')) {
+      throw new AppError('Email must end with @cornell.edu', 400, ERROR_CODES.INVALID_FORMAT);
+    }
+
+    // 查找用户
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email, is_verified')
+      .eq('email', email)
+      .single();
+
+    console.log('🔍 User lookup:', { email, found: !!user, error: error?.message });
+
+    if (error || !user) {
+      // 安全考虑：不透露用户是否存在
+      return res.json({
+        success: true,
+        message: 'If the email address is registered, a password reset email will be sent.'
+      });
+    }
+
+    console.log('👤 Found user:', { id: user.id, verified: user.is_verified });
+
+    // 检查用户是否已验证邮箱
+    if (!user.is_verified) {
+      throw new AppError('Email not verified. Please verify your email first.', 400, 'EMAIL_NOT_VERIFIED');
+    }
+
+    // 生成密码重置token
+    const resetToken = generateEmailVerificationToken();
+    const resetExpiry = generateTokenExpiry();
+
+    // 更新用户的重置token（重用email verification字段）
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        email_verification_token: resetToken,
+        email_verification_expires: resetExpiry.toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('❌ Database update error:', updateError);
+      throw new AppError('Failed to generate password reset token', 500, ERROR_CODES.DATABASE_ERROR, updateError);
+    }
+
+    // 发送密码重置邮件
+    try {
+      await sendPasswordResetEmail(email, resetToken);
+      console.log(`✅ Password reset email sent to ${email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send password reset email:', emailError);
+      throw new AppError('Failed to send password reset email', 500, 'EMAIL_SEND_FAILED');
+    }
+
+    res.json({
+      success: true,
+      message: 'Password reset email sent successfully. Please check your inbox.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 重置密码
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!token) {
+      throw new AppError('Reset token is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    if (!password) {
+      throw new AppError('Password is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    // 密码验证: 必须是8位字母和数字的组合
+    if (password.length !== 8) {
+      throw new AppError('Password must be exactly 8 characters', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    const passwordRegex = /^[a-zA-Z0-9]{8}$/;
+    if (!passwordRegex.test(password)) {
+      throw new AppError('Password must contain only letters and numbers', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // 查找用户（通过email verification token字段）
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email, email_verification_token, email_verification_expires, is_verified')
+      .eq('email_verification_token', token)
+      .single();
+
+    if (error || !user) {
+      throw new AppError('Invalid or expired reset token', 400, 'INVALID_TOKEN');
+    }
+
+    // 检查用户必须是已验证的（密码重置只对已验证用户有效）
+    if (!user.is_verified) {
+      throw new AppError('Invalid or expired reset token', 400, 'INVALID_TOKEN');
+    }
+
+    // 检查token是否过期
+    if (isTokenExpired(user.email_verification_expires)) {
+      throw new AppError(
+        'Reset token has expired. Please request a new password reset.',
+        400,
+        'TOKEN_EXPIRED'
+      );
+    }
+
+    // 加密新密码
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 更新用户密码并清空验证token
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        password_hash: hashedPassword,
+        email_verification_token: null,
+        email_verification_expires: null
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      throw new AppError('Failed to reset password', 500, ERROR_CODES.DATABASE_ERROR);
+    }
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully! You can now log in with your new password.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 游客登录
+export const guestLogin = async (req, res, next) => {
+  try {
+    // 生成游客token
+    const guestToken = jwt.sign(
+      { userId: 'guest', type: 'guest' },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: 'guest',
+          email: 'guest@example.com',
+          first_name: 'Guest',
+          last_name: 'User',
+          student_id: 'guest',
+          university: 'Cornell University',
+          role: 'guest',
+          points: 0,
+          isGuest: true
+        },
+        token: guestToken,
+        tokenType: 'Bearer'
+      },
+      message: 'Guest login successful'
+    });
+  } catch (error) {
+    next(error);
+  }
+}; 
