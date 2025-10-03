@@ -1,6 +1,6 @@
 <template>
 <div class="min-h-screen bg-[#EDEEE8] pt-16">
-  
+
   <!-- Search and Filter Section -->
   <div class="sticky top-16 z-40 bg-white shadow-sm">
     <div class="max-w-7xl mx-auto px-4 py-4">
@@ -36,15 +36,15 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <div class="text-sm mb-2">Price Range: ${{priceRange[0]}} - ${{priceRange[1]}}</div>
-              <a-slider v-model:value="priceRange" range :min="0" :max="2000" :step="10" />
+              <a-slider v-model:value="priceRange" range :min="0" :max="2000" :step="10" @change="applyFilters" />
             </div>
             <div>
               <div class="text-sm mb-2">Condition</div>
-              <a-select v-model:value="condition" style="width: 100%" :options="conditionOptions" />
+              <a-select v-model:value="condition" style="width: 100%" :options="conditionOptions" @change="applyFilters" />
             </div>
             <div>
               <div class="text-sm mb-2">Sort By</div>
-              <a-select v-model:value="sortBy" style="width: 100%" :options="sortOptions" />
+              <a-select v-model:value="sortBy" style="width: 100%" :options="sortOptions" @change="applyFilters" />
             </div>
           </div>
         </div>
@@ -52,12 +52,12 @@
     </div>
     <div class="max-w-7xl mx-auto px-4">
       <div class="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
-        <a-tag 
-          v-for="category in categories" 
+        <a-tag
+          v-for="category in categories"
           :key="category"
           :color="selectedCategory === category ? '#C24D45' : 'default'"
           class="cursor-pointer px-4 py-2 !rounded-full"
-          @click="selectedCategory = category"
+          @click="handleCategoryChange(category)"
         >
           {{ category }}
         </a-tag>
@@ -65,39 +65,62 @@
     </div>
   </div>
 
+  <!-- Loading State -->
+  <div v-if="loading" class="flex justify-center items-center py-20">
+    <a-spin size="large" />
+  </div>
+
   <!-- Items Grid/List -->
-  <div class="py-8">
+  <div v-else class="py-8">
     <div class="max-w-7xl mx-auto px-4">
-      <div :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'">
-        <div v-for="item in filteredItems" :key="item.id" 
-          :class="viewMode === 'grid' ? 'bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300' : 'bg-white rounded-lg shadow-sm p-4 flex space-x-4'">
+      <!-- Empty State -->
+      <div v-if="items.length === 0" class="text-center py-20">
+        <p class="text-gray-500 text-lg">No items found</p>
+        <p class="text-gray-400 mt-2">Try adjusting your filters or post a new item</p>
+      </div>
+
+      <!-- Items Display -->
+      <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'">
+        <div v-for="item in items" :key="item.id"
+          :class="viewMode === 'grid' ? 'bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer' : 'bg-white rounded-lg shadow-sm p-4 flex space-x-4 cursor-pointer'"
+          @click="viewItemDetails(item)">
           <div :class="viewMode === 'grid' ? '' : 'w-48 h-48 flex-shrink-0'">
-            <img :src="item.image" :alt="item.title" :class="viewMode === 'grid' ? 'w-full h-48 object-cover' : 'w-full h-full object-cover rounded-lg'" />
+            <img
+              :src="getItemImage(item)"
+              :alt="item.title"
+              :class="viewMode === 'grid' ? 'w-full h-48 object-cover' : 'w-full h-full object-cover rounded-lg'"
+            />
           </div>
           <div :class="viewMode === 'grid' ? 'p-4' : 'flex-grow flex flex-col justify-between'">
             <div>
               <div class="flex items-start justify-between">
                 <h3 class="font-medium text-lg flex-grow pr-2">{{ item.title }}</h3>
-                <HeartOutlined :class="item.favorited ? 'text-[#C24D45]' : 'text-gray-400'" class="text-xl cursor-pointer flex-shrink-0" @click="toggleFavorite(item)" />
+                <HeartFilled
+                  v-if="item.is_favorited"
+                  class="text-[#C24D45] text-xl cursor-pointer flex-shrink-0"
+                  @click.stop="toggleFavorite(item)"
+                />
+                <HeartOutlined
+                  v-else
+                  class="text-gray-400 text-xl cursor-pointer flex-shrink-0"
+                  @click.stop="toggleFavorite(item)"
+                />
               </div>
-              <p v-if="viewMode === 'list'" class="text-sm text-gray-500 mt-1">{{ item.description }}</p>
+              <p v-if="viewMode === 'list'" class="text-sm text-gray-500 mt-1">{{ truncateText(item.description, 100) }}</p>
             </div>
             <div class="mt-4">
               <div class="flex items-center justify-between">
                 <span class="text-xl font-bold text-[#C24D45]">${{ item.price }}</span>
-                <div class="flex items-center space-x-1">
-                  <StarFilled class="text-[#F9D367]" />
-                  <span class="text-sm text-gray-500">{{ item.rating }}</span>
-                </div>
+                <a-tag :color="getConditionColor(item.condition)">{{ formatCondition(item.condition) }}</a-tag>
               </div>
               <div class="mt-4 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <img :src="item.sellerAvatar" class="w-8 h-8 rounded-full object-cover" />
-                  <span class="text-sm text-gray-500">{{ item.sellerName }}</span>
+                  <a-avatar v-if="item.seller" size="small">{{ getInitials(item.seller) }}</a-avatar>
+                  <span class="text-sm text-gray-500">{{ getSellerName(item.seller) }}</span>
                 </div>
-                <a-button type="primary" @click="openChat(item)">
-                  <template #icon><MessageOutlined /></template> Message
-                </a-button>
+                <div class="flex items-center space-x-2 text-gray-400 text-sm">
+                  <EyeOutlined /> <span>{{ item.views_count || 0 }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -107,38 +130,91 @@
   </div>
 
   <!-- Post Item Modal -->
-  <a-modal v-model:visible="showPostModal" title="Post New Item" @ok="handlePostItem" okText="Post" cancelText="Cancel" width="600px">
+  <a-modal
+    v-model:visible="showPostModal"
+    title="Post New Item"
+    @ok="handlePostItem"
+    okText="Post"
+    cancelText="Cancel"
+    width="600px"
+    :confirmLoading="posting"
+  >
     <div class="space-y-4 pt-4">
-      <a-input v-model:value="newItem.title" placeholder="Item Title" />
-      <a-textarea v-model:value="newItem.description" placeholder="Description" :rows="4" />
-      <a-input-number v-model:value="newItem.price" placeholder="Price" style="width: 100%" prefix="$" :min="0"/>
-      <a-select v-model:value="newItem.category" style="width: 100%" placeholder="Select Category" :options="categoryOptions" />
-      <a-select v-model:value="newItem.condition" style="width: 100%" placeholder="Select Condition" :options="conditionOptions.slice(1)" />
+      <a-input v-model:value="newItem.title" placeholder="Item Title *" />
+      <a-textarea v-model:value="newItem.description" placeholder="Description *" :rows="4" />
+      <a-input-number v-model:value="newItem.price" placeholder="Price *" style="width: 100%" prefix="$" :min="0" :precision="2" />
+      <a-select v-model:value="newItem.category" style="width: 100%" placeholder="Select Category *" :options="categoryOptions" />
+      <a-select v-model:value="newItem.condition" style="width: 100%" placeholder="Select Condition *" :options="conditionOptions.slice(1)" />
+      <a-input v-model:value="newItem.location" placeholder="Location (optional)" />
+      <div>
+        <label class="text-sm text-gray-600">Tags (comma separated)</label>
+        <a-input v-model:value="newItem.tagsInput" placeholder="e.g. laptop, electronics, like-new" />
+      </div>
+    </div>
+  </a-modal>
+
+  <!-- Item Details Modal -->
+  <a-modal
+    v-model:visible="showDetailsModal"
+    :title="selectedItem?.title"
+    :footer="null"
+    width="700px"
+  >
+    <div v-if="selectedItem" class="space-y-4">
+      <img :src="getItemImage(selectedItem)" :alt="selectedItem.title" class="w-full h-64 object-cover rounded-lg" />
+      <div class="flex items-center justify-between">
+        <span class="text-2xl font-bold text-[#C24D45]">${{ selectedItem.price }}</span>
+        <a-tag :color="getConditionColor(selectedItem.condition)">{{ formatCondition(selectedItem.condition) }}</a-tag>
+      </div>
+      <p class="text-gray-700">{{ selectedItem.description }}</p>
+      <div class="flex items-center space-x-4 pt-4 border-t">
+        <a-avatar>{{ getInitials(selectedItem.seller) }}</a-avatar>
+        <div>
+          <p class="font-medium">{{ getSellerName(selectedItem.seller) }}</p>
+          <p class="text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
+        </div>
+      </div>
+      <div class="flex space-x-2 pt-4">
+        <a-button type="primary" block>
+          <template #icon><MessageOutlined /></template> Contact Seller
+        </a-button>
+        <a-button @click="toggleFavorite(selectedItem)">
+          <template #icon>
+            <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
+            <HeartOutlined v-else />
+          </template>
+        </a-button>
+      </div>
     </div>
   </a-modal>
 </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { 
-  SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined, HeartOutlined, StarFilled, MessageOutlined, PlusOutlined 
-} from '@ant-design/icons-vue';
+import { ref, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import {
-  Select as ASelect, Slider as ASlider, Tag as ATag, Input as AInput, Button as AButton, ButtonGroup as AButtonGroup, Modal as AModal, InputNumber as AInputNumber, Textarea as ATextarea
-} from 'ant-design-vue';
-
-const AInputSearch = AInput.Search;
+  SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined,
+  HeartOutlined, HeartFilled, MessageOutlined, PlusOutlined, EyeOutlined
+} from '@ant-design/icons-vue';
+import { marketplaceAPI } from '@/utils/api'
 
 // State management
+const loading = ref(false)
+const posting = ref(false)
 const viewMode = ref('grid')
 const searchQuery = ref('')
 const selectedCategory = ref('All')
 const showAdvancedFilter = ref(false)
 const priceRange = ref([0, 2000])
 const condition = ref('all')
-const sortBy = ref('latest')
+const sortBy = ref('created_at')
 const showPostModal = ref(false)
+const showDetailsModal = ref(false)
+const selectedItem = ref(null)
+
+// Items data
+const items = ref([])
 
 // Categories
 const categories = ['All', 'Electronics', 'Books', 'Furniture', 'Fashion', 'Sports', 'Art', 'Others']
@@ -150,91 +226,194 @@ const newItem = ref({
   description: '',
   price: null,
   category: null,
-  condition: null
+  condition: null,
+  location: '',
+  tagsInput: ''
 })
 
-// Sample items data
-const items = ref([
-  {
-    id: 1,
-    title: 'MacBook Pro M3 2024',
-    description: 'Latest model, only used for 2 months. Perfect condition with original packaging.',
-    price: 1599,
-    rating: 4.8,
-    category: 'Electronics',
-    condition: 'like-new',
-    favorited: false,
-    sellerName: 'Michael Chen',
-    sellerAvatar: 'https://public.readdy.ai/ai/img_res/539e6fa3fa12610ae42a7bcac135190f.jpg',
-    image: 'https://public.readdy.ai/ai/img_res/550990d6396fe731a589085be79fcdd0.jpg'
-  },
-  {
-    id: 2,
-    title: 'Calculus Textbook Bundle',
-    description: 'Complete set of calculus textbooks for Math 101-103.',
-    price: 125,
-    rating: 4.9,
-    category: 'Books',
-    condition: 'used',
-    favorited: true,
-    sellerName: 'Sarah Johnson',
-    sellerAvatar: 'https://public.readdy.ai/ai/img_res/de2255ba37565d676e2c732b5dc5961c.jpg',
-    image: 'https://public.readdy.ai/ai/img_res/55dfd7c25a4de7828a074200e5bf6faf.jpg'
-  }
-])
+// Condition options
+const conditionOptions = [
+  { value: 'all', label: 'All' },
+  { value: 'new', label: 'New' },
+  { value: 'like_new', label: 'Like New' },
+  { value: 'good', label: 'Good' },
+  { value: 'fair', label: 'Fair' },
+  { value: 'poor', label: 'Poor' }
+];
 
-// Computed properties
-const filteredItems = computed(() => {
-  return items.value.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.value.toLowerCase());
-    const matchesCategory = selectedCategory.value === 'All' || item.category === selectedCategory.value;
-    const matchesPrice = item.price >= priceRange.value[0] && item.price <= priceRange.value[1];
-    const matchesCondition = condition.value === 'all' || item.condition === condition.value;
-    return matchesSearch && matchesCategory && matchesPrice && matchesCondition;
-  });
-})
+// Sort options
+const sortOptions = [
+  { value: 'created_at', label: 'Latest', order: 'desc' },
+  { value: 'price', label: 'Price: Low to High', order: 'asc' },
+  { value: 'price', label: 'Price: High to Low', order: 'desc' },
+  { value: 'views_count', label: 'Most Viewed', order: 'desc' },
+  { value: 'favorites_count', label: 'Most Popular', order: 'desc' }
+];
 
 // Methods
-const handleSearch = () => {
-  console.log('Searching for:', searchQuery.value)
+const fetchItems = async () => {
+  loading.value = true
+  try {
+    const params = {
+      category: selectedCategory.value !== 'All' ? selectedCategory.value : undefined,
+      condition: condition.value !== 'all' ? condition.value : undefined,
+      minPrice: priceRange.value[0],
+      maxPrice: priceRange.value[1],
+      sortBy: sortBy.value,
+      order: sortOptions.find(opt => opt.value === sortBy.value)?.order || 'desc'
+    }
+
+    const response = await marketplaceAPI.getItems(params)
+    items.value = response.data.data.items || []
+  } catch (error) {
+    console.error('Failed to fetch items:', error)
+    message.error('Failed to load marketplace items')
+  } finally {
+    loading.value = false
+  }
 }
 
-const toggleFavorite = (item) => {
-  item.favorited = !item.favorited
-}
-
-const openChat = (item) => {
-  alert(`Opening chat with ${item.sellerName} about "${item.title}"`)
-}
-
-const handlePostItem = () => {
-  if (!newItem.value.title || !newItem.value.price) {
-    alert('Please fill in required fields')
+const handleSearch = async () => {
+  if (!searchQuery.value || searchQuery.value.trim().length < 2) {
+    fetchItems()
     return
   }
-  
-  items.value.unshift({
-    id: items.value.length + 1,
-    ...newItem.value,
-    rating: 5.0,
-    favorited: false,
-    sellerName: 'You',
-    sellerAvatar: 'https://public.readdy.ai/ai/img_res/e488429cf1a5ca4e6366c8ee916e9030.jpg',
-    image: 'https://public.readdy.ai/ai/img_res/550990d6396fe731a589085be79fcdd0.jpg'
-  })
 
-  newItem.value = { title: '', description: '', price: 0, category: '', condition: '' }
-  showPostModal.value = false
-  alert('Item posted successfully!')
+  loading.value = true
+  try {
+    const params = {
+      q: searchQuery.value,
+      category: selectedCategory.value !== 'All' ? selectedCategory.value : undefined
+    }
+    const response = await marketplaceAPI.searchItems(params)
+    items.value = response.data.data.items || []
+  } catch (error) {
+    console.error('Search failed:', error)
+    message.error('Search failed')
+  } finally {
+    loading.value = false
+  }
 }
 
-const conditionOptions = [
-  { value: 'all', label: 'All' }, { value: 'new', label: 'New' }, { value: 'like-new', label: 'Like New' }, { value: 'used', label: 'Used' }
-];
+const handleCategoryChange = (category) => {
+  selectedCategory.value = category
+  fetchItems()
+}
 
-const sortOptions = [
-  { value: 'latest', label: 'Latest' }, { value: 'price-low', label: 'Price: Low to High' }, { value: 'price-high', label: 'Price: High to Low' }, { value: 'popular', label: 'Most Popular' }
-];
+const applyFilters = () => {
+  fetchItems()
+}
+
+const toggleFavorite = async (item) => {
+  try {
+    if (item.is_favorited) {
+      await marketplaceAPI.unfavoriteItem(item.id)
+      item.is_favorited = false
+      item.favorites_count = Math.max(0, (item.favorites_count || 0) - 1)
+      message.success('Removed from favorites')
+    } else {
+      await marketplaceAPI.favoriteItem(item.id)
+      item.is_favorited = true
+      item.favorites_count = (item.favorites_count || 0) + 1
+      message.success('Added to favorites')
+    }
+  } catch (error) {
+    console.error('Failed to toggle favorite:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to update favorite')
+  }
+}
+
+const handlePostItem = async () => {
+  if (!newItem.value.title || !newItem.value.description || !newItem.value.price ||
+      !newItem.value.category || !newItem.value.condition) {
+    message.error('Please fill in all required fields')
+    return
+  }
+
+  posting.value = true
+  try {
+    const tags = newItem.value.tagsInput
+      ? newItem.value.tagsInput.split(',').map(t => t.trim()).filter(t => t)
+      : []
+
+    const itemData = {
+      title: newItem.value.title,
+      description: newItem.value.description,
+      price: newItem.value.price,
+      category: newItem.value.category,
+      condition: newItem.value.condition,
+      location: newItem.value.location || '',
+      tags,
+      images: []
+    }
+
+    await marketplaceAPI.createItem(itemData)
+    message.success('Item posted successfully!')
+
+    // Reset form
+    newItem.value = { title: '', description: '', price: null, category: null, condition: null, location: '', tagsInput: '' }
+    showPostModal.value = false
+
+    // Refresh items
+    fetchItems()
+  } catch (error) {
+    console.error('Failed to post item:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to post item')
+  } finally {
+    posting.value = false
+  }
+}
+
+const viewItemDetails = (item) => {
+  selectedItem.value = item
+  showDetailsModal.value = true
+}
+
+// Helper functions
+const getItemImage = (item) => {
+  if (item.images && item.images.length > 0) {
+    return item.images[0]
+  }
+  return 'https://via.placeholder.com/400x300?text=No+Image'
+}
+
+const getSellerName = (seller) => {
+  if (!seller) return 'Unknown'
+  return `${seller.first_name || ''} ${seller.last_name || ''}`.trim() || 'Unknown'
+}
+
+const getInitials = (seller) => {
+  if (!seller) return '?'
+  const first = seller.first_name?.[0] || ''
+  const last = seller.last_name?.[0] || ''
+  return (first + last).toUpperCase() || '?'
+}
+
+const formatCondition = (cond) => {
+  if (!cond) return 'Unknown'
+  return cond.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+const getConditionColor = (cond) => {
+  const colors = {
+    'new': 'green',
+    'like_new': 'blue',
+    'good': 'cyan',
+    'fair': 'orange',
+    'poor': 'red'
+  }
+  return colors[cond] || 'default'
+}
+
+const truncateText = (text, maxLength) => {
+  if (!text || text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchItems()
+})
 </script>
 
 <style scoped>
