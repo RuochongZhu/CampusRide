@@ -16,6 +16,10 @@ import pointsRoutes from './routes/points.routes.js';
 import activityRoutes from './routes/activity.routes.js';
 import rideshareRoutes from './routes/rideshare.routes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
+import groupRoutes from './routes/group.routes.js';
+import thoughtRoutes from './routes/thought.routes.js';
+import visibilityRoutes from './routes/visibility.routes.js';
+import carpoolingRoutes from './routes/carpooling.routes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware.js';
@@ -88,6 +92,10 @@ app.use('/api/v1/points', pointsRoutes);
 app.use('/api/v1/activities', activityRoutes);
 app.use('/api/v1/rideshare', rideshareRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
+app.use('/api/v1/groups', groupRoutes);
+app.use('/api/v1/thoughts', thoughtRoutes);
+app.use('/api/v1/visibility', visibilityRoutes);
+app.use('/api/v1/carpooling', carpoolingRoutes);
 
 // Health check endpoint
 app.get('/', (req, res) => {

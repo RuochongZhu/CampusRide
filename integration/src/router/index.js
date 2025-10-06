@@ -12,6 +12,7 @@ import RideshareView from '@/views/RideshareView.vue'
 import ActivitiesView from '@/views/ActivitiesView.vue'
 import MarketplaceView from '@/views/MarketplaceView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
+import GroupMapView from '@/views/GroupMapView.vue'
 
 const routes = [
   {
@@ -118,9 +119,18 @@ const routes = [
     path: '/leaderboard',
     name: 'Leaderboard',
     component: LeaderboardView,
-    meta: { 
+    meta: {
       requiresAuth: true,
       title: 'Leaderboard - CampusRide'
+    }
+  },
+  {
+    path: '/groups',
+    name: 'Groups',
+    component: GroupMapView,
+    meta: {
+      requiresAuth: true,
+      title: 'Groups - CampusRide'
     }
   },
   {

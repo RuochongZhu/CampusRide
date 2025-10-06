@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
+    "@googlemaps/js-api-loader": "^2.0.1",
     "ant-design-vue": "^4.2.5",
     "axios": "^1.7.9",
     "dayjs": "^1.11.13",

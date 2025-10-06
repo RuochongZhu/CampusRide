@@ -150,6 +150,41 @@ export const rideshareAPI = {
   getMyBookings: () => api.get('/rideshare/bookings/me'),
 };
 
+// ================================================
+// Carpooling 拼车相关 API
+// ================================================
+export const carpoolingAPI = {
+  // 获取拼车列表
+  getRides: (params = {}) => api.get('/carpooling/rides', { params }),
+
+  // 创建拼车
+  createRide: (data) => api.post('/carpooling/rides', data),
+
+  // 获取拼车详情
+  getRide: (id) => api.get(`/carpooling/rides/${id}`),
+
+  // 更新拼车
+  updateRide: (id, data) => api.put(`/carpooling/rides/${id}`, data),
+
+  // 删除拼车
+  deleteRide: (id) => api.delete(`/carpooling/rides/${id}`),
+
+  // 预订拼车
+  bookRide: (rideId, data) => api.post(`/carpooling/rides/${rideId}/book`, data),
+
+  // 获取我发布的拼车
+  getMyRides: (params = {}) => api.get('/carpooling/my-rides', { params }),
+
+  // 获取我的拼车预订
+  getMyBookings: (params = {}) => api.get('/carpooling/my-bookings', { params }),
+
+  // 取消预订
+  cancelBooking: (bookingId) => api.delete(`/carpooling/bookings/${bookingId}`),
+
+  // 完成行程
+  completeRide: (rideId) => api.post(`/carpooling/rides/${rideId}/complete`),
+};
+
 // 市场相关 API
 export const marketplaceAPI = {
   // 获取商品列表
@@ -232,6 +267,66 @@ export const notificationsAPI = {
 export const healthAPI = {
   // 健康检查
   check: () => api.get('/health'),
+};
+
+// ================================================
+// 小组相关 API
+// ================================================
+export const groupAPI = {
+  // 获取所有小组
+  getGroups: (params) => api.get('/groups', { params }),
+
+  // 获取我的小组
+  getMyGroups: () => api.get('/groups/my'),
+
+  // 创建小组
+  createGroup: (data) => api.post('/groups', data),
+
+  // 加入小组
+  joinGroup: (groupId) => api.post(`/groups/${groupId}/join`),
+
+  // 退出小组
+  leaveGroup: (groupId) => api.delete(`/groups/${groupId}/leave`),
+
+  // 获取小组成员
+  getMembers: (groupId) => api.get(`/groups/${groupId}/members`),
+
+  // 删除小组
+  deleteGroup: (groupId) => api.delete(`/groups/${groupId}`),
+};
+
+// ================================================
+// 想法相关 API
+// ================================================
+export const thoughtAPI = {
+  // 获取想法列表
+  getThoughts: (params) => api.get('/thoughts', { params }),
+
+  // 获取地图上的想法点位
+  getMapThoughts: (params) => api.get('/thoughts/map', { params }),
+
+  // 获取我的想法
+  getMyThoughts: () => api.get('/thoughts/my'),
+
+  // 发布想法
+  postThought: (data) => api.post('/thoughts', data),
+
+  // 删除想法
+  deleteThought: (thoughtId) => api.delete(`/thoughts/${thoughtId}`),
+};
+
+// ================================================
+// 可见性相关 API
+// ================================================
+export const visibilityAPI = {
+  // 获取我的可见性状态
+  getMyVisibility: () => api.get('/visibility/my'),
+
+  // 更新可见性
+  updateVisibility: (data) => api.put('/visibility', data),
+
+  // 获取地图上可见的用户
+  getMapUsers: (params) => api.get('/visibility/map', { params }),
 };
 
 // 导出默认API实例

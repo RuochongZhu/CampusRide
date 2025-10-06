@@ -4,38 +4,86 @@
       
       <!-- Groups Grid -->
       <div class="mb-8">
-        <h2 class="text-2xl font-bold text-[#333333] mb-6">Campus Groups</h2>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-[#333333]">Campus Groups</h2>
+          <div class="flex space-x-3">
+            <a-button
+              type="default"
+              class="!rounded-button"
+              @click="showCreateGroupModal = true"
+            >
+              <PlusOutlined /> 创建小组
+            </a-button>
+            <a-button
+              type="primary"
+              class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
+              @click="showPostThoughtModal = true"
+            >
+              <EditOutlined /> 发布想法
+            </a-button>
+            <a-button
+              :type="isVisible ? 'default' : 'dashed'"
+              class="!rounded-button"
+              @click="toggleVisibility"
+            >
+              <EyeOutlined v-if="isVisible" />
+              <EyeInvisibleOutlined v-else />
+              {{ isVisible ? '出现' : '隐身' }}
+            </a-button>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div 
-            v-for="group in groups" 
+          <div
+            v-for="group in myGroups"
             :key="group.id"
             class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all cursor-pointer"
+            :class="selectedGroupId === group.id ? 'ring-2 ring-[#C24D45]' : ''"
+            @click="enterGroup(group)"
           >
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-medium text-[#333333]">{{ group.name }}</h3>
-              <a-tag :color="group.category.color">{{ group.category.name }}</a-tag>
             </div>
-            <p class="text-sm text-[#666666] mb-4">{{ group.description }}</p>
+            <p class="text-sm text-[#666666] mb-4 line-clamp-2">{{ group.description || '暂无描述' }}</p>
             <div class="flex items-center justify-between text-sm">
               <div class="flex items-center space-x-4">
                 <div class="flex items-center text-gray-500">
                   <TeamOutlined class="mr-1" />
-                  <span>{{ group.members }} members</span>
-                </div>
-                <div class="flex items-center text-gray-500">
-                  <ClockCircleOutlined class="mr-1" />
-                  <span>{{ group.activeTime }}</span>
+                  <span>{{ group.member_count || 0 }} 成员</span>
                 </div>
               </div>
-              <a-button 
-                type="primary" 
-                class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap"
-                @click="joinGroup(group)"
+              <a-button
+                v-if="group.my_role === 'creator'"
+                type="default"
+                danger
+                size="small"
+                class="!rounded-button whitespace-nowrap"
+                @click.stop="deleteGroupHandler(group.id)"
               >
-                Join Group
+                删除小组
+              </a-button>
+              <a-button
+                v-else
+                type="default"
+                danger
+                size="small"
+                class="!rounded-button whitespace-nowrap"
+                @click.stop="leaveGroupHandler(group.id)"
+              >
+                退出小组
               </a-button>
             </div>
           </div>
+        </div>
+        <div v-if="myGroups.length === 0" class="text-center py-12 text-gray-400">
+          <TeamOutlined class="text-5xl mb-4" />
+          <p>你还没有加入任何小组</p>
+          <a-button
+            type="primary"
+            class="mt-4 !rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
+            @click="showBrowseGroupsModal = true"
+          >
+            浏览小组
+          </a-button>
         </div>
       </div>
 
@@ -60,7 +108,6 @@
                 <a-select v-model:value="sortOption" class="w-32">
                   <a-select-option value="newest">Newest</a-select-option>
                   <a-select-option value="closest">Closest</a-select-option>
-                  <a-select-option value="relevant">Most Relevant</a-select-option>
                 </a-select>
               </div>
             </div>
@@ -161,109 +208,31 @@
           <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex justify-between items-center mb-4">
               <h2 class="text-lg font-medium text-[#333333]">Nearby Radar</h2>
-              <a-button 
-                type="link" 
+              <a-button
+                type="link"
                 class="text-[#C24D45]"
                 @click="toggleMapExpand"
               >
                 {{ isMapExpanded ? 'Collapse' : 'Expand' }}
               </a-button>
             </div>
-            
-            <div class="relative bg-[#F5F5F5] rounded-lg overflow-hidden mb-4 h-64">
-              <img 
-                :src="mapImage" 
-                class="w-full h-full object-cover" 
-                alt="Campus Map"
-              />
-              
-              <!-- Radar Center Point -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full z-10"></div>
-              
-              <!-- Distance Rings -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 border border-gray-400 rounded-full opacity-50"></div>
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 border border-gray-400 rounded-full opacity-50"></div>
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 border border-gray-400 rounded-full opacity-50"></div>
-              
-              <!-- Activity Dots -->
-              <div 
-                v-for="dot in nearbyDots" 
-                :key="dot.id"
-                :class="['absolute rounded-full transition-all duration-300 cursor-pointer',
-                dot.color,
-                activeRadarDot === dot.id ? 'w-5 h-5 -translate-x-1 -translate-y-1' : 'w-3 h-3']"
-                :style="{ top: dot.top + '%', left: dot.left + '%' }"
-                @mouseenter="showDotInfo(dot)"
-                @mouseleave="hideDotInfo()"
-                @click="focusActivity(dot.activityId)"
-              >
-              </div>
-              
-              <!-- Activity Info Popup -->
-              <div 
-                v-if="hoveredDot"
-                class="absolute bg-white p-2 rounded-lg shadow-lg text-sm z-10 max-w-xs pointer-events-none"
-                :style="{
-                  top: (hoveredDot.top - 10) + '%',
-                  left: (hoveredDot.left + 5) + '%'
-                }"
-              >
-                {{ hoveredDot.activityInfo }}
-              </div>
-            </div>
+
+            <!-- Google Maps Container -->
+            <div id="small-map" class="relative bg-[#F5F5F5] rounded-lg overflow-hidden mb-4 h-64"></div>
 
             <!-- Radar Legend -->
             <div class="flex justify-between text-sm text-[#666666]">
               <div class="flex items-center">
-                <div class="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
-                <span>Offering Help</span>
-              </div>
-              <div class="flex items-center">
                 <div class="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
-                <span>Need Help</span>
+                <span>想法位置</span>
               </div>
               <div class="flex items-center">
-                <div class="w-3 h-3 rounded-full bg-purple-500 mr-1"></div>
-                <span>Social</span>
+                <div class="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
+                <span>可见用户</span>
               </div>
-            </div>
-          </div>
-
-          <!-- Recent Successful Connections -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-lg font-medium text-[#333333] mb-4">Recent Connections</h2>
-            <div class="space-y-4">
-              <div 
-                v-for="connection in recentConnections" 
-                :key="connection.id" 
-                class="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
-              >
-                <div class="flex items-center space-x-3 mb-2">
-                  <img :src="connection.user1.avatar" class="w-8 h-8 rounded-full" />
-                  <span class="text-[#333333] text-sm">{{ connection.user1.name }}</span>
-                  <span class="text-[#666666]">+</span>
-                  <img :src="connection.user2.avatar" class="w-8 h-8 rounded-full" />
-                  <span class="text-[#333333] text-sm">{{ connection.user2.name }}</span>
-                </div>
-                <p class="text-sm text-[#666666] italic">"{{ connection.testimonial }}"</p>
-              </div>
-            </div>
-            
-            <!-- Activity Stats -->
-            <div class="mt-4 pt-4 border-t border-gray-100">
-              <div class="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div class="text-xl font-bold text-[#C24D45]">{{ activityStats.studySessions }}</div>
-                  <div class="text-xs text-[#666666]">Study sessions today</div>
-                </div>
-                <div>
-                  <div class="text-xl font-bold text-[#C24D45]">{{ activityStats.helpRequests }}</div>
-                  <div class="text-xs text-[#666666]">Help requests fulfilled</div>
-                </div>
-                <div>
-                  <div class="text-xl font-bold text-[#C24D45]">{{ activityStats.newConnections }}</div>
-                  <div class="text-xs text-[#666666]">New connections</div>
-                </div>
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
+                <span>我的位置</span>
               </div>
             </div>
           </div>
@@ -271,47 +240,66 @@
       </div>
 
       <!-- Expanded Map Modal -->
-      <a-modal 
+      <a-modal
         v-model:visible="isMapExpanded"
         title="Nearby Radar - Expanded View"
         :footer="null"
-        width="800px"
+        width="90%"
+        :style="{ top: '20px' }"
         class="radar-modal"
         @cancel="isMapExpanded = false"
       >
-        <div class="relative bg-[#F5F5F5] rounded-lg overflow-hidden" style="height: 600px;">
-          <img :src="mapImage" class="w-full h-full object-cover" />
-          
-          <!-- Larger radar elements for expanded view -->
-          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-blue-500 rounded-full z-10"></div>
-          
-          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 border border-gray-400 rounded-full opacity-50"></div>
-          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-gray-400 rounded-full opacity-50"></div>
-          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-120 h-120 border border-gray-400 rounded-full opacity-50"></div>
-          
-          <!-- Activity Dots -->
-          <div 
-            v-for="dot in nearbyDots" 
-            :key="dot.id"
-            :class="['absolute rounded-full transition-all duration-300',
-            dot.color,
-            'w-8 h-8']"
-            :style="{ top: dot.top + '%', left: dot.left + '%' }"
-            @mouseenter="showDotInfo(dot)"
-            @mouseleave="hideDotInfo()"
+        <div id="large-map" class="relative bg-[#F5F5F5] rounded-lg overflow-hidden" style="height: 70vh;"></div>
+      </a-modal>
+
+      <!-- 创建小组弹窗 -->
+      <CreateGroupModal
+        :visible="showCreateGroupModal"
+        @update:visible="showCreateGroupModal = $event"
+        @success="handleGroupCreated"
+      />
+
+      <!-- 发布想法弹窗 -->
+      <PostThoughtModal
+        :visible="showPostThoughtModal"
+        @update:visible="showPostThoughtModal = $event"
+        :my-groups="myGroups"
+        :default-group="selectedGroupId"
+        @success="handleThoughtPosted"
+      />
+
+      <!-- 浏览小组弹窗 -->
+      <a-modal
+        v-model:visible="showBrowseGroupsModal"
+        title="浏览所有小组"
+        :footer="null"
+        width="800px"
+      >
+        <div class="space-y-4 max-h-96 overflow-y-auto">
+          <div
+            v-for="group in allGroups"
+            :key="group.id"
+            class="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
           >
-          </div>
-          
-          <!-- Expanded Activity Info Popup -->
-          <div 
-            v-if="hoveredDot"
-            class="absolute bg-white p-3 rounded-lg shadow-lg text-sm z-10 max-w-sm"
-            :style="{
-              top: (hoveredDot.top - 10) + '%',
-              left: (hoveredDot.left + 5) + '%'
-            }"
-          >
-            {{ hoveredDot.activityInfo }}
+            <div class="flex justify-between items-start">
+              <div class="flex-grow">
+                <h3 class="font-medium text-lg">{{ group.name }}</h3>
+                <p class="text-sm text-gray-600 mt-1">{{ group.description || '暂无描述' }}</p>
+                <div class="flex items-center mt-2 text-sm text-gray-500">
+                  <TeamOutlined class="mr-1" />
+                  <span>{{ group.member_count || 0 }} 成员</span>
+                </div>
+              </div>
+              <a-button
+                v-if="!isGroupJoined(group.id)"
+                type="primary"
+                class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
+                @click="joinGroupHandler(group.id)"
+              >
+                加入
+              </a-button>
+              <a-tag v-else color="success">已加入</a-tag>
+            </div>
           </div>
         </div>
       </a-modal>
@@ -320,7 +308,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { message } from 'ant-design-vue'
 import {
   BellOutlined,
   EnvironmentOutlined,
@@ -328,9 +317,16 @@ import {
   TeamOutlined,
   MessageOutlined,
   ShareAltOutlined,
-  LikeOutlined
+  LikeOutlined,
+  PlusOutlined,
+  EditOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined
 } from '@ant-design/icons-vue'
 import { Modal as AModal, Select as ASelect, SelectOption as ASelectOption, Tag as ATag, RadioGroup as ARadioGroup, RadioButton as ARadioButton, Slider as ASlider, Button as AButton, Pagination as APagination } from 'ant-design-vue'
+import { groupAPI, thoughtAPI, visibilityAPI } from '@/utils/api'
+import CreateGroupModal from '@/components/groups/CreateGroupModal.vue'
+import PostThoughtModal from '@/components/groups/PostThoughtModal.vue'
 
 // Reactive data
 const feedFilter = ref('all')
@@ -341,62 +337,32 @@ const activeRadarDot = ref(null)
 const isMapExpanded = ref(false)
 const hoveredDot = ref(null)
 
+// Groups related state
+const myGroups = ref([])
+const allGroups = ref([])
+const selectedGroupId = ref(null)
+const showCreateGroupModal = ref(false)
+const showPostThoughtModal = ref(false)
+const showBrowseGroupsModal = ref(false)
+
+// Visibility state
+const isVisible = ref(true)
+
+// Thoughts state
+const thoughts = ref([])
+const mapThoughts = ref([])
+const visibleUsers = ref([])
+
+// Google Maps instances
+let smallMap = null
+let largeMap = null
+let thoughtMarkers = []
+let userMarkers = []
+
 // Filter options
 const feedFilters = ['all', 'groups', 'urgent']
 
-// Groups data
-const groups = ref([
-  {
-    id: 'cs5582',
-    name: 'CS 5582 Study Group',
-    category: { name: 'Academic', color: 'blue' },
-    description: 'A collaborative group for CS 5582 students to discuss coursework, share resources, and prepare for exams together.',
-    members: 45,
-    activeTime: 'Very Active'
-  },
-  {
-    id: 'rideshare',
-    name: 'Campus Rideshare',
-    category: { name: 'Transportation', color: 'green' },
-    description: 'Connect with fellow students for carpooling and ride-sharing to save money and reduce environmental impact.',
-    members: 128,
-    activeTime: 'Active'
-  },
-  {
-    id: 'basketball',
-    name: 'Basketball Club',
-    category: { name: 'Sports', color: 'orange' },
-    description: 'Join casual basketball games and tournaments. All skill levels welcome!',
-    members: 76,
-    activeTime: 'Very Active'
-  },
-  {
-    id: 'debate',
-    name: 'Debate Society',
-    category: { name: 'Academic', color: 'purple' },
-    description: 'Enhance your public speaking and critical thinking skills through structured debates and discussions.',
-    members: 52,
-    activeTime: 'Moderate'
-  },
-  {
-    id: 'photography',
-    name: 'Photography Club',
-    category: { name: 'Arts', color: 'cyan' },
-    description: 'Share your passion for photography, learn new techniques, and participate in photo walks around campus.',
-    members: 94,
-    activeTime: 'Active'
-  },
-  {
-    id: 'volunteer',
-    name: 'Community Service',
-    category: { name: 'Volunteer', color: 'red' },
-    description: 'Make a difference in our community through various volunteer opportunities and social initiatives.',
-    members: 156,
-    activeTime: 'Very Active'
-  }
-])
-
-// Activities data
+// Activities data (keeping for backward compatibility)
 const activities = ref([
   {
     id: 1,
@@ -415,60 +381,6 @@ const activities = ref([
     expiresIn: '3 hours',
     participants: 4,
     successRate: 85
-  },
-  {
-    id: 2,
-    title: 'Need Help with Physics Assignment',
-    category: { name: 'Help Needed', color: 'red' },
-    user: {
-      name: 'Sophia Chen',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20asian%20student%20with%20friendly%20smile%20wearing%20casual%20attire%20against%20neutral%20background&width=100&height=100&seq=3&orientation=squarish'
-    },
-    group: 'Physics 101',
-    timeAgo: '45 minutes ago',
-    description: 'Struggling with the quantum mechanics problems in this week\'s assignment. Would appreciate if someone could help explain the concepts.',
-    tags: ['Physics', 'Quantum Mechanics', 'Homework'],
-    location: 'Science Building',
-    distance: '0.5 miles',
-    expiresIn: '5 hours',
-    participants: 2,
-    successRate: 90
-  },
-  {
-    id: 3,
-    title: 'Basketball Pickup Game',
-    category: { name: 'Social', color: 'purple' },
-    user: {
-      name: 'Marcus Williams',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20athletic%20young%20male%20student%20with%20friendly%20smile%20wearing%20sports%20attire%20against%20neutral%20background&width=100&height=100&seq=4&orientation=squarish'
-    },
-    group: 'Campus Sports',
-    timeAgo: '1 hour ago',
-    description: 'Organizing a casual basketball game this evening. All skill levels welcome! We need 4 more players to make full teams.',
-    tags: ['Basketball', 'Sports', 'Recreation'],
-    location: 'Recreation Center',
-    distance: '0.8 miles',
-    expiresIn: '4 hours',
-    participants: 6,
-    successRate: 95
-  },
-  {
-    id: 4,
-    title: 'Offering Free Tutoring in Calculus',
-    category: { name: 'Offering Help', color: 'green' },
-    user: {
-      name: 'Emily Parker',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20glasses%20wearing%20smart%20casual%20attire%20against%20neutral%20background&width=100&height=100&seq=5&orientation=squarish'
-    },
-    group: 'Math Tutors',
-    timeAgo: '2 hours ago',
-    description: 'I\'m offering free tutoring sessions for Calculus I & II. I have 2 hours available this afternoon to help anyone struggling with derivatives, integrals, or application problems.',
-    tags: ['Calculus', 'Math', 'Tutoring'],
-    location: 'Student Union',
-    distance: '0.2 miles',
-    expiresIn: '2 hours',
-    participants: 3,
-    successRate: 98
   }
 ])
 
@@ -613,6 +525,12 @@ const resetRadarDot = () => {
 
 const toggleMapExpand = () => {
   isMapExpanded.value = !isMapExpanded.value
+  if (isMapExpanded.value) {
+    // 等待 modal 渲染后初始化大地图
+    nextTick(() => {
+      initLargeMap()
+    })
+  }
 }
 
 const showDotInfo = (dot) => {
@@ -642,7 +560,6 @@ const shareActivity = (activity) => {
     text: activity.description,
     url: window.location.href
   }).catch(() => {
-    // Fallback for browsers that don't support navigator.share
     navigator.clipboard?.writeText(window.location.href)
     alert('Activity link copied to clipboard!')
   })
@@ -652,11 +569,439 @@ const joinActivity = (activity) => {
   alert(`Joined "${activity.title}"! The organizer will be notified.`)
   activity.participants++
 }
+
+// === Groups API Methods ===
+const fetchMyGroups = async () => {
+  try {
+    const response = await groupAPI.getMyGroups()
+    myGroups.value = response.data.data.groups || []
+  } catch (error) {
+    console.error('获取我的小组失败:', error)
+    message.error('获取小组列表失败')
+  }
+}
+
+const fetchAllGroups = async () => {
+  try {
+    const response = await groupAPI.getGroups()
+    allGroups.value = response.data.data.groups || []
+  } catch (error) {
+    console.error('获取所有小组失败:', error)
+  }
+}
+
+const joinGroupHandler = async (groupId) => {
+  try {
+    const response = await groupAPI.joinGroup(groupId)
+    if (response.data.success) {
+      message.success('加入小组成功！')
+      await fetchMyGroups()
+      await fetchAllGroups()
+    }
+  } catch (error) {
+    message.error(error.response?.data?.error?.message || '加入小组失败')
+  }
+}
+
+const leaveGroupHandler = async (groupId) => {
+  try {
+    const response = await groupAPI.leaveGroup(groupId)
+    if (response.data.success) {
+      message.success('已退出小组')
+      if (selectedGroupId.value === groupId) {
+        selectedGroupId.value = null
+      }
+      await fetchMyGroups()
+      await fetchThoughts()
+      await fetchMapThoughts()
+    }
+  } catch (error) {
+    message.error(error.response?.data?.error?.message || '退出小组失败')
+  }
+}
+
+const deleteGroupHandler = async (groupId) => {
+  try {
+    const response = await groupAPI.deleteGroup(groupId)
+    if (response.data.success) {
+      message.success('小组已删除')
+      if (selectedGroupId.value === groupId) {
+        selectedGroupId.value = null
+      }
+      await fetchMyGroups()
+      await fetchAllGroups()
+      await fetchThoughts()
+      await fetchMapThoughts()
+    }
+  } catch (error) {
+    message.error(error.response?.data?.error?.message || '删除小组失败')
+  }
+}
+
+const enterGroup = (group) => {
+  selectedGroupId.value = selectedGroupId.value === group.id ? null : group.id
+  fetchThoughts()
+  fetchMapThoughts()
+}
+
+const handleGroupCreated = () => {
+  fetchMyGroups()
+  fetchAllGroups()
+  message.success('小组创建成功！')
+}
+
+const isGroupJoined = (groupId) => {
+  return myGroups.value.some(g => g.id === groupId)
+}
+
+// === Thoughts API Methods ===
+const fetchThoughts = async () => {
+  try {
+    const params = {}
+    if (selectedGroupId.value) {
+      params.group_id = selectedGroupId.value
+    }
+    const response = await thoughtAPI.getThoughts(params)
+    thoughts.value = response.data.data.thoughts || []
+  } catch (error) {
+    console.error('获取想法失败:', error)
+  }
+}
+
+const fetchMapThoughts = async () => {
+  try {
+    const params = {}
+    if (selectedGroupId.value) {
+      params.group_id = selectedGroupId.value
+    }
+    const response = await thoughtAPI.getMapThoughts(params)
+    mapThoughts.value = response.data.data.thoughts || []
+    updateMapMarkers()
+  } catch (error) {
+    console.error('获取地图想法失败:', error)
+  }
+}
+
+const handleThoughtPosted = () => {
+  fetchThoughts()
+  fetchMapThoughts()
+  message.success('想法发布成功！')
+}
+
+// === Visibility API Methods ===
+const toggleVisibility = async () => {
+  try {
+    let location = null
+    if (!isVisible.value) {
+      // 要变为可见，获取位置
+      location = await getCurrentLocation()
+    }
+
+    const response = await visibilityAPI.updateVisibility({
+      is_visible: !isVisible.value,
+      current_location: location
+    })
+
+    if (response.data.success) {
+      isVisible.value = !isVisible.value
+      message.success(isVisible.value ? '您已出现在地图上' : '您已隐身')
+      fetchVisibleUsers()
+    }
+  } catch (error) {
+    message.error('切换可见性失败')
+  }
+}
+
+const getCurrentLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('浏览器不支持地理定位'))
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        })
+      },
+      (error) => {
+        reject(error)
+      }
+    )
+  })
+}
+
+const fetchVisibleUsers = async () => {
+  try {
+    const params = {}
+    if (selectedGroupId.value) {
+      params.group_id = selectedGroupId.value
+    }
+    const response = await visibilityAPI.getMapUsers(params)
+    visibleUsers.value = response.data.data.users || []
+    updateMapMarkers()
+  } catch (error) {
+    console.error('获取可见用户失败:', error)
+  }
+}
+
+// === Google Maps Methods ===
+const initGoogleMaps = async () => {
+  try {
+    // 等待 Google Maps API 加载
+    if (!window.google) {
+      // 如果还没加载，等待一下
+      await new Promise((resolve) => {
+        const checkGoogle = setInterval(() => {
+          if (window.google) {
+            clearInterval(checkGoogle)
+            resolve()
+          }
+        }, 100)
+      })
+    }
+
+    // 初始化小地图
+    const smallMapElement = document.getElementById('small-map')
+    if (smallMapElement && window.google) {
+      smallMap = new window.google.maps.Map(smallMapElement, {
+        center: { lat: 42.4534, lng: -76.4735 }, // Cornell University
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false
+      })
+    }
+
+    updateMapMarkers()
+  } catch (error) {
+    console.error('Google Maps 加载失败:', error)
+    message.error('地图加载失败')
+  }
+}
+
+const initLargeMap = async () => {
+  try {
+    if (!window.google) return
+
+    const largeMapElement = document.getElementById('large-map')
+    if (largeMapElement && !largeMap) {
+      largeMap = new window.google.maps.Map(largeMapElement, {
+        center: { lat: 42.4534, lng: -76.4735 },
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false
+      })
+      updateLargeMapMarkers()
+    }
+  } catch (error) {
+    console.error('大地图初始化失败:', error)
+  }
+}
+
+const updateMapMarkers = () => {
+  if (!smallMap || !window.google) {
+    console.log('⚠️ 地图未初始化或Google API未加载')
+    return
+  }
+
+  console.log('🗺️ 更新地图标记:', {
+    thoughts: mapThoughts.value.length,
+    users: visibleUsers.value.length
+  })
+
+  // 清除旧标记
+  thoughtMarkers.forEach(marker => marker.setMap(null))
+  userMarkers.forEach(marker => marker.setMap(null))
+  thoughtMarkers = []
+  userMarkers = []
+
+  // 添加想法标记（红色）
+  mapThoughts.value.forEach(thought => {
+    console.log('📍 添加想法标记:', thought)
+    if (thought.location && thought.location.lat && thought.location.lng) {
+      // 截断过长的内容
+      const maxLength = 100
+      const displayContent = thought.content.length > maxLength
+        ? thought.content.substring(0, maxLength) + '...'
+        : thought.content
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: thought.location.lat, lng: thought.location.lng },
+        map: smallMap,
+        title: thought.content,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: '#EF4444',
+          fillOpacity: 0.8,
+          strokeWeight: 2,
+          strokeColor: '#FFF',
+          scale: 8
+        }
+      })
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="padding: 8px; max-width: 200px;">
+          <div style="font-weight: bold; margin-bottom: 4px; color: #333;">${thought.user?.first_name || '用户'}</div>
+          <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
+        </div>`
+      })
+
+      // 鼠标悬停时显示
+      marker.addListener('mouseover', () => {
+        infoWindow.open(smallMap, marker)
+      })
+
+      // 鼠标离开时隐藏
+      marker.addListener('mouseout', () => {
+        infoWindow.close()
+      })
+
+      thoughtMarkers.push(marker)
+    }
+  })
+
+  // 添加用户标记（蓝色）
+  visibleUsers.value.forEach(user => {
+    if (user.current_location && user.current_location.lat && user.current_location.lng) {
+      const marker = new window.google.maps.Marker({
+        position: { lat: user.current_location.lat, lng: user.current_location.lng },
+        map: smallMap,
+        title: user.first_name,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: '#3B82F6',
+          fillOpacity: 0.8,
+          strokeWeight: 2,
+          strokeColor: '#FFF',
+          scale: 8
+        }
+      })
+
+      userMarkers.push(marker)
+    }
+  })
+}
+
+const updateLargeMapMarkers = () => {
+  if (!largeMap || !window.google) return
+
+  // 复制小地图的标记到大地图
+  mapThoughts.value.forEach(thought => {
+    if (thought.location && thought.location.lat && thought.location.lng) {
+      // 截断过长的内容
+      const maxLength = 100
+      const displayContent = thought.content.length > maxLength
+        ? thought.content.substring(0, maxLength) + '...'
+        : thought.content
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: thought.location.lat, lng: thought.location.lng },
+        map: largeMap,
+        title: thought.content,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: '#EF4444',
+          fillOpacity: 0.8,
+          strokeWeight: 2,
+          strokeColor: '#FFF',
+          scale: 10
+        }
+      })
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="padding: 8px; max-width: 200px;">
+          <div style="font-weight: bold; margin-bottom: 4px; color: #333;">${thought.user?.first_name || '用户'}</div>
+          <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
+        </div>`
+      })
+
+      // 鼠标悬停时显示
+      marker.addListener('mouseover', () => {
+        infoWindow.open(largeMap, marker)
+      })
+
+      // 鼠标离开时隐藏
+      marker.addListener('mouseout', () => {
+        infoWindow.close()
+      })
+    }
+  })
+
+  visibleUsers.value.forEach(user => {
+    if (user.current_location && user.current_location.lat && user.current_location.lng) {
+      const marker = new window.google.maps.Marker({
+        position: { lat: user.current_location.lat, lng: user.current_location.lng },
+        map: largeMap,
+        title: user.first_name,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: '#3B82F6',
+          fillOpacity: 0.8,
+          strokeWeight: 2,
+          strokeColor: '#FFF',
+          scale: 10
+        }
+      })
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="padding: 8px;">
+          <div style="font-weight: bold; color: #333;">${user.first_name || '用户'}</div>
+        </div>`
+      })
+
+      // 鼠标悬停时显示
+      marker.addListener('mouseover', () => {
+        infoWindow.open(largeMap, marker)
+      })
+
+      // 鼠标离开时隐藏
+      marker.addListener('mouseout', () => {
+        infoWindow.close()
+      })
+    }
+  })
+}
+
+// Watch for group selection changes
+watch(selectedGroupId, () => {
+  fetchThoughts()
+  fetchMapThoughts()
+  fetchVisibleUsers()
+})
+
+// Initialize on mount
+onMounted(async () => {
+  await fetchMyGroups()
+  await fetchAllGroups()
+  await fetchThoughts()
+  await fetchMapThoughts()
+  await fetchVisibleUsers()
+  await initGoogleMaps()
+
+  // 获取我的可见性状态
+  try {
+    const response = await visibilityAPI.getMyVisibility()
+    isVisible.value = response.data.data.visibility.is_visible
+  } catch (error) {
+    console.error('获取可见性状态失败:', error)
+  }
+})
+
 </script>
 
 <style scoped>
 .main-content {
   flex: 1;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Custom slider styling */
