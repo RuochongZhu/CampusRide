@@ -131,7 +131,7 @@
 
   <!-- Post Item Modal -->
   <a-modal
-    v-model:visible="showPostModal"
+    v-model:open="showPostModal"
     title="Post New Item"
     @ok="handlePostItem"
     okText="Post"
@@ -155,7 +155,7 @@
 
   <!-- Item Details Modal -->
   <a-modal
-    v-model:visible="showDetailsModal"
+    v-model:open="showDetailsModal"
     :title="selectedItem?.title"
     :footer="null"
     width="700px"

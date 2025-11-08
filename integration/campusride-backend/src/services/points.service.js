@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { supabase } from '../config/database.js';
 import { socketManager } from '../app.js';
 import notificationService from './notification.service.js';
@@ -28,6 +29,27 @@ class PointsService {
       name: '活动组织',
       basePoints: 20,
       description: '组织活动获得积分',
+      category: 'activity'
+    });
+
+    this.pointsRules.set('activity_creation', {
+      name: '活动创建',
+      basePoints: 20,
+      description: '创建活动获得积分',
+      category: 'activity'
+    });
+
+    this.pointsRules.set('activity_join', {
+      name: '活动报名',
+      basePoints: 10,
+      description: '报名活动获得积分',
+      category: 'activity'
+    });
+
+    this.pointsRules.set('activity_registration_refund', {
+      name: '活动报名退款',
+      basePoints: 0,
+      description: '取消活动报名返还积分',
       category: 'activity'
     });
 
@@ -80,6 +102,21 @@ class PointsService {
       description: '连续签到获得额外积分',
       category: 'bonus'
     });
+  }
+
+  async validateActivityPoints(userId, action, activityId = null) {
+    try {
+      // 预留接口：这里可以加入防刷分逻辑，例如每日限额等
+      return {
+        valid: true
+      };
+    } catch (error) {
+      console.error('❌ Failed to validate activity points:', error);
+      return {
+        valid: false,
+        reason: error.message
+      };
+    }
   }
 
   async awardPoints(options) {

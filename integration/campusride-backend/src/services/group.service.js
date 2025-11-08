@@ -308,6 +308,111 @@ class GroupService {
       };
     }
   }
+
+  // 检查用户是否是小组成员
+  async checkMembership(groupId, userId) {
+    try {
+      const { data: membership, error } = await supabaseAdmin
+        .from('group_members')
+        .select('role')
+        .eq('group_id', groupId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return {
+        success: true,
+        isMember: !!membership,
+        role: membership?.role
+      };
+    } catch (error) {
+      console.error('❌ 检查小组成员失败:', error);
+      return {
+        success: false,
+        error: error.message,
+        isMember: false
+      };
+    }
+  }
+
+  // 获取小组消息
+  async getGroupMessages(groupId, params = {}) {
+    try {
+      const { limit = 50, offset = 0 } = params;
+
+      // 获取消息，包含发送者信息
+      const { data: messages, error, count } = await supabaseAdmin
+        .from('group_messages')
+        .select(`
+          *,
+          sender:users!sender_id(
+            id,
+            first_name,
+            last_name,
+            avatar_url
+          )
+        `, { count: 'exact' })
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        messages: messages || [],
+        total: count
+      };
+    } catch (error) {
+      console.error('❌ 获取小组消息失败:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // 发送小组消息
+  async sendGroupMessage(groupId, userId, content) {
+    try {
+      // 创建消息
+      const { data: message, error } = await supabaseAdmin
+        .from('group_messages')
+        .insert({
+          group_id: groupId,
+          sender_id: userId,
+          content: content.trim()
+        })
+        .select(`
+          *,
+          sender:users!sender_id(
+            id,
+            first_name,
+            last_name,
+            avatar_url
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      console.log(`✅ 小组消息发送成功: 用户 ${userId} 在小组 ${groupId}`);
+
+      return {
+        success: true,
+        message
+      };
+    } catch (error) {
+      console.error('❌ 发送小组消息失败:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 const groupService = new GroupService();

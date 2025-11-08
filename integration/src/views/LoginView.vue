@@ -19,26 +19,26 @@ class="object-cover w-full h-auto"
 </div>
           <h2 class="text-2xl font-bold text-gray-900 mb-6">Log in</h2>
           
-          <!-- 错误提示 -->
+          <!-- Error notification -->
           <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
             <div class="whitespace-pre-line">{{ errorMessage }}</div>
-            <!-- 重发验证邮件按钮 -->
+            <!-- Resend verification email button -->
             <button
               v-if="showResendButton"
               @click="resendVerification"
               :disabled="isResending"
               class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ isResending ? '发送中...' : '重新发送验证邮件' }}
+              {{ isResending ? 'Sending...' : 'Resend Verification Email' }}
             </button>
           </div>
-          
-          <!-- 演示模式提示 -->
+
+          <!-- Demo mode notification -->
           <div class="mb-4 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded">
-            <div class="font-semibold mb-1">🎯 演示账号</div>
+            <div class="font-semibold mb-1">🎯 Demo Account</div>
             <div class="text-sm">
-              邮箱: demo@cornell.edu<br>
-              密码: demo1234
+              Email: demo@cornell.edu<br>
+              Password: demo1234
             </div>
           </div>
           
@@ -132,8 +132,10 @@ required
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
@@ -142,99 +144,56 @@ const showResendButton = ref(false)
 const resendEmail = ref('')
 const isResending = ref(false)
 
-// 后端API基础URL
+// Backend API base URL
 const API_BASE_URL = 'http://localhost:3001/api/v1'
 
-// 清除错误信息
+// Clear error message
 const clearError = () => {
   errorMessage.value = ''
   showResendButton.value = false
   resendEmail.value = ''
 }
 
-// 处理登录
+// Handle login
 const handleSignIn = async () => {
   if (!email.value || !password.value) {
-    errorMessage.value = '请输入邮箱和密码'
+    errorMessage.value = 'Please enter email and password'
     return
   }
-  
+
   isLoading.value = true
   clearError()
-  
-  // 首先尝试演示模式登录
-  // 演示账号: demo@cornell.edu / demo1234
-  if (email.value === 'demo@cornell.edu' && password.value === 'demo1234') {
-    // 演示模式登录成功
-    localStorage.setItem('userToken', 'demo-token-' + Date.now())
-    localStorage.setItem('userData', JSON.stringify({
-      id: 'demo-user-001',
-      email: 'demo@cornell.edu',
-      first_name: 'Demo User', // Use first_name to store display name
-      last_name: 'User',
-      student_id: 'DEMO2024',
-      university: 'Cornell University',
-      major: 'Computer Science',
-      role: 'user',
-      points: 100
-    }))
-    
-    errorMessage.value = ''
-    const redirect = router.currentRoute.value.query.redirect || '/home'
-    setTimeout(() => {
-      router.push(redirect)
-    }, 500)
-    isLoading.value = false
-    return
-  }
-  
-  // 尝试真实后端登录
+
+  // Use auth store's login method
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value
-      })
+    const result = await authStore.login({
+      email: email.value,
+      password: password.value
     })
-    
-    const data = await response.json()
-    
-    if (response.ok && data.success) {
-      // 保存认证信息
-      localStorage.setItem('userToken', data.data.token)
-      localStorage.setItem('userData', JSON.stringify(data.data.user))
-      
+
+    if (result.success) {
       errorMessage.value = ''
-      // 跳转到主页或指定页面
+      // Redirect to homepage or specified page
       const redirect = router.currentRoute.value.query.redirect || '/home'
       setTimeout(() => {
         router.push(redirect)
       }, 500)
     } else {
-      // 如果是数据库连接错误，提供演示模式提示
-      if (data.error?.code === 'DATABASE_ERROR' || response.status === 500) {
-        errorMessage.value = '数据库连接失败。请使用演示账号登录：\n邮箱: demo@cornell.edu\n密码: demo1234'
+      // Handle different types of errors
+      if (result.error?.includes('EMAIL_NOT_VERIFIED')) {
+        errorMessage.value = result.error + '\n\nClick the button below to resend verification email:'
+        showResendButton.value = true
+        resendEmail.value = email.value
+      } else if (result.error?.includes('DATABASE_ERROR')) {
+        errorMessage.value = 'Database connection failed. Please use the demo account to log in:\nEmail: demo@cornell.edu\nPassword: demo1234'
       } else {
-        // 如果是邮箱未验证错误
-        if (data.error?.code === 'EMAIL_NOT_VERIFIED') {
-          errorMessage.value = data.error.message + '\n\n点击下方按钮重新发送验证邮件：'
-          showResendButton.value = true
-          resendEmail.value = email.value
-        } else if (data.error?.code === 'DATABASE_ERROR' || response.status === 500) {
-          errorMessage.value = '数据库连接失败。请使用演示账号登录：\n邮箱: demo@cornell.edu\n密码: demo1234'
-        } else {
-          errorMessage.value = data.error?.message || 'Invalid credentials'
-        }
+        errorMessage.value = result.error || 'Invalid credentials'
       }
     }
   } catch (error) {
     console.error('Login error:', error)
-    // 网络错误时提供演示模式
-    errorMessage.value = '无法连接到服务器。\n\n您可以使用演示账号体验系统：\n邮箱: demo@cornell.edu\n密码: demo1234'
+    // Provide demo mode on network error
+    errorMessage.value = 'Unable to connect to server.\n\nYou can use the demo account to try the system:\nEmail: demo@cornell.edu\nPassword: demo1234'
   } finally {
     isLoading.value = false
   }
@@ -242,15 +201,15 @@ const handleSignIn = async () => {
 
 const signInWithGoogle = () => {
   clearError()
-  // TODO: 实现Google OAuth登录
-  errorMessage.value = 'Google OAuth功能开发中，敬请期待'
+  // TODO: Implement Google OAuth login
+  errorMessage.value = 'Google OAuth feature is under development, stay tuned'
 }
 
-// 游客登录
+// Guest login
 const guestLogin = async () => {
   clearError()
   isLoading.value = true
-  
+
   try {
     const response = await fetch(`${API_BASE_URL}/auth/guest-login`, {
       method: 'POST',
@@ -258,14 +217,14 @@ const guestLogin = async () => {
         'Content-Type': 'application/json',
       }
     })
-    
+
     const data = await response.json()
-    
+
     if (response.ok) {
-      // 保存游客token和数据
+      // Save guest token and data
       localStorage.setItem('userToken', data.data.token)
       localStorage.setItem('userData', JSON.stringify(data.data.user))
-      
+
       errorMessage.value = ''
       const redirect = router.currentRoute.value.query.redirect || '/home'
       setTimeout(() => {
@@ -282,12 +241,12 @@ const guestLogin = async () => {
   }
 }
 
-// 重新发送验证邮件
+// Resend verification email
 const resendVerification = async () => {
   if (!resendEmail.value) return
-  
+
   isResending.value = true
-  
+
   try {
     const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
       method: 'POST',
@@ -298,41 +257,41 @@ const resendVerification = async () => {
         email: resendEmail.value
       })
     })
-    
+
     const data = await response.json()
-    
+
     if (response.ok && data.success) {
-      errorMessage.value = '验证邮件已发送！请检查您的邮箱。'
+      errorMessage.value = 'Verification email sent! Please check your inbox.'
       showResendButton.value = false
     } else {
-      errorMessage.value = data.error?.message || '发送验证邮件失败'
+      errorMessage.value = data.error?.message || 'Failed to send verification email'
     }
   } catch (error) {
     console.error('Resend verification error:', error)
-    errorMessage.value = '网络错误，请稍后重试'
+    errorMessage.value = 'Network error, please try again later'
   } finally {
     isResending.value = false
   }
 }
 
-// 跳转到注册页面
+// Redirect to registration page
 const goToRegister = () => {
   router.push('/register')
 }
 
-// 跳转到重发验证邮件页面
+// Redirect to resend verification page
 const goToResendVerification = () => {
   router.push('/resend-verification')
 }
 
-// 跳转到忘记密码页面
+// Redirect to forgot password page
 const goToForgotPassword = () => {
   router.push('/forgot-password')
 }
 </script>
 
 <style scoped>
-/* 保留原有样式 */
+/* Keep original styles */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
 -webkit-appearance: none;

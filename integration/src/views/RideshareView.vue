@@ -74,12 +74,6 @@
           <!-- Driver Post Form -->
           <div v-else>
             <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Trip Title</label>
-              <a-input v-model:value="driverForm.title" placeholder="e.g., Cornell to NYC">
-                <template #prefix><car-outlined /></template>
-              </a-input>
-            </div>
-            <div class="mb-4">
               <label class="block text-gray-700 mb-2">Origin</label>
               <input
                 ref="driverOriginInput"
@@ -376,7 +370,6 @@ const searchForm = ref({
 
 // Driver Form
 const driverForm = ref({
-  title: '',
   origin: '',
   destination: '',
   date: null,
@@ -410,19 +403,20 @@ const driverOriginInput = ref(null);
 const driverDestInput = ref(null);
 let googleMapsLoaded = false;
 
-// Initialize Google Maps Autocomplete with new API
+// Initialize Google Maps Autocomplete
 const initGoogleMaps = async () => {
   if (googleMapsLoaded) return;
 
   try {
     // 检查是否已经加载
-    if (window.google && window.google.maps) {
+    if (window.google && window.google.maps && window.google.maps.places) {
       googleMapsLoaded = true;
+      console.log('✅ Google Maps already loaded');
       setupAutocomplete();
       return;
     }
 
-    // Load Google Maps script manually
+    // Load Google Maps script
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
     script.async = true;
@@ -431,7 +425,18 @@ const initGoogleMaps = async () => {
     // 创建全局回调
     window.initMap = () => {
       googleMapsLoaded = true;
+      console.log('✅ Google Maps loaded successfully');
       setupAutocomplete();
+    };
+
+    // 错误处理
+    script.onerror = () => {
+      console.error('❌ Failed to load Google Maps');
+      notification.warning({
+        message: 'Address Autocomplete Unavailable',
+        description: 'You can still enter addresses manually.',
+        duration: 3
+      });
     };
 
     document.head.appendChild(script);
@@ -449,44 +454,83 @@ const initGoogleMaps = async () => {
 const setupAutocomplete = () => {
   setTimeout(() => {
     try {
-      if (passengerOriginInput.value && window.google?.maps?.places) {
-        const autocomplete1 = new google.maps.places.Autocomplete(passengerOriginInput.value);
+      if (!window.google?.maps?.places) {
+        console.warn('Google Maps Places API not available');
+        return;
+      }
+
+      let setupCount = 0;
+
+      // Passenger Origin Input
+      if (passengerOriginInput.value) {
+        const autocomplete1 = new google.maps.places.Autocomplete(passengerOriginInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' } // 限制为美国地址
+        });
         autocomplete1.addListener('place_changed', () => {
           const place = autocomplete1.getPlace();
           if (place.formatted_address) {
             searchForm.value.origin = place.formatted_address;
+          } else if (place.name) {
+            searchForm.value.origin = place.name;
           }
         });
+        setupCount++;
       }
 
-      if (passengerDestInput.value && window.google?.maps?.places) {
-        const autocomplete2 = new google.maps.places.Autocomplete(passengerDestInput.value);
+      // Passenger Destination Input
+      if (passengerDestInput.value) {
+        const autocomplete2 = new google.maps.places.Autocomplete(passengerDestInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' }
+        });
         autocomplete2.addListener('place_changed', () => {
           const place = autocomplete2.getPlace();
           if (place.formatted_address) {
             searchForm.value.destination = place.formatted_address;
+          } else if (place.name) {
+            searchForm.value.destination = place.name;
           }
         });
+        setupCount++;
       }
 
-      if (driverOriginInput.value && window.google?.maps?.places) {
-        const autocomplete3 = new google.maps.places.Autocomplete(driverOriginInput.value);
+      // Driver Origin Input
+      if (driverOriginInput.value) {
+        const autocomplete3 = new google.maps.places.Autocomplete(driverOriginInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' }
+        });
         autocomplete3.addListener('place_changed', () => {
           const place = autocomplete3.getPlace();
           if (place.formatted_address) {
             driverForm.value.origin = place.formatted_address;
+          } else if (place.name) {
+            driverForm.value.origin = place.name;
           }
         });
+        setupCount++;
       }
 
-      if (driverDestInput.value && window.google?.maps?.places) {
-        const autocomplete4 = new google.maps.places.Autocomplete(driverDestInput.value);
+      // Driver Destination Input
+      if (driverDestInput.value) {
+        const autocomplete4 = new google.maps.places.Autocomplete(driverDestInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' }
+        });
         autocomplete4.addListener('place_changed', () => {
           const place = autocomplete4.getPlace();
           if (place.formatted_address) {
             driverForm.value.destination = place.formatted_address;
+          } else if (place.name) {
+            driverForm.value.destination = place.name;
           }
         });
+        setupCount++;
+      }
+
+      if (setupCount > 0) {
+        console.log(`✅ Autocomplete initialized for ${setupCount} input fields`);
       }
     } catch (error) {
       console.warn('Failed to setup autocomplete:', error);
@@ -543,10 +587,10 @@ const searchRides = async () => {
 // Post trip (Driver)
 const postTrip = async () => {
   // Validation
-  if (!driverForm.value.title || !driverForm.value.origin || !driverForm.value.destination) {
+  if (!driverForm.value.origin || !driverForm.value.destination) {
     notification.error({
       message: 'Missing Information',
-      description: 'Please fill in title, origin, and destination.'
+      description: 'Please fill in origin and destination.'
     });
     return;
   }
@@ -568,8 +612,11 @@ const postTrip = async () => {
       .minute(dayjs(driverForm.value.time).minute())
       .toISOString();
 
+    // Auto-generate title from origin and destination
+    const autoTitle = `${driverForm.value.origin} → ${driverForm.value.destination}`;
+
     const response = await carpoolingAPI.createRide({
-      title: driverForm.value.title,
+      title: autoTitle,
       departureLocation: driverForm.value.origin,
       destinationLocation: driverForm.value.destination,
       departureTime: departureDateTime,
@@ -586,7 +633,6 @@ const postTrip = async () => {
 
       // Reset form
       driverForm.value = {
-        title: '',
         origin: '',
         destination: '',
         date: null,
@@ -704,11 +750,10 @@ watch(userMode, async () => {
 
 // Lifecycle
 onMounted(async () => {
+  // 立即开始加载 Google Maps（异步加载，不阻塞）
+  initGoogleMaps();
+  // 加载拼车列表
   await loadRides();
-  // 延迟加载 Google Maps,避免影响主要功能
-  setTimeout(() => {
-    initGoogleMaps();
-  }, 1000);
 });
 </script>
 
@@ -732,5 +777,61 @@ onMounted(async () => {
 }
 :deep(.ant-pagination-item-active a) {
   color: #dc2626;
+}
+</style>
+
+<style>
+/* Google Maps Autocomplete 下拉框样式 */
+.pac-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  margin-top: 4px;
+  font-family: inherit;
+  z-index: 9999 !important;
+}
+
+.pac-container:after {
+  display: none !important;
+}
+
+.pac-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-top: 1px solid #f3f4f6;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.pac-item:first-child {
+  border-top: none;
+}
+
+.pac-item:hover {
+  background-color: #fef2f2;
+}
+
+.pac-item-selected {
+  background-color: #fee2e2;
+}
+
+.pac-icon {
+  margin-top: 6px;
+}
+
+.pac-item-query {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.pac-matched {
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.hdpi.pac-logo:after {
+  background-image: none !important;
 }
 </style>

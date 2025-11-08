@@ -54,10 +54,12 @@
         <div class="relative hover:scale-110 transition-transform duration-300">
           <BellOutlined
             class="text-xl text-[#666666] cursor-pointer hover:text-[#C24D45]"
+            @click="handleBellClick"
           />
           <span
+            v-if="unreadCount > 0"
             class="absolute -top-1 -right-1 w-4 h-4 bg-[#C24D45] rounded-full text-white text-xs flex items-center justify-center"
-            >3</span
+            >{{ unreadCount > 99 ? '99+' : unreadCount }}</span
           >
         </div>
         <div class="relative">
@@ -87,12 +89,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { SearchOutlined, BellOutlined } from "@ant-design/icons-vue";
+import { messagesAPI } from "@/utils/api";
+import { message } from 'ant-design-vue';
 
 const router = useRouter();
 const isUserMenuOpen = ref(false);
+const unreadCount = ref(0);
+let intervalId = null;
 
 const userAvatar =
   "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
@@ -113,9 +119,47 @@ const loadUserData = () => {
   }
 };
 
+// Load unread message count
+const loadUnreadCount = async () => {
+  try {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      unreadCount.value = 0;
+      return;
+    }
+
+    const response = await messagesAPI.getUnreadCount();
+    if (response.data?.success) {
+      unreadCount.value = response.data.data.count || 0;
+    }
+  } catch (error) {
+    // Silently fail if not authenticated or API unavailable
+    console.log('Could not load unread count:', error.message);
+    unreadCount.value = 0;
+  }
+};
+
+// Handle bell icon click
+const handleBellClick = () => {
+  router.push('/messages');
+};
+
 // Load user data when component mounts
 onMounted(() => {
   loadUserData();
+  loadUnreadCount();
+
+  // Poll for new messages every 30 seconds
+  intervalId = setInterval(() => {
+    loadUnreadCount();
+  }, 30000);
+});
+
+// Cleanup interval on unmount
+onUnmounted(() => {
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
 });
 
 const toggleUserMenu = () => {

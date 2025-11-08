@@ -1,4 +1,5 @@
 import activityService from '../services/activity.service.js';
+import activityCleanupService from '../services/activity-cleanup.service.js';
 import { body, query, param, validationResult } from 'express-validator';
 
 class ActivityController {
@@ -19,7 +20,7 @@ class ActivityController {
 
       const result = await activityService.createActivity({
         ...req.body,
-        organizerId: req.user.userId
+        organizerId: req.user.id
       });
 
       if (!result.success) {
@@ -120,7 +121,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       const result = await activityService.getActivityById(activityId, userId);
 
@@ -169,7 +170,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const organizerId = req.user.userId;
+      const organizerId = req.user.id;
 
       const result = await activityService.updateActivity(activityId, req.body, organizerId);
 
@@ -219,7 +220,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const organizerId = req.user.userId;
+      const organizerId = req.user.id;
 
       const result = await activityService.deleteActivity(activityId, organizerId);
 
@@ -267,7 +268,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const organizerId = req.user.userId;
+      const organizerId = req.user.id;
 
       const result = await activityService.publishActivity(activityId, organizerId);
 
@@ -364,7 +365,7 @@ class ActivityController {
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { type = 'organized' } = req.query;
 
       const result = await activityService.getMyActivities(userId, type);
@@ -415,7 +416,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const result = await activityService.registerForActivity(activityId, userId);
 
@@ -465,7 +466,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const result = await activityService.cancelRegistration(activityId, userId);
 
@@ -496,6 +497,55 @@ class ActivityController {
     }
   }
 
+  // Regenerate check-in code (organizer only)
+  async generateCheckinCode(req, res) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid activity ID',
+            details: errors.array()
+          }
+        });
+      }
+
+      const { activityId } = req.params;
+      const organizerId = req.user.id;
+
+      const result = await activityService.regenerateCheckinCode(activityId, organizerId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'CHECKIN_CODE_REGEN_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          checkinCode: result.code
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Regenerate check-in code error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to regenerate check-in code'
+        }
+      });
+    }
+  }
+
   // Check in to activity
   async checkInToActivity(req, res) {
     try {
@@ -512,7 +562,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const checkinData = {
         checkinCode: req.body.checkinCode,
         location: req.body.location
@@ -551,6 +601,128 @@ class ActivityController {
     }
   }
 
+  // Get user's historical activities (archived/completed)
+  async getHistoryActivities(req, res) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid input data',
+            details: errors.array()
+          }
+        });
+      }
+
+      const { type = 'organized', limit = 20, offset = 0 } = req.query;
+      const userId = req.user.id;
+
+      const result = await activityService.getHistoryActivities(userId, { type, limit: parseInt(limit), offset: parseInt(offset) });
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'GET_HISTORY_ACTIVITIES_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          activities: result.activities,
+          total: result.total,
+          hasMore: result.hasMore,
+          pagination: {
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            total: result.total
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Get history activities error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get history activities'
+        }
+      });
+    }
+  }
+
+  // Manual cleanup trigger (admin only)
+  async triggerCleanup(req, res) {
+    try {
+      // Check if user is admin (you can add proper admin check here)
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Admin access required'
+          }
+        });
+      }
+
+      await activityCleanupService.manualCleanup();
+
+      res.status(200).json({
+        success: true,
+        message: 'Activity cleanup triggered successfully'
+      });
+
+    } catch (error) {
+      console.error('❌ Trigger cleanup error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to trigger cleanup'
+        }
+      });
+    }
+  }
+
+  // Get cleanup statistics
+  async getCleanupStats(req, res) {
+    try {
+      // Check if user is admin
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Admin access required'
+          }
+        });
+      }
+
+      const stats = await activityCleanupService.getCleanupStats();
+
+      res.status(200).json({
+        success: true,
+        data: stats
+      });
+
+    } catch (error) {
+      console.error('❌ Get cleanup stats error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get cleanup stats'
+        }
+      });
+    }
+  }
+
   // Get activity participants (organizers only)
   async getActivityParticipants(req, res) {
     try {
@@ -567,7 +739,7 @@ class ActivityController {
       }
 
       const { activityId } = req.params;
-      const organizerId = req.user.userId;
+      const organizerId = req.user.id;
 
       const result = await activityService.getActivityParticipants(activityId, organizerId);
 
@@ -647,8 +819,8 @@ class ActivityController {
 
 // Validation middlewares
 export const createActivityValidation = [
-  body('title').isString().isLength({ min: 5, max: 255 }).withMessage('Title must be 5-255 characters'),
-  body('description').isString().isLength({ min: 20, max: 2000 }).withMessage('Description must be 20-2000 characters'),
+  body('title').isString().isLength({ min: 3, max: 255 }).withMessage('Title must be 3-255 characters'),
+  body('description').isString().isLength({ min: 5, max: 2000 }).withMessage('Description must be 5-2000 characters'),
   body('category').isIn(['academic', 'sports', 'social', 'volunteer', 'career', 'cultural', 'technology']).withMessage('Invalid category'),
   body('type').isIn(['individual', 'team', 'competition', 'workshop', 'seminar']).withMessage('Invalid type'),
   body('location').isString().notEmpty().withMessage('Location is required'),
@@ -665,7 +837,9 @@ export const createActivityValidation = [
   body('imageUrls').optional().isArray(),
   body('contactInfo').optional().isObject(),
   body('locationVerification').optional().isBoolean(),
-  body('autoComplete').optional().isBoolean()
+  body('autoComplete').optional().isBoolean(),
+  body('group_id').optional().custom(value => value === null || typeof value === 'string').withMessage('Group ID must be null or string'),
+  body('status').optional().isIn(['draft', 'published', 'cancelled'])
 ];
 
 export const updateActivityValidation = [
@@ -732,6 +906,12 @@ export const checkinValidation = [
   param('activityId').isUUID().withMessage('Invalid activity ID'),
   body('checkinCode').optional().isString().isLength({ min: 6, max: 6 }).withMessage('Checkin code must be 6 characters'),
   body('location').optional().isObject().withMessage('Location must be an object with lat and lng')
+];
+
+export const getHistoryActivitiesValidation = [
+  query('type').optional().isIn(['organized', 'participated']).withMessage('Type must be organized or participated'),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('offset').optional().isInt({ min: 0 })
 ];
 
 export default new ActivityController();

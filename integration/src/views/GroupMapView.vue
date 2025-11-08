@@ -23,6 +23,7 @@
         <MapCanvas
           :thoughts="mapThoughts"
           :users="visibleUsers"
+          :activities="activityStore.nearbyActivities"
           @marker-hover="handleMarkerHover"
           @marker-click="handleMarkerClick"
         />
@@ -32,6 +33,12 @@
           v-if="hoveredThought"
           :thought="hoveredThought"
           :position="bubblePosition"
+        />
+
+        <!-- Activity悬浮按钮 -->
+        <ActivityFloatingButton
+          :activity-count="nearbyActivityCount"
+          @click="showActivityModal = true"
         />
       </div>
     </div>
@@ -45,16 +52,27 @@
 
     <!-- 创建小组弹窗 -->
     <CreateGroupModal
-      v-model:visible="showCreateModal"
+      v-model:open="showCreateModal"
       @success="handleGroupCreated"
     />
 
-    <!-- 发布想法弹窗 -->
+    <!-- 发布活动弹窗 -->
     <PostThoughtModal
-      v-model:visible="showThoughtModal"
+      v-model:open="showThoughtModal"
       :my-groups="myGroups"
       :default-group="selectedGroup"
       @success="handleThoughtPosted"
+    />
+
+    <!-- Activity功能弹窗 -->
+    <ActivityModal
+      v-model:open="showActivityModal"
+      :map-bounds="currentMapBounds"
+      @activity-created="handleActivityCreated"
+      @activity-updated="handleActivityUpdated"
+      @activity-joined="handleActivityJoined"
+      @activity-left="handleActivityLeft"
+      @location-highlight="handleActivityLocationHighlight"
     />
   </div>
 </template>
@@ -70,6 +88,9 @@ import ThoughtBubble from '@/components/groups/ThoughtBubble.vue'
 import ThoughtTimeline from '@/components/groups/ThoughtTimeline.vue'
 import CreateGroupModal from '@/components/groups/CreateGroupModal.vue'
 import PostThoughtModal from '@/components/groups/PostThoughtModal.vue'
+import ActivityFloatingButton from '@/components/activities/ActivityFloatingButton.vue'
+import ActivityModal from '@/components/activities/ActivityModal.vue'
+import { useActivityStore } from '@/stores/activity'
 
 // 状态
 const selectedGroup = ref(null)
@@ -82,6 +103,18 @@ const hoveredThought = ref(null)
 const bubblePosition = ref({ x: 0, y: 0 })
 const showCreateModal = ref(false)
 const showThoughtModal = ref(false)
+
+// Activity相关状态
+const showActivityModal = ref(false)
+const currentMapBounds = ref(null)
+
+// Activity Store
+const activityStore = useActivityStore()
+
+// Activity相关computed
+const nearbyActivityCount = computed(() => {
+  return activityStore.nearbyActivities.length
+})
 
 // 切换小组
 const handleSelectGroup = (groupId) => {
@@ -236,6 +269,39 @@ const handleDeleteThought = async (thoughtId) => {
   }
 }
 
+// Activity事件处理
+const handleActivityCreated = (activity) => {
+  message.success('活动创建成功！')
+  activityStore.fetchActivities()
+}
+
+const handleActivityUpdated = (activity) => {
+  message.success('活动更新成功！')
+  activityStore.fetchActivities()
+}
+
+const handleActivityJoined = (activity) => {
+  message.success('成功加入活动！')
+  activityStore.fetchActivities()
+}
+
+const handleActivityLeft = (activity) => {
+  message.success('已退出活动！')
+  activityStore.fetchActivities()
+}
+
+const handleActivityLocationHighlight = (coordinates) => {
+  // 通知地图组件高亮特定位置
+  // 这需要在MapCanvas组件中实现相应的方法
+  console.log('Highlighting activity location:', coordinates)
+}
+
+// 获取地图边界变化（需要在MapCanvas中触发）
+const handleMapBoundsChanged = (bounds) => {
+  currentMapBounds.value = bounds
+  activityStore.updateMapBounds(bounds)
+}
+
 // 初始化
 onMounted(async () => {
   await fetchMyGroups()
@@ -249,6 +315,14 @@ onMounted(async () => {
     isVisible.value = response.data.data.visibility.is_visible
   } catch (error) {
     console.error('获取可见性状态失败:', error)
+  }
+
+  // 初始化Activity store
+  try {
+    await activityStore.fetchActivities()
+    console.log('Activity store initialized')
+  } catch (error) {
+    console.error('初始化Activity失败:', error)
   }
 })
 </script>

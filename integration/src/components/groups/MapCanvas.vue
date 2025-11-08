@@ -39,6 +39,10 @@
           <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
           <span>用户位置</span>
         </div>
+        <div class="flex items-center text-xs text-gray-600">
+          <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+          <span>校园活动</span>
+        </div>
       </div>
     </div>
 
@@ -58,6 +62,11 @@
           <div class="text-lg font-bold text-blue-500">{{ users.length }}</div>
           <div class="text-xs text-gray-500">用户</div>
         </div>
+        <div class="w-px h-8 bg-gray-300"></div>
+        <div class="text-center">
+          <div class="text-lg font-bold text-orange-500">{{ activities.length }}</div>
+          <div class="text-xs text-gray-500">活动</div>
+        </div>
       </div>
     </div>
   </div>
@@ -76,6 +85,10 @@ const props = defineProps({
   users: {
     type: Array,
     default: () => []
+  },
+  activities: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -87,6 +100,7 @@ const error = ref(null)
 let map = null
 let thoughtMarkers = []
 let userMarkers = []
+let activityMarkers = []
 let infoWindow = null
 
 // 获取 API Key
@@ -141,6 +155,7 @@ const initMap = async () => {
     // 渲染标记
     renderThoughtMarkers()
     renderUserMarkers()
+    renderActivityMarkers()
 
     // 如果有标记，自动调整视图
     fitMapToMarkers()
@@ -285,9 +300,111 @@ const renderUserMarkers = () => {
   })
 }
 
+// 渲染活动标记
+const renderActivityMarkers = () => {
+  if (!map) return
+
+  // 清除旧标记
+  activityMarkers.forEach(marker => marker.setMap(null))
+  activityMarkers = []
+
+  props.activities.forEach(activity => {
+    if (!activity.location_coordinates || !activity.location_coordinates.lat || !activity.location_coordinates.lng) {
+      return
+    }
+
+    const marker = new google.maps.Marker({
+      position: {
+        lat: activity.location_coordinates.lat,
+        lng: activity.location_coordinates.lng
+      },
+      map: map,
+      title: activity.title,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 14,
+        fillColor: '#f97316', // orange-500
+        fillOpacity: 1,
+        strokeColor: 'white',
+        strokeWeight: 2
+      },
+      animation: google.maps.Animation.DROP
+    })
+
+    // 点击事件
+    marker.addListener('click', () => {
+      const startTime = new Date(activity.start_time)
+      const endTime = new Date(activity.end_time)
+      const now = new Date()
+
+      let statusColor = '#10b981' // green
+      let statusText = '即将开始'
+
+      if (now > startTime && now < endTime) {
+        statusColor = '#3b82f6' // blue
+        statusText = '进行中'
+      } else if (now > endTime) {
+        statusColor = '#6b7280' // gray
+        statusText = '已结束'
+      }
+
+      const content = `
+        <div style="max-width: 300px; padding: 12px;">
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <div style="width: 8px; height: 8px; background-color: ${statusColor}; border-radius: 50%; margin-right: 8px;"></div>
+            <div style="font-weight: 600; color: #333; font-size: 16px;">${activity.title}</div>
+          </div>
+
+          <div style="margin-bottom: 8px;">
+            <span style="display: inline-block; background-color: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 8px;">
+              ${activity.category}
+            </span>
+            <span style="color: ${statusColor}; font-weight: 500; font-size: 12px;">${statusText}</span>
+          </div>
+
+          <div style="color: #555; line-height: 1.5; margin-bottom: 8px; font-size: 14px;">
+            ${activity.description?.substring(0, 100)}${activity.description?.length > 100 ? '...' : ''}
+          </div>
+
+          <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+            <div style="margin-bottom: 4px;">
+              🕒 ${startTime.toLocaleDateString('zh-CN')} ${startTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div style="margin-bottom: 4px;">
+              📍 ${activity.location}
+            </div>
+            ${activity.current_participants !== undefined ?
+              `<div>👥 ${activity.current_participants || 0}${activity.max_participants ? `/${activity.max_participants}` : ''} 人参与</div>` :
+              ''
+            }
+          </div>
+
+          ${activity.reward_points > 0 ?
+            `<div style="background-color: #fef3cd; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #92400e;">
+              🏆 奖励 ${activity.reward_points} 积分
+            </div>` :
+            ''
+          }
+        </div>
+      `
+      infoWindow.setContent(content)
+      infoWindow.open(map, marker)
+      emit('marker-click', activity)
+    })
+
+    // 悬停效果
+    marker.addListener('mouseover', () => {
+      marker.setAnimation(google.maps.Animation.BOUNCE)
+      setTimeout(() => marker.setAnimation(null), 750)
+    })
+
+    activityMarkers.push(marker)
+  })
+}
+
 // 调整地图视图以显示所有标记
 const fitMapToMarkers = () => {
-  if (!map || (thoughtMarkers.length === 0 && userMarkers.length === 0)) {
+  if (!map || (thoughtMarkers.length === 0 && userMarkers.length === 0 && activityMarkers.length === 0)) {
     return
   }
 
@@ -298,6 +415,10 @@ const fitMapToMarkers = () => {
   })
 
   userMarkers.forEach(marker => {
+    bounds.extend(marker.getPosition())
+  })
+
+  activityMarkers.forEach(marker => {
     bounds.extend(marker.getPosition())
   })
 
@@ -327,6 +448,17 @@ watch(
   () => {
     if (map) {
       renderUserMarkers()
+      fitMapToMarkers()
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.activities,
+  () => {
+    if (map) {
+      renderActivityMarkers()
       fitMapToMarkers()
     }
   },

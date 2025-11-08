@@ -2,7 +2,9 @@ import express from 'express';
 import groupController, {
   createGroupValidation,
   getGroupsValidation,
-  groupIdValidation
+  groupIdValidation,
+  sendGroupMessageValidation,
+  getGroupMessagesValidation
 } from '../controllers/group.controller.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 import { authenticateToken, requireRegisteredUser } from '../middleware/auth.middleware.js';
@@ -56,6 +58,20 @@ router.delete('/:groupId',
   requireRegisteredUser,
   groupIdValidation,
   asyncHandler(groupController.deleteGroup.bind(groupController))
+);
+
+// 获取小组消息 (需要注册用户)
+router.get('/:groupId/messages',
+  requireRegisteredUser,
+  getGroupMessagesValidation,
+  asyncHandler(groupController.getGroupMessages.bind(groupController))
+);
+
+// 发送小组消息 (需要注册用户)
+router.post('/:groupId/messages',
+  requireRegisteredUser,
+  sendGroupMessageValidation,
+  asyncHandler(groupController.sendGroupMessage.bind(groupController))
 );
 
 export default router;

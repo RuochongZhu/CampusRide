@@ -10,9 +10,14 @@ import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import RideshareView from '@/views/RideshareView.vue'
 import ActivitiesView from '@/views/ActivitiesView.vue'
+import CreateActivityView from '@/views/CreateActivityView.vue'
+import ActivityDetailView from '@/views/ActivityDetailView.vue'
+import ParticipationHistoryView from '@/views/ParticipationHistoryView.vue'
 import MarketplaceView from '@/views/MarketplaceView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import GroupMapView from '@/views/GroupMapView.vue'
+import GroupDetailView from '@/views/GroupDetailView.vue'
+import MessagesView from '@/views/MessagesView.vue'
 
 const routes = [
   {
@@ -101,9 +106,36 @@ const routes = [
     path: '/activities',
     name: 'Activities',
     component: ActivitiesView,
-    meta: { 
+    meta: {
       requiresAuth: true,
       title: 'Campus Activities - CampusRide'
+    }
+  },
+  {
+    path: '/activities/create',
+    name: 'CreateActivity',
+    component: CreateActivityView,
+    meta: {
+      requiresAuth: true,
+      title: 'Create Activity - CampusRide'
+    }
+  },
+  {
+    path: '/activities/history',
+    name: 'ParticipationHistory',
+    component: ParticipationHistoryView,
+    meta: {
+      requiresAuth: true,
+      title: 'Participation History - CampusRide'
+    }
+  },
+  {
+    path: '/activities/:id',
+    name: 'ActivityDetail',
+    component: ActivityDetailView,
+    meta: {
+      requiresAuth: true,
+      title: 'Activity Details - CampusRide'
     }
   },
   {
@@ -130,7 +162,25 @@ const routes = [
     component: GroupMapView,
     meta: {
       requiresAuth: true,
-      title: 'Groups - CampusRide'
+      title: 'Campus Groups - CampusRide'
+    }
+  },
+  {
+    path: '/groups/:id',
+    name: 'GroupDetail',
+    component: GroupDetailView,
+    meta: {
+      requiresAuth: true,
+      title: 'Group Details - CampusRide'
+    }
+  },
+  {
+    path: '/messages',
+    name: 'Messages',
+    component: MessagesView,
+    meta: {
+      requiresAuth: true,
+      title: 'Messages - CampusRide'
     }
   },
   {

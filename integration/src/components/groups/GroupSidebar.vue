@@ -1,9 +1,9 @@
 <template>
   <div class="w-64 bg-white border-r h-full overflow-y-auto flex-shrink-0">
     <div class="p-4">
-      <h2 class="text-lg font-bold mb-4 text-gray-800">🗺️ 地图社交</h2>
+      <h2 class="text-lg font-bold mb-4 text-gray-800">🗺️ Map Social</h2>
 
-      <!-- 全局选项 -->
+      <!-- Global options -->
       <div
         class="p-3 rounded-lg cursor-pointer mb-2 transition-colors"
         :class="!selectedGroup ? 'bg-[#C24D45] text-white' : 'hover:bg-gray-100'"
@@ -11,20 +11,20 @@
       >
         <div class="flex items-center">
           <GlobalOutlined class="mr-2 text-lg" />
-          <span class="font-medium">全局地图</span>
+          <span class="font-medium">Global Map</span>
         </div>
-        <div class="text-xs mt-1 opacity-75">查看所有想法</div>
+        <div class="text-xs mt-1 opacity-75">View all thoughts</div>
       </div>
 
       <div class="my-4 border-t border-gray-200"></div>
 
-      <!-- 我的小组标题 -->
+      <!-- My Groups header -->
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-gray-600">我的小组</h3>
+        <h3 class="text-sm font-semibold text-gray-600">My Groups</h3>
         <span class="text-xs text-gray-400">{{ myGroups.length }}</span>
       </div>
 
-      <!-- 小组列表 -->
+      <!-- Group list -->
       <div v-if="myGroups.length > 0" class="space-y-2">
         <div
           v-for="group in myGroups"
@@ -47,20 +47,20 @@
               <div class="font-medium truncate">{{ group.name }}</div>
               <div class="text-xs opacity-75 flex items-center">
                 <UserOutlined class="mr-1" style="font-size: 10px;" />
-                {{ group.member_count }} 成员
+                {{ group.member_count }} members
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 空状态 -->
+      <!-- Empty state -->
       <div v-else class="text-center py-6 text-gray-400">
         <TeamOutlined class="text-3xl mb-2" />
-        <p class="text-sm">还没有加入小组</p>
+        <p class="text-sm">No groups joined yet</p>
       </div>
 
-      <!-- 创建小组按钮 -->
+      <!-- Create Group button -->
       <a-button
         type="dashed"
         block
@@ -68,31 +68,32 @@
         @click="$emit('create-group')"
       >
         <template #icon><PlusOutlined /></template>
-        创建小组
+        Create Group
       </a-button>
 
-      <!-- 浏览小组按钮 -->
+      <!-- Browse Groups button -->
       <a-button
         block
         class="mt-2"
         @click="showBrowseModal = true"
       >
         <template #icon><SearchOutlined /></template>
-        浏览小组
+        Browse Groups
       </a-button>
     </div>
 
-    <!-- 浏览小组弹窗 -->
+    <!-- Browse Groups modal -->
     <a-modal
-      v-model:visible="showBrowseModal"
-      title="浏览小组"
+      v-model:open="showBrowseModal"
+      title="Browse Groups"
       :footer="null"
       width="600px"
+      @after-open="handleSearch"
     >
       <div class="space-y-2">
         <a-input-search
           v-model:value="searchQuery"
-          placeholder="搜索小组..."
+          placeholder="Search groups..."
           @search="handleSearch"
         />
 
@@ -110,10 +111,10 @@
               <div class="flex-grow">
                 <div class="font-medium">{{ group.name }}</div>
                 <div class="text-sm text-gray-500 line-clamp-1">
-                  {{ group.description || '暂无描述' }}
+                  {{ group.description || 'No description' }}
                 </div>
                 <div class="text-xs text-gray-400 mt-1">
-                  {{ group.member_count }} 成员
+                  {{ group.member_count }} members
                 </div>
               </div>
               <a-button
@@ -122,15 +123,15 @@
                 size="small"
                 @click="handleJoinGroup(group.id)"
               >
-                加入
+                Join
               </a-button>
-              <a-tag v-else color="green">已加入</a-tag>
+              <a-tag v-else color="green">Joined</a-tag>
             </div>
           </div>
         </div>
 
         <div v-else class="text-center py-8 text-gray-400">
-          暂无小组
+          No groups available
         </div>
       </div>
     </a-modal>
@@ -167,12 +168,12 @@ const searchQuery = ref('')
 const allGroups = ref([])
 const loading = ref(false)
 
-// 检查是否已加入小组
+// Check if user has joined group
 const isInGroup = (groupId) => {
   return props.myGroups.some(g => g.id === groupId)
 }
 
-// 搜索小组
+// Search groups
 const handleSearch = async () => {
   loading.value = true
   try {
@@ -183,28 +184,28 @@ const handleSearch = async () => {
     const response = await groupAPI.getGroups(params)
     allGroups.value = response.data.data.groups || []
   } catch (error) {
-    message.error('搜索失败')
+    message.error('Search failed')
   } finally {
     loading.value = false
   }
 }
 
-// 加入小组
+// Join group
 const handleJoinGroup = async (groupId) => {
   try {
     const response = await groupAPI.joinGroup(groupId)
     if (response.data.success) {
-      message.success('加入成功！')
+      message.success('Joined successfully!')
       showBrowseModal.value = false
-      emit('select-group', null) // 触发刷新
-      window.location.reload() // 简单粗暴的刷新
+      emit('select-group', null) // Trigger refresh
+      window.location.reload() // Simple refresh
     }
   } catch (error) {
-    message.error(error.response?.data?.error?.message || '加入失败')
+    message.error(error.response?.data?.error?.message || 'Join failed')
   }
 }
 
-// 打开浏览弹窗时加载小组
+// Load groups when opening browse modal
 const handleOpenBrowse = () => {
   showBrowseModal.value = true
   handleSearch()

@@ -82,9 +82,11 @@ const createVerificationEmailTemplate = (verificationUrl, userEmail) => {
  */
 export const sendVerificationEmail = async (email, token) => {
   try {
-    const verificationUrl = `http://localhost:3001/api/v1/auth/verify-email/${token}`;
+    // 使用前端URL生成验证链接，让前端处理验证流程
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const verificationUrl = `${frontendUrl}/verify-email/${token}`;
     const netid = email.split('@')[0];
-    
+
     console.log(`📧 Attempting to send verification email to ${email}`);
     console.log(`🔗 Verification URL: ${verificationUrl}`);
     

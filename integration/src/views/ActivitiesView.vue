@@ -10,16 +10,30 @@
             <a-button
               type="default"
               class="!rounded-button"
+              @click="showBrowseGroupsModal = true"
+            >
+              <TeamOutlined /> Browse Groups
+            </a-button>
+            <a-button
+              type="default"
+              class="!rounded-button"
               @click="showCreateGroupModal = true"
             >
-              <PlusOutlined /> 创建小组
+              <PlusOutlined /> Create Group
             </a-button>
             <a-button
               type="primary"
               class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
               @click="showPostThoughtModal = true"
             >
-              <EditOutlined /> 发布想法
+              <EditOutlined /> Post Activity
+            </a-button>
+            <a-button
+              type="default"
+              class="!rounded-button"
+              @click="() => $router.push('/activities/history')"
+            >
+              <HistoryOutlined /> Participation History
             </a-button>
             <a-button
               :type="isVisible ? 'default' : 'dashed'"
@@ -28,7 +42,7 @@
             >
               <EyeOutlined v-if="isVisible" />
               <EyeInvisibleOutlined v-else />
-              {{ isVisible ? '出现' : '隐身' }}
+              {{ isVisible ? 'Visible' : 'Invisible' }}
             </a-button>
           </div>
         </div>
@@ -38,51 +52,62 @@
             :key="group.id"
             class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all cursor-pointer"
             :class="selectedGroupId === group.id ? 'ring-2 ring-[#C24D45]' : ''"
-            @click="enterGroup(group)"
+            @click="goToGroupDetail(group.id)"
           >
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-medium text-[#333333]">{{ group.name }}</h3>
             </div>
-            <p class="text-sm text-[#666666] mb-4 line-clamp-2">{{ group.description || '暂无描述' }}</p>
+            <p class="text-sm text-[#666666] mb-4 line-clamp-2">{{ group.description || 'No description' }}</p>
             <div class="flex items-center justify-between text-sm">
               <div class="flex items-center space-x-4">
                 <div class="flex items-center text-gray-500">
                   <TeamOutlined class="mr-1" />
-                  <span>{{ group.member_count || 0 }} 成员</span>
+                  <span>{{ group.member_count || 0 }} Members</span>
                 </div>
               </div>
-              <a-button
-                v-if="group.my_role === 'creator'"
-                type="default"
-                danger
-                size="small"
-                class="!rounded-button whitespace-nowrap"
-                @click.stop="deleteGroupHandler(group.id)"
-              >
-                删除小组
-              </a-button>
-              <a-button
-                v-else
-                type="default"
-                danger
-                size="small"
-                class="!rounded-button whitespace-nowrap"
-                @click.stop="leaveGroupHandler(group.id)"
-              >
-                退出小组
-              </a-button>
+              <div class="flex items-center space-x-2">
+                <a-button
+                  type="primary"
+                  size="small"
+                  class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap"
+                  @click.stop="openGroupChat(group)"
+                >
+                  <MessageOutlined class="mr-1" />
+                  Group Chat
+                </a-button>
+                <a-button
+                  v-if="group.my_role === 'creator'"
+                  type="default"
+                  danger
+                  size="small"
+                  class="!rounded-button whitespace-nowrap"
+                  @click.stop="deleteGroupHandler(group.id)"
+                >
+                  Delete Group
+                </a-button>
+                <a-button
+                  v-else
+                  type="default"
+                  danger
+                  size="small"
+                  class="!rounded-button whitespace-nowrap"
+                  @click.stop="leaveGroupHandler(group.id)"
+                >
+                  Leave Group
+                </a-button>
+              </div>
             </div>
           </div>
         </div>
         <div v-if="myGroups.length === 0" class="text-center py-12 text-gray-400">
           <TeamOutlined class="text-5xl mb-4" />
-          <p>你还没有加入任何小组</p>
+          <p>You haven't joined any groups yet</p>
           <a-button
             type="primary"
             class="mt-4 !rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
             @click="showBrowseGroupsModal = true"
           >
-            浏览小组
+            Browse Groups
           </a-button>
         </div>
       </div>
@@ -113,7 +138,17 @@
             </div>
 
             <!-- Activity Cards -->
-            <div class="space-y-6">
+            <div v-if="activitiesLoading" class="py-12 flex justify-center">
+              <a-spin />
+            </div>
+            <div v-else-if="activitiesError" class="py-12 text-center text-red-500">
+              {{ activitiesError }}
+            </div>
+            <div v-else-if="filteredActivities.length === 0" class="py-12 text-center text-gray-500">
+              <p class="text-lg font-medium mb-2">No activities found</p>
+              <p class="text-sm">Try adjusting your filters or create a new activity.</p>
+            </div>
+            <div v-else class="space-y-6">
               <div 
                 v-for="activity in filteredActivities" 
                 :key="activity.id"
@@ -149,11 +184,12 @@
                   <div class="flex items-center space-x-4">
                     <div class="flex items-center">
                       <EnvironmentOutlined class="mr-1" />
-                      <span>{{ activity.location }} ({{ activity.distance }})</span>
+                      <span>{{ activity.locationLabel }} ({{ activity.distance }})</span>
                     </div>
                     <div class="flex items-center">
                       <ClockCircleOutlined class="mr-1" />
-                      <span>Expires in {{ activity.expiresIn }}</span>
+                      <span v-if="activity.expiresIn === 'Started'">In Progress</span>
+                      <span v-else>Starting countdown: {{ activity.expiresIn }}</span>
                     </div>
                     <div class="flex items-center">
                       <TeamOutlined class="mr-1" />
@@ -162,35 +198,109 @@
                   </div>
                   <div class="flex items-center">
                     <div class="w-16 bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        class="bg-green-500 h-1.5 rounded-full" 
-                        :style="{ width: activity.successRate + '%' }"
+                      <div
+                        class="h-1.5 rounded-full transition-all"
+                        :class="activity.timeProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'"
+                        :style="{ width: Math.min(activity.timeProgress, 100) + '%' }"
                       ></div>
                     </div>
-                    <span class="ml-1">{{ activity.successRate }}%</span>
+                    <span class="ml-1">{{ Math.min(Math.round(activity.timeProgress), 100) }}%</span>
                   </div>
                 </div>
                 
-                <div class="flex justify-end space-x-2 mt-4">
-                  <a-button 
-                    class="!rounded-button whitespace-nowrap"
-                    @click="sendMessage(activity)"
-                  >
-                    <MessageOutlined /> Message
-                  </a-button>
-                  <a-button 
-                    class="!rounded-button whitespace-nowrap"
-                    @click="shareActivity(activity)"
-                  >
-                    <ShareAltOutlined /> Share
-                  </a-button>
-                  <a-button 
-                    type="primary"
-                    class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap"
-                    @click="joinActivity(activity)"
-                  >
-                    <LikeOutlined /> Interested
-                  </a-button>
+                <div class="flex justify-between items-center mt-4">
+                  <!-- 积分和费用信息 -->
+                  <div class="flex items-center space-x-3">
+                    <span v-if="activity.entry_fee && activity.entry_fee > 0" class="text-sm text-orange-600 font-medium flex items-center">
+                      <span class="mr-1">💰</span>
+                      ${{ activity.entry_fee }}
+                    </span>
+                    <span v-if="activity.reward_points && activity.reward_points > 0" class="text-sm text-green-600 font-medium flex items-center">
+                      <span class="mr-1">⭐</span>
+                      +{{ activity.reward_points }} pts
+                    </span>
+                    <a-tag v-if="activity.status === 'completed'" color="gray">Completed</a-tag>
+                    <a-tag v-else-if="activity.isOwner" color="blue">My Activity</a-tag>
+                    <a-tag v-else-if="activity.isRegistered" color="green">Registered</a-tag>
+                  </div>
+
+                  <!-- 操作按钮区域 -->
+                  <div class="flex space-x-2">
+                    <a-button
+                      class="!rounded-button whitespace-nowrap"
+                      @click="() => $router.push(`/activities/${activity.id}`)"
+                    >
+                      <EyeOutlined /> View Details
+                    </a-button>
+                    <a-button
+                      class="!rounded-button whitespace-nowrap"
+                      @click="shareActivity(activity)"
+                    >
+                      <ShareAltOutlined /> Share
+                    </a-button>
+
+                    <!-- 活动创建者功能 -->
+                    <template v-if="activity.isOwner">
+                      <a-button
+                        class="!rounded-button whitespace-nowrap"
+                        @click="editActivity(activity)"
+                      >
+                        <EditOutlined /> Edit
+                      </a-button>
+                      <a-button
+                        class="!rounded-button whitespace-nowrap"
+                        @click="showParticipants(activity)"
+                      >
+                        <TeamOutlined /> Participants
+                      </a-button>
+                      <a-button
+                        v-if="activity.status === 'ongoing'"
+                        type="primary"
+                        class="!rounded-button bg-[#52C41A] border-none hover:bg-[#45A117] whitespace-nowrap"
+                        @click="generateCheckinCode(activity)"
+                      >
+                        <QrcodeOutlined /> Generate Code
+                      </a-button>
+                    </template>
+
+                    <!-- 参与者功能 -->
+                    <template v-else>
+                      <!-- 注册/Cancel注册按钮 -->
+                      <template v-if="activity.status !== 'completed'">
+                        <a-button
+                          v-if="!activity.isRegistered"
+                          type="primary"
+                          class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap"
+                          @click="registerForActivity(activity)"
+                          :disabled="activity.max_participants && activity.current_participants >= activity.max_participants"
+                          :loading="activity.registering"
+                        >
+                          <UserAddOutlined v-if="!activity.registering" />
+                          {{ activity.registering ? 'Joining...' : (activity.max_participants && activity.current_participants >= activity.max_participants ? 'Full' : 'Join Activity') }}
+                        </a-button>
+
+                        <a-button
+                          v-else
+                          class="!rounded-button bg-gray-500 border-none hover:bg-gray-600 text-white whitespace-nowrap"
+                          @click="cancelRegistration(activity)"
+                          :loading="activity.cancelling"
+                        >
+                          <UserDeleteOutlined v-if="!activity.cancelling" />
+                          {{ activity.cancelling ? 'Cancelling...' : 'Cancel Registration' }}
+                        </a-button>
+
+                        <!-- Check In按钮（仅当活动In Progress且已注册） -->
+                        <a-button
+                          v-if="canCheckin(activity)"
+                          type="primary"
+                          class="!rounded-button bg-[#FA8C16] border-none hover:bg-[#D46B08] whitespace-nowrap"
+                          @click="openActivityCheckinModal(activity)"
+                        >
+                          <CheckCircleOutlined /> Check In
+                        </a-button>
+                      </template>
+                    </template>
+                  </div>
                 </div>
               </div>
             </div>
@@ -204,6 +314,33 @@
 
         <!-- Right Sidebar -->
         <div class="space-y-6">
+          <!-- User Points Widget -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-medium text-[#333333]">My Points</h2>
+              <div class="text-2xl">⭐</div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-[#666666]">Current Balance</span>
+                <span class="font-bold text-xl text-[#C24D45]">{{ userPoints.current_balance }}</span>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-[#666666]">Total Earned</span>
+                <span class="text-green-600">+{{ userPoints.total_earned }}</span>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-[#666666]">Total Spent</span>
+                <span class="text-orange-600">-{{ userPoints.total_spent }}</span>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-100">
+              <p class="text-xs text-gray-500 text-center">
+                Earn points by joining and completing activities!
+              </p>
+            </div>
+          </div>
+
           <!-- Nearby Radar Widget -->
           <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex justify-between items-center mb-4">
@@ -224,15 +361,15 @@
             <div class="flex justify-between text-sm text-[#666666]">
               <div class="flex items-center">
                 <div class="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
-                <span>想法位置</span>
+                <span>Thought Locations</span>
               </div>
               <div class="flex items-center">
                 <div class="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
-                <span>可见用户</span>
+                <span>Visible Users</span>
               </div>
               <div class="flex items-center">
                 <div class="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
-                <span>我的位置</span>
+                <span>My Location</span>
               </div>
             </div>
           </div>
@@ -241,7 +378,7 @@
 
       <!-- Expanded Map Modal -->
       <a-modal
-        v-model:visible="isMapExpanded"
+        v-model:open="isMapExpanded"
         title="Nearby Radar - Expanded View"
         :footer="null"
         width="90%"
@@ -252,28 +389,35 @@
         <div id="large-map" class="relative bg-[#F5F5F5] rounded-lg overflow-hidden" style="height: 70vh;"></div>
       </a-modal>
 
-      <!-- 创建小组弹窗 -->
+      <!-- Create Group弹窗 -->
       <CreateGroupModal
-        :visible="showCreateGroupModal"
-        @update:visible="showCreateGroupModal = $event"
+        :open="showCreateGroupModal"
+        @update:open="showCreateGroupModal = $event"
         @success="handleGroupCreated"
       />
 
-      <!-- 发布想法弹窗 -->
+      <!-- Post Activity弹窗 -->
       <PostThoughtModal
-        :visible="showPostThoughtModal"
-        @update:visible="showPostThoughtModal = $event"
+        :open="showPostThoughtModal"
+        @update:open="showPostThoughtModal = $event"
         :my-groups="myGroups"
         :default-group="selectedGroupId"
         @success="handleThoughtPosted"
       />
 
-      <!-- 浏览小组弹窗 -->
+      <!-- 群组聊天弹窗 -->
+      <GroupChatModal
+        v-model:visible="showGroupChatModal"
+        :group="selectedGroupForChat"
+      />
+
+      <!-- Browse Groups弹窗 -->
       <a-modal
-        v-model:visible="showBrowseGroupsModal"
-        title="浏览所有小组"
+        v-model:open="showBrowseGroupsModal"
+        title="Browse All Groups"
         :footer="null"
         width="800px"
+        @after-open="fetchAllGroups"
       >
         <div class="space-y-4 max-h-96 overflow-y-auto">
           <div
@@ -284,10 +428,10 @@
             <div class="flex justify-between items-start">
               <div class="flex-grow">
                 <h3 class="font-medium text-lg">{{ group.name }}</h3>
-                <p class="text-sm text-gray-600 mt-1">{{ group.description || '暂无描述' }}</p>
+                <p class="text-sm text-gray-600 mt-1">{{ group.description || 'No description' }}</p>
                 <div class="flex items-center mt-2 text-sm text-gray-500">
                   <TeamOutlined class="mr-1" />
-                  <span>{{ group.member_count || 0 }} 成员</span>
+                  <span>{{ group.member_count || 0 }} Members</span>
                 </div>
               </div>
               <a-button
@@ -296,13 +440,228 @@
                 class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
                 @click="joinGroupHandler(group.id)"
               >
-                加入
+                Join
               </a-button>
-              <a-tag v-else color="success">已加入</a-tag>
+              <a-tag v-else color="success">Joined</a-tag>
             </div>
           </div>
         </div>
       </a-modal>
+
+      <!-- Check In弹窗 -->
+      <a-modal
+        v-model:open="showCheckinModal"
+        title="Activity Check In"
+        :footer="null"
+        width="450px"
+      >
+        <div class="space-y-4">
+          <div>
+            <h3 class="font-medium mb-2">{{ selectedActivity?.title }}</h3>
+            <p class="text-sm text-gray-600 mb-4">Verify your location and time to complete check-in</p>
+          </div>
+
+          <!-- Check-in Requirements -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="text-sm text-blue-800 space-y-2">
+              <div class="flex items-center">
+                <ClockCircleOutlined class="mr-2" />
+                <span>Activity Time：{{ formatDateTime(selectedActivity?.start_time) }} - {{ formatDateTime(selectedActivity?.end_time) }}</span>
+              </div>
+              <div class="flex items-center">
+                <EnvironmentOutlined class="mr-2" />
+                <span>Activity Location：{{ selectedActivity?.locationLabel }}</span>
+              </div>
+              <div class="flex items-center">
+                <span class="mr-2">📍</span>
+                <span>Must be within activity time and within {{ selectedActivity?.max_checkin_distance || 100 }} meters of the activity location</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <a-button @click="showCheckinModal = false">Cancel</a-button>
+            <a-button
+              type="primary"
+              class="bg-[#C24D45] border-none hover:bg-[#A93C35]"
+              @click="submitCheckin"
+              :loading="checkinForm.checking"
+            >
+              {{ checkinForm.checking ? 'Verifying...' : 'Check In Now' }}
+            </a-button>
+          </div>
+        </div>
+      </a-modal>
+
+      <!-- 参与者列表弹窗 -->
+      <a-modal
+        v-model:open="showParticipantsModal"
+        title="Activity Participants"
+        :footer="null"
+        width="700px"
+      >
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="font-medium mb-2">{{ selectedActivity?.title }}</h3>
+              <div class="flex items-center space-x-4 text-sm text-gray-600">
+                <span>{{ participantsList.length }} / {{ selectedActivity?.max_participants || '∞' }} participants</span>
+                <span>•</span>
+                <span>{{ participantsList.filter(p => p.status === 'checked_in').length }} checked in</span>
+              </div>
+            </div>
+            <div v-if="selectedActivity?.isOwner" class="text-right">
+              <a-tag color="blue">Activity Owner</a-tag>
+            </div>
+          </div>
+
+          <div class="max-h-96 overflow-y-auto">
+            <div
+              v-for="participant in participantsList"
+              :key="participant.id"
+              class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div class="flex items-center space-x-4 flex-grow">
+                <img
+                  :src="participant.avatar || 'https://via.placeholder.com/40'"
+                  class="w-12 h-12 rounded-full"
+                  alt="Avatar"
+                />
+                <div class="flex-grow">
+                  <div class="flex items-center space-x-2">
+                    <p class="font-medium">{{ participant.name }}</p>
+                    <a-tag :color="getParticipantStatusColor(participant.status)" size="small">
+                      {{ getParticipantStatusText(participant.status) }}
+                    </a-tag>
+                  </div>
+                  <p class="text-sm text-gray-500">{{ participant.email }}</p>
+                  <p class="text-xs text-gray-400">Joined {{ formatJoinDate(participant.joined_at) }}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 ml-4">
+                <!-- Message participant button -->
+                <a-button
+                  size="small"
+                  class="!rounded-button"
+                  @click="messageParticipant(participant)"
+                >
+                  <MessageOutlined />
+                </a-button>
+
+                <!-- Remove participant button (only for activity owners) -->
+                <a-button
+                  v-if="selectedActivity?.isOwner && participant.status !== 'checked_in'"
+                  size="small"
+                  danger
+                  class="!rounded-button"
+                  @click="removeParticipant(participant)"
+                  :title="'Remove ' + participant.name"
+                >
+                  <DeleteOutlined />
+                </a-button>
+
+                <!-- Cannot remove if checked in -->
+                <a-tooltip v-else-if="selectedActivity?.isOwner && participant.status === 'checked_in'" title="Cannot remove participant who has checked in">
+                  <a-button
+                    size="small"
+                    disabled
+                    class="!rounded-button"
+                  >
+                    <DeleteOutlined />
+                  </a-button>
+                </a-tooltip>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-if="participantsList.length === 0" class="text-center py-8 text-gray-400">
+              <TeamOutlined class="text-4xl mb-4" />
+              <p>No participants yet</p>
+            </div>
+          </div>
+
+          <!-- Summary footer -->
+          <div class="border-t pt-4 mt-4">
+            <div class="grid grid-cols-3 gap-4 text-center text-sm">
+              <div>
+                <div class="font-medium text-blue-600">{{ participantsList.filter(p => p.status === 'registered').length }}</div>
+                <div class="text-gray-500">Registered</div>
+              </div>
+              <div>
+                <div class="font-medium text-green-600">{{ participantsList.filter(p => p.status === 'checked_in').length }}</div>
+                <div class="text-gray-500">Checked In</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-600">{{ (selectedActivity?.max_participants || 0) - participantsList.length }}</div>
+                <div class="text-gray-500">Available Spots</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a-modal>
+
+      <!-- Check In码显示弹窗 -->
+      <a-modal
+        v-model:open="showCheckinCodeModal"
+        title="Check-in Code Generated"
+        :footer="null"
+        width="450px"
+      >
+        <div class="text-center space-y-4">
+          <div>
+            <h3 class="font-medium mb-2">{{ selectedActivity?.title }}</h3>
+            <p class="text-sm text-gray-600 mb-4">Share this code with participants for check-in</p>
+          </div>
+          <div class="bg-gray-100 rounded-lg p-6">
+            <div class="text-3xl font-mono font-bold tracking-widest text-[#C24D45] mb-2">
+              {{ selectedActivity?.checkin_code }}
+            </div>
+            <div class="text-sm text-gray-500">
+              {{ formatExpirationTime(selectedActivity?.code_expires_at) }}
+            </div>
+          </div>
+
+          <!-- Code expiration warning -->
+          <div v-if="isCodeExpired(selectedActivity?.code_expires_at)" class="bg-red-50 border border-red-200 rounded-lg p-3">
+            <div class="text-red-600 text-sm">
+              ⚠️ This code has expired. Generate a new code to continue check-ins.
+            </div>
+          </div>
+          <div v-else-if="selectedActivity?.code_expires_at" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div class="text-blue-600 text-sm">
+              💡 Participants must enter this code to check in. Code expires automatically for security.
+            </div>
+          </div>
+
+          <div class="flex justify-center space-x-3 pt-4">
+            <a-button @click="showCheckinCodeModal = false">Close</a-button>
+            <a-button
+              v-if="!isCodeExpired(selectedActivity?.code_expires_at)"
+              type="primary"
+              class="bg-[#C24D45] border-none hover:bg-[#A93C35]"
+              @click="copyCheckinCode"
+            >
+              Copy Code
+            </a-button>
+            <a-button
+              v-if="isCodeExpired(selectedActivity?.code_expires_at)"
+              type="primary"
+              class="bg-[#52C41A] border-none hover:bg-[#45A117]"
+              @click="generateCheckinCode(selectedActivity)"
+            >
+              Generate New Code
+            </a-button>
+          </div>
+        </div>
+      </a-modal>
+
+      <!-- New Activity Checkin Modal -->
+      <ActivityCheckinModal
+        v-model:open="showActivityCheckinModal"
+        :activity="selectedActivityForCheckin"
+        @checkin-success="handleActivityCheckinSuccess"
+      />
     </div>
   </div>
 </template>
@@ -321,12 +680,34 @@ import {
   PlusOutlined,
   EditOutlined,
   EyeOutlined,
-  EyeInvisibleOutlined
+  EyeInvisibleOutlined,
+  UserAddOutlined,
+  UserDeleteOutlined,
+  CheckCircleOutlined,
+  QrcodeOutlined,
+  DeleteOutlined,
+  HistoryOutlined
 } from '@ant-design/icons-vue'
 import { Modal as AModal, Select as ASelect, SelectOption as ASelectOption, Tag as ATag, RadioGroup as ARadioGroup, RadioButton as ARadioButton, Slider as ASlider, Button as AButton, Pagination as APagination } from 'ant-design-vue'
-import { groupAPI, thoughtAPI, visibilityAPI } from '@/utils/api'
+import { groupAPI, thoughtAPI, visibilityAPI, activitiesAPI, pointsAPI } from '@/utils/api'
 import CreateGroupModal from '@/components/groups/CreateGroupModal.vue'
 import PostThoughtModal from '@/components/groups/PostThoughtModal.vue'
+import GroupChatModal from '@/components/groups/GroupChatModal.vue'
+import ActivityCheckinModal from '@/components/activities/ActivityCheckinModal.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const storedUser = ref(null)
+try {
+  storedUser.value = JSON.parse(localStorage.getItem('userData') || 'null')
+} catch (error) {
+  storedUser.value = null
+}
+
+const currentUserId = computed(() => authStore.userId || storedUser.value?.id || null)
 
 // Reactive data
 const feedFilter = ref('all')
@@ -344,6 +725,8 @@ const selectedGroupId = ref(null)
 const showCreateGroupModal = ref(false)
 const showPostThoughtModal = ref(false)
 const showBrowseGroupsModal = ref(false)
+const showGroupChatModal = ref(false)
+const selectedGroupForChat = ref(null)
 
 // Visibility state
 const isVisible = ref(true)
@@ -352,6 +735,21 @@ const isVisible = ref(true)
 const thoughts = ref([])
 const mapThoughts = ref([])
 const visibleUsers = ref([])
+
+// Activity functionality state
+const showCheckinModal = ref(false)
+const showParticipantsModal = ref(false)
+const showCheckinCodeModal = ref(false)
+const selectedActivity = ref(null)
+const checkinForm = ref({
+  location: null,
+  checking: false
+})
+const participantsList = ref([])
+
+// New checkin modal state
+const showActivityCheckinModal = ref(false)
+const selectedActivityForCheckin = ref(null)
 
 // Google Maps instances
 let smallMap = null
@@ -362,27 +760,161 @@ let userMarkers = []
 // Filter options
 const feedFilters = ['all', 'groups', 'urgent']
 
-// Activities data (keeping for backward compatibility)
-const activities = ref([
-  {
-    id: 1,
-    title: 'Study Group for Midterm Exam',
-    category: { name: 'Academic', color: 'blue' },
-    user: {
-      name: 'Alex Johnson',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20glasses%20wearing%20casual%20smart%20attire%20against%20neutral%20background&width=100&height=100&seq=2&orientation=squarish'
-    },
-    group: 'CS 5582 Study Group',
-    timeAgo: '15 minutes ago',
-    description: 'Looking for 3-4 people to join our study session for the upcoming midterm. We\'ll be focusing on chapters 5-8. I can help with the practical problems!',
-    tags: ['Computer Science', 'Algorithms', 'Midterm'],
-    location: 'Main Library',
-    distance: '0.3 miles',
-    expiresIn: '3 hours',
-    participants: 4,
-    successRate: 85
+// Activities data
+const activities = ref([])
+const activitiesLoading = ref(false)
+const activitiesError = ref(null)
+const participatedActivityIds = ref(new Set())
+
+const CATEGORY_LABELS = {
+  academic: 'Academic',
+  sports: 'Sports',
+  social: 'Social',
+  volunteer: 'Volunteer',
+  career: 'Career',
+  cultural: 'Cultural',
+  technology: 'Technology'
+}
+
+const CATEGORY_COLORS = {
+  academic: 'blue',
+  sports: 'orange',
+  social: 'purple',
+  volunteer: 'green',
+  career: 'red',
+  cultural: 'cyan',
+  technology: 'geekblue'
+}
+
+const STATUS_LABELS = {
+  draft: 'Draft',
+  published: 'Published',
+  ongoing: 'In Progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled'
+}
+
+const DEFAULT_ACTIVITY_AVATAR = 'https://via.placeholder.com/64?text=CR'
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'TBD'
+  return new Date(dateString).toLocaleString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return 'Just now'
+  const now = new Date()
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return 'Just now'
+
+  const diffInMinutes = Math.floor((now - date) / (1000 * 60))
+  if (diffInMinutes < 1) return 'Just now'
+  if (diffInMinutes < 60) return `${diffInMinutes} min ago`
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} hr ago`
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
+  const diffInWeeks = Math.floor(diffInDays / 7)
+  return `${diffInWeeks} wk${diffInWeeks > 1 ? 's' : ''} ago`
+}
+
+const formatTimeUntil = (targetTime) => {
+  if (!targetTime) return '—'
+  const now = new Date()
+  const target = new Date(targetTime)
+  if (Number.isNaN(target.getTime())) return '—'
+  if (target <= now) return 'Started'
+
+  const diffMs = target - now
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+  if (diffHours >= 24) {
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays} day${diffDays > 1 ? 's' : ''}`
   }
-])
+  if (diffHours > 0) {
+    return `${diffHours}h ${diffMinutes}m`
+  }
+  return `${diffMinutes}m`
+}
+
+const formatActivity = (raw) => {
+  const categoryKey = raw?.category || 'academic'
+  const organizerName = raw?.organizer
+    ? `${raw.organizer.first_name || ''} ${raw.organizer.last_name || ''}`.trim()
+    : ''
+
+  // Calculate time progress: from created_at to start_time
+  let timeProgress = 0
+  if (raw.created_at && raw.start_time) {
+    const createdTime = new Date(raw.created_at).getTime()
+    const startTime = new Date(raw.start_time).getTime()
+    const now = Date.now()
+
+    if (now >= startTime) {
+      // Activity has started or completed
+      timeProgress = 100
+    } else if (now > createdTime) {
+      // Activity is in waiting period
+      const totalDuration = startTime - createdTime
+      const elapsed = now - createdTime
+      timeProgress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
+    }
+  }
+
+  const initialData = {
+    id: raw.id,
+    title: raw.title,
+    category: {
+      name: CATEGORY_LABELS[categoryKey] || (raw.category || 'Activity'),
+      color: CATEGORY_COLORS[categoryKey] || 'blue'
+    },
+    user: {
+      name: organizerName || raw.organizer?.email || 'Campus Organizer',
+      avatar: raw.organizer?.avatar_url || DEFAULT_ACTIVITY_AVATAR
+    },
+    group: raw.organizer?.university || 'Campus Community',
+    timeAgo: formatTimeAgo(raw.created_at),
+    description: raw.description,
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
+    locationLabel: raw.location || raw.location_coordinates?.address || 'Location TBD',
+    distance: raw.location_coordinates ? 'Nearby' : '—',
+    expiresIn: formatTimeUntil(raw.start_time),
+    participants: raw.current_participants || 0,
+    successRate: raw.max_participants
+      ? Math.min(100, Math.round(((raw.current_participants || 0) / raw.max_participants) * 100))
+      : 0,
+    timeProgress: timeProgress,
+    status: raw.status,
+    isOwner: currentUserId.value ? raw.organizer_id === currentUserId.value : false,
+    isRegistered: participatedActivityIds.value.has(raw.id) || Boolean(raw.user_participation),
+    current_participants: raw.current_participants || 0,
+    max_participants: raw.max_participants,
+    entry_fee: raw.entry_fee,
+    reward_points: raw.reward_points || 0,
+    checkin_code: raw.checkin_code || null,
+    location_verification: Boolean(raw.location_verification),
+    max_checkin_distance: raw.max_checkin_distance || 100,
+    registering: false,
+    cancelling: false,
+    user_checked_in: raw.user_participation?.attendance_status === 'attended',
+    user_participation: raw.user_participation || null,
+    start_time: raw.start_time,
+    end_time: raw.end_time,
+    registration_deadline: raw.registration_deadline,
+    organizer_id: raw.organizer_id,
+    view_count: raw.view_count || 0,
+    created_at: raw.created_at,
+    locationCoordinates: raw.location_coordinates || null
+  }
+
+  return initialData
+}
 
 // Map data
 const mapImage = 'https://readdy.ai/api/search-image?query=aerial%20view%20of%20university%20campus%20map%20with%20buildings%20paths%20and%20green%20spaces%20in%20a%20simple%20clean%20design%20style&width=400&height=300&seq=6&orientation=landscape'
@@ -493,14 +1025,65 @@ const activityStats = ref({
   newConnections: 42
 })
 
+const loadUserParticipation = async () => {
+  try {
+    const response = await activitiesAPI.getMyActivities({ type: 'registered' })
+    const payload = response.data?.data || {}
+    const ids = (payload.activities || []).map(activity => activity.id)
+    participatedActivityIds.value = new Set(ids)
+  } catch (error) {
+    console.warn('Failed to load participated activities:', error)
+    participatedActivityIds.value = new Set()
+  }
+}
+
+const loadActivities = async () => {
+  try {
+    activitiesLoading.value = true
+    activitiesError.value = null
+    const response = await activitiesAPI.getActivities({
+      status: ['published', 'ongoing'],
+      sortBy: 'start_time',
+      sortOrder: 'asc',
+      limit: 50
+    })
+    const payload = response.data?.data || {}
+    const fetched = payload.activities || []
+    activities.value = fetched.map(formatActivity)
+  } catch (error) {
+    console.error('Failed to fetch activities:', error)
+    activitiesError.value = error.response?.data?.error?.message || 'Failed to load activities'
+    message.error(activitiesError.value)
+  } finally {
+    activitiesLoading.value = false
+  }
+}
+
 // Computed properties
 const filteredActivities = computed(() => {
-  let filtered = activities.value
+  let filtered = [...activities.value]
 
   if (feedFilter.value === 'groups') {
-    filtered = filtered.filter(activity => activity.group.includes('CS 5582'))
+    filtered = filtered.filter(activity =>
+      activity.isOwner || participatedActivityIds.value.has(activity.id)
+    )
   } else if (feedFilter.value === 'urgent') {
-    filtered = filtered.filter(activity => activity.category.name === 'Help Needed')
+    const now = Date.now()
+    filtered = filtered.filter(activity => {
+      if (!activity.start_time) return false
+      const startTime = new Date(activity.start_time).getTime()
+      return startTime > now && (startTime - now) <= 2 * 60 * 60 * 1000 // within 2 hours
+    })
+  }
+
+  if (sortOption.value === 'newest') {
+    filtered.sort((a, b) => new Date(b.start_time || b.created_at || 0) - new Date(a.start_time || a.created_at || 0))
+  } else if (sortOption.value === 'closest') {
+    filtered.sort((a, b) => {
+      const aTime = new Date(a.start_time || 0).getTime()
+      const bTime = new Date(b.start_time || 0).getTime()
+      return aTime - bTime
+    })
   }
 
   return filtered
@@ -576,8 +1159,8 @@ const fetchMyGroups = async () => {
     const response = await groupAPI.getMyGroups()
     myGroups.value = response.data.data.groups || []
   } catch (error) {
-    console.error('获取我的小组失败:', error)
-    message.error('获取小组列表失败')
+    console.error('Failed to fetch my groups:', error)
+    message.error('Failed to fetch groups list')
   }
 }
 
@@ -586,7 +1169,7 @@ const fetchAllGroups = async () => {
     const response = await groupAPI.getGroups()
     allGroups.value = response.data.data.groups || []
   } catch (error) {
-    console.error('获取所有小组失败:', error)
+    console.error('Failed to fetch all groups:', error)
   }
 }
 
@@ -594,12 +1177,12 @@ const joinGroupHandler = async (groupId) => {
   try {
     const response = await groupAPI.joinGroup(groupId)
     if (response.data.success) {
-      message.success('加入小组成功！')
+      message.success('Group joined successfully!')
       await fetchMyGroups()
       await fetchAllGroups()
     }
   } catch (error) {
-    message.error(error.response?.data?.error?.message || '加入小组失败')
+    message.error(error.response?.data?.error?.message || 'Failed to join group')
   }
 }
 
@@ -607,7 +1190,7 @@ const leaveGroupHandler = async (groupId) => {
   try {
     const response = await groupAPI.leaveGroup(groupId)
     if (response.data.success) {
-      message.success('已退出小组')
+      message.success('Left the group')
       if (selectedGroupId.value === groupId) {
         selectedGroupId.value = null
       }
@@ -616,7 +1199,7 @@ const leaveGroupHandler = async (groupId) => {
       await fetchMapThoughts()
     }
   } catch (error) {
-    message.error(error.response?.data?.error?.message || '退出小组失败')
+    message.error(error.response?.data?.error?.message || 'Failed to leave group')
   }
 }
 
@@ -624,7 +1207,7 @@ const deleteGroupHandler = async (groupId) => {
   try {
     const response = await groupAPI.deleteGroup(groupId)
     if (response.data.success) {
-      message.success('小组已删除')
+      message.success('Group deleted successfully')
       if (selectedGroupId.value === groupId) {
         selectedGroupId.value = null
       }
@@ -634,7 +1217,7 @@ const deleteGroupHandler = async (groupId) => {
       await fetchMapThoughts()
     }
   } catch (error) {
-    message.error(error.response?.data?.error?.message || '删除小组失败')
+    message.error(error.response?.data?.error?.message || 'Failed to delete group')
   }
 }
 
@@ -644,14 +1227,25 @@ const enterGroup = (group) => {
   fetchMapThoughts()
 }
 
+// Navigate to group detail page
+const goToGroupDetail = (groupId) => {
+  router.push(`/groups/${groupId}`)
+}
+
 const handleGroupCreated = () => {
   fetchMyGroups()
   fetchAllGroups()
-  message.success('小组创建成功！')
+  message.success('Group created successfully!')
 }
 
 const isGroupJoined = (groupId) => {
   return myGroups.value.some(g => g.id === groupId)
+}
+
+// Open group chat modal
+const openGroupChat = (group) => {
+  selectedGroupForChat.value = group
+  showGroupChatModal.value = true
 }
 
 // === Thoughts API Methods ===
@@ -664,7 +1258,7 @@ const fetchThoughts = async () => {
     const response = await thoughtAPI.getThoughts(params)
     thoughts.value = response.data.data.thoughts || []
   } catch (error) {
-    console.error('获取想法失败:', error)
+    console.error('Failed to fetch thoughts:', error)
   }
 }
 
@@ -678,14 +1272,14 @@ const fetchMapThoughts = async () => {
     mapThoughts.value = response.data.data.thoughts || []
     updateMapMarkers()
   } catch (error) {
-    console.error('获取地图想法失败:', error)
+    console.error('Failed to fetch map thoughts:', error)
   }
 }
 
 const handleThoughtPosted = () => {
   fetchThoughts()
   fetchMapThoughts()
-  message.success('想法发布成功！')
+  message.success('Activity posted successfully!')
 }
 
 // === Visibility API Methods ===
@@ -704,18 +1298,18 @@ const toggleVisibility = async () => {
 
     if (response.data.success) {
       isVisible.value = !isVisible.value
-      message.success(isVisible.value ? '您已出现在地图上' : '您已隐身')
+      message.success(isVisible.value ? 'You are now visible on the map' : 'You are now invisible')
       fetchVisibleUsers()
     }
   } catch (error) {
-    message.error('切换可见性失败')
+    message.error('Failed to toggle visibility')
   }
 }
 
 const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('浏览器不支持地理定位'))
+      reject(new Error('Browser does not support geolocation'))
       return
     }
 
@@ -723,11 +1317,29 @@ const getCurrentLocation = () => {
       (position) => {
         resolve({
           lat: position.coords.latitude,
-          lng: position.coords.longitude
+          lng: position.coords.longitude,
+          address: `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`
         })
       },
       (error) => {
-        reject(error)
+        let message = 'Failed to get location'
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            message = 'User denied the location permission request'
+            break
+          case error.POSITION_UNAVAILABLE:
+            message = 'Location information is unavailable'
+            break
+          case error.TIMEOUT:
+            message = 'Location request timed out'
+            break
+        }
+        reject(new Error(message))
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
       }
     )
   })
@@ -743,16 +1355,16 @@ const fetchVisibleUsers = async () => {
     visibleUsers.value = response.data.data.users || []
     updateMapMarkers()
   } catch (error) {
-    console.error('获取可见用户失败:', error)
+    console.error('Failed to fetch visible users:', error)
   }
 }
 
 // === Google Maps Methods ===
 const initGoogleMaps = async () => {
   try {
-    // 等待 Google Maps API 加载
+    // Wait for Google Maps API to load
     if (!window.google) {
-      // 如果还没加载，等待一下
+      // If not loaded yet, wait a bit
       await new Promise((resolve) => {
         const checkGoogle = setInterval(() => {
           if (window.google) {
@@ -763,7 +1375,7 @@ const initGoogleMaps = async () => {
       })
     }
 
-    // 初始化小地图
+    // Initialize small map
     const smallMapElement = document.getElementById('small-map')
     if (smallMapElement && window.google) {
       smallMap = new window.google.maps.Map(smallMapElement, {
@@ -776,8 +1388,8 @@ const initGoogleMaps = async () => {
 
     updateMapMarkers()
   } catch (error) {
-    console.error('Google Maps 加载失败:', error)
-    message.error('地图加载失败')
+    console.error('Google Maps loading failed:', error)
+    message.error('Map loading failed')
   }
 }
 
@@ -796,32 +1408,32 @@ const initLargeMap = async () => {
       updateLargeMapMarkers()
     }
   } catch (error) {
-    console.error('大地图初始化失败:', error)
+    console.error('Large map initialization failed:', error)
   }
 }
 
 const updateMapMarkers = () => {
   if (!smallMap || !window.google) {
-    console.log('⚠️ 地图未初始化或Google API未加载')
+    console.log('⚠️ Map not initialized or Google API not loaded')
     return
   }
 
-  console.log('🗺️ 更新地图标记:', {
+  console.log('🗺️ Updating map markers:', {
     thoughts: mapThoughts.value.length,
     users: visibleUsers.value.length
   })
 
-  // 清除旧标记
+  // Clear old markers
   thoughtMarkers.forEach(marker => marker.setMap(null))
   userMarkers.forEach(marker => marker.setMap(null))
   thoughtMarkers = []
   userMarkers = []
 
-  // 添加想法标记（红色）
+  // Add thought markers (red)
   mapThoughts.value.forEach(thought => {
-    console.log('📍 添加想法标记:', thought)
+    console.log('📍 Adding thought marker:', thought)
     if (thought.location && thought.location.lat && thought.location.lng) {
-      // 截断过长的内容
+      // Truncate overly long content
       const maxLength = 100
       const displayContent = thought.content.length > maxLength
         ? thought.content.substring(0, maxLength) + '...'
@@ -843,17 +1455,17 @@ const updateMapMarkers = () => {
 
       const infoWindow = new window.google.maps.InfoWindow({
         content: `<div style="padding: 8px; max-width: 200px;">
-          <div style="font-weight: bold; margin-bottom: 4px; color: #333;">${thought.user?.first_name || '用户'}</div>
+          <div style="font-weight: bold; margin-bottom: 4px; color: #333;">${thought.user?.first_name || 'User'}</div>
           <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
         </div>`
       })
 
-      // 鼠标悬停时显示
+      // Show on mouse hover
       marker.addListener('mouseover', () => {
         infoWindow.open(smallMap, marker)
       })
 
-      // 鼠标离开时隐藏
+      // Hide on mouse leave
       marker.addListener('mouseout', () => {
         infoWindow.close()
       })
@@ -862,7 +1474,7 @@ const updateMapMarkers = () => {
     }
   })
 
-  // 添加用户标记（蓝色）
+  // Add user markers (blue)
   visibleUsers.value.forEach(user => {
     if (user.current_location && user.current_location.lat && user.current_location.lng) {
       const marker = new window.google.maps.Marker({
@@ -879,6 +1491,22 @@ const updateMapMarkers = () => {
         }
       })
 
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="padding: 8px;">
+          <div style="font-weight: bold; color: #333;">${user.first_name || 'User'}</div>
+        </div>`
+      })
+
+      // Show on mouse hover
+      marker.addListener('mouseover', () => {
+        infoWindow.open(smallMap, marker)
+      })
+
+      // Hide on mouse leave
+      marker.addListener('mouseout', () => {
+        infoWindow.close()
+      })
+
       userMarkers.push(marker)
     }
   })
@@ -887,10 +1515,10 @@ const updateMapMarkers = () => {
 const updateLargeMapMarkers = () => {
   if (!largeMap || !window.google) return
 
-  // 复制小地图的标记到大地图
+  // Copy small map markers to large map
   mapThoughts.value.forEach(thought => {
     if (thought.location && thought.location.lat && thought.location.lng) {
-      // 截断过长的内容
+      // Truncate overly long content
       const maxLength = 100
       const displayContent = thought.content.length > maxLength
         ? thought.content.substring(0, maxLength) + '...'
@@ -964,6 +1592,539 @@ const updateLargeMapMarkers = () => {
   })
 }
 
+// === Activity API Methods ===
+const registerForActivity = async (activity) => {
+  try {
+    activity.registering = true
+    const response = await activitiesAPI.joinActivity(activity.id)
+
+    if (response.data?.success) {
+      const payload = response.data.data || {}
+      activity.isRegistered = true
+      activity.current_participants = (activity.current_participants || 0) + 1
+      activity.participants = activity.current_participants
+      activity.user_participation = payload.participation || null
+      activity.user_checked_in = false
+      participatedActivityIds.value = new Set([
+        ...participatedActivityIds.value,
+        activity.id
+      ])
+
+      const joinPoints = activity.reward_points || 0
+      if (joinPoints > 0) {
+        message.success(`Successfully joined "${activity.title}"! You'll earn ${joinPoints} points when you check in.`)
+      } else {
+        message.success(`Successfully joined "${activity.title}"!`)
+      }
+
+      await fetchUserPoints()
+    }
+  } catch (error) {
+    message.error(error.response?.data?.error?.message || 'Failed to join activity')
+  } finally {
+    activity.registering = false
+  }
+}
+
+const cancelRegistration = async (activity) => {
+  try {
+    activity.cancelling = true
+    const response = await activitiesAPI.leaveActivity(activity.id)
+
+    if (response.data?.success) {
+      activity.isRegistered = false
+      activity.current_participants = Math.max((activity.current_participants || 1) - 1, 0)
+      activity.participants = activity.current_participants
+      activity.user_participation = null
+      activity.user_checked_in = false
+      participatedActivityIds.value = new Set(
+        [...participatedActivityIds.value].filter(id => id !== activity.id)
+      )
+      message.success(`Registration cancelled for "${activity.title}"`)
+      await fetchUserPoints()
+    }
+  } catch (error) {
+    message.error(error.response?.data?.error?.message || 'Failed to cancel registration')
+  } finally {
+    activity.cancelling = false
+  }
+}
+
+// Enhanced points integration
+const awardPointsForActivity = async (action, points, activityTitle) => {
+  try {
+    const pointsData = {
+      action: action,
+      points: points,
+      description: `${action === 'join' ? 'Joined' : action === 'checkin' ? 'Checked into' : 'Completed'} activity: ${activityTitle}`,
+      category: 'activity',
+      metadata: {
+        activity_title: activityTitle,
+        action: action
+      }
+    }
+
+    const response = await pointsAPI.awardPoints(pointsData)
+
+    if (response.data.success) {
+      console.log(`Successfully awarded ${points} points for ${action}`)
+      return response.data
+    }
+  } catch (error) {
+    console.error('Failed to award points:', error)
+    // Don't show error to user - points failure shouldn't block main action
+  }
+}
+
+// User points state
+const userPoints = ref({
+  current_balance: 0,
+  total_earned: 0,
+  total_spent: 0
+})
+
+const fetchUserPoints = async () => {
+  try {
+    const response = await pointsAPI.getMyPoints()
+    if (response.data?.success) {
+      const payload = response.data.data || {}
+      userPoints.value = {
+        current_balance: payload.current_balance ?? payload.points ?? 0,
+        total_earned: payload.total_earned ?? payload.points ?? 0,
+        total_spent: payload.total_spent ?? 0
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch user points:', error)
+  }
+}
+
+const editActivity = (activity) => {
+  // Navigate to edit activity page or show edit modal
+  message.info('Edit functionality will be implemented in next phase')
+}
+
+const showParticipants = async (activity) => {
+  try {
+    selectedActivity.value = activity
+
+    const response = await activitiesAPI.getActivityParticipants(activity.id)
+    if (response.data?.success) {
+      const payload = response.data.data || {}
+      participantsList.value = (payload.participants || []).map(mapParticipant)
+      showParticipantsModal.value = true
+    }
+  } catch (error) {
+    console.error('Failed to load participants list:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to load participants list')
+  }
+}
+
+// Participant mapper
+const mapParticipant = (participant) => {
+  const fullName = participant.user
+    ? `${participant.user.first_name || ''} ${participant.user.last_name || ''}`.trim()
+    : ''
+
+  return {
+    id: participant.id,
+    user_id: participant.user_id,
+    name: fullName || participant.user?.email || 'Participant',
+    email: participant.user?.email || 'N/A',
+    avatar: participant.user?.avatar_url || DEFAULT_ACTIVITY_AVATAR,
+    joined_at: participant.registration_time,
+    status: participant.attendance_status || 'registered'
+  }
+}
+
+const legacyGenerateMockParticipants = () => {
+  return []
+  const mockUsers = [
+    {
+      id: 1,
+      name: 'John Smith',
+      email: 'john.smith@cornell.edu',
+      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20friendly%20smile&width=40&height=40&seq=1&orientation=squarish',
+      joined_at: '2025-10-20T10:30:00Z',
+      status: 'registered'
+    },
+    {
+      id: 2,
+      name: 'Emily Davis',
+      email: 'emily.davis@cornell.edu',
+      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20glasses&width=40&height=40&seq=2&orientation=squarish',
+      joined_at: '2025-10-20T11:15:00Z',
+      status: 'checked_in'
+    },
+    {
+      id: 3,
+      name: 'Michael Johnson',
+      email: 'michael.j@cornell.edu',
+      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20beard&width=40&height=40&seq=3&orientation=squarish',
+      joined_at: '2025-10-20T12:00:00Z',
+      status: 'registered'
+    },
+    {
+      id: 4,
+      name: 'Sarah Wilson',
+      email: 'sarah.wilson@cornell.edu',
+      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20curly%20hair&width=40&height=40&seq=4&orientation=squarish',
+      joined_at: '2025-10-20T13:30:00Z',
+      status: 'checked_in'
+    },
+    {
+      id: 5,
+      name: 'David Chen',
+      email: 'david.chen@cornell.edu',
+      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20asian%20male%20student&width=40&height=40&seq=5&orientation=squarish',
+      joined_at: '2025-10-20T14:00:00Z',
+      status: 'registered'
+    },
+    {
+      id: 6,
+      name: 'Lisa Rodriguez',
+      email: 'lisa.rodriguez@cornell.edu',
+      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20latina%20female%20student&width=40&height=40&seq=6&orientation=squarish',
+      joined_at: '2025-10-20T14:30:00Z',
+      status: 'registered'
+    }
+  ]
+
+  return mockUsers.slice(0, count).map((user, index) => ({
+    ...user,
+    // Randomly assign some as checked in for ongoing activities
+    status: activityId === 3 && index < 2 ? 'checked_in' : 'registered'
+  }))
+}
+
+// Remove participant (for activity owners)
+const removeParticipant = async (participant) => {
+  try {
+    // In real implementation:
+    // const response = await activitiesAPI.removeParticipant(selectedActivity.value.id, participant.id)
+
+    // Mock implementation:
+    participantsList.value = participantsList.value.filter(p => p.id !== participant.id)
+    selectedActivity.value.current_participants--
+
+    // Update the activity in the main list
+    const activityIndex = activities.value.findIndex(a => a.id === selectedActivity.value.id)
+    if (activityIndex !== -1) {
+      activities.value[activityIndex].current_participants--
+    }
+
+    message.success(`Removed ${participant.name} from the activity`)
+  } catch (error) {
+    message.error('Failed to remove participant')
+  }
+}
+
+// Send message to participant
+const messageParticipant = (participant) => {
+  message.info(`Opening chat with ${participant.name}...`)
+  // In real implementation, this would open a chat/messaging interface
+}
+
+// Get participant status color
+const getParticipantStatusColor = (status) => {
+  switch (status) {
+    case 'checked_in':
+      return 'green'
+    case 'registered':
+      return 'blue'
+    case 'cancelled':
+      return 'red'
+    default:
+      return 'default'
+  }
+}
+
+// Get participant status text
+const getParticipantStatusText = (status) => {
+  switch (status) {
+    case 'checked_in':
+      return 'Checked In'
+    case 'registered':
+      return 'Registered'
+    case 'cancelled':
+      return 'Cancelled'
+    default:
+      return 'Unknown'
+  }
+}
+
+// Format join date
+const formatJoinDate = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const generateCheckinCode = async (activity) => {
+  try {
+    const response = await activitiesAPI.generateCheckinCode(activity.id)
+
+    if (response.data?.success) {
+      const payload = response.data.data || {}
+      activity.checkin_code = payload.checkinCode
+      activity.code_expires_at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      activity.status = activity.status === 'published' ? 'ongoing' : activity.status
+
+      selectedActivity.value = activity
+      showCheckinCodeModal.value = true
+      message.success('Check-in code generated successfully!')
+
+      // Update the activity in the main list
+      const activityIndex = activities.value.findIndex(a => a.id === activity.id)
+      if (activityIndex !== -1) {
+        activities.value[activityIndex].checkin_code = activity.checkin_code
+        activities.value[activityIndex].code_expires_at = activity.code_expires_at
+        activities.value[activityIndex].status = 'ongoing'
+      }
+    }
+  } catch (error) {
+    console.error('Failed to generate check-in code:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to generate check-in code')
+  }
+}
+
+// Check if code is expired
+const isCodeExpired = (expiresAt) => {
+  if (!expiresAt) return false
+  return new Date() > new Date(expiresAt)
+}
+
+// Enhanced code validation
+const validateCheckinCode = (inputCode, activity) => {
+  if (!inputCode || inputCode.length === 0) {
+    return { valid: false, message: 'Please enter a check-in code' }
+  }
+
+  if (!activity.checkin_code) {
+    return { valid: false, message: 'No check-in code has been generated for this activity' }
+  }
+
+  if (inputCode.toUpperCase() !== activity.checkin_code.toUpperCase()) {
+    return { valid: false, message: 'Invalid check-in code. Please try again.' }
+  }
+
+  if (isCodeExpired(activity.code_expires_at)) {
+    return { valid: false, message: 'Check-in code has expired. Please ask the organizer for a new code.' }
+  }
+
+  return { valid: true, message: 'Code is valid' }
+}
+
+// Format expiration time for display
+const formatExpirationTime = (expiresAt) => {
+  if (!expiresAt) return 'No expiration'
+
+  const now = new Date()
+  const expiry = new Date(expiresAt)
+  const diffMs = expiry - now
+
+  if (diffMs <= 0) return 'Expired'
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60))
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (hours > 0) {
+    return `Expires in ${hours}h ${minutes}m`
+  } else {
+    return `Expires in ${minutes}m`
+  }
+}
+
+const openCheckinModal = (activity) => {
+  selectedActivity.value = activity
+  checkinForm.value = {
+    location: null,
+    checking: false
+  }
+  showCheckinModal.value = true
+}
+
+// New check-in methods
+const canCheckin = (activity) => {
+  // 检查活动状态是否允许Check In（In Progress中）
+  if (activity.status !== 'ongoing') return false
+
+  // 检查用户是否已经参加活动
+  if (!activity.isRegistered) return false
+
+  // 检查是否已经Check In
+  if (activity.user_checked_in) return false
+  if (activity.user_participation?.checked_in) return false
+
+  // 检查活动是否启用Check In功能（如果字段存在的话）
+  // 如果字段不存在（数据库迁移未执行），则默认允许Check In
+  if (activity.checkin_enabled !== undefined && !activity.checkin_enabled) return false
+
+  return true
+}
+
+const openActivityCheckinModal = (activity) => {
+  selectedActivityForCheckin.value = activity
+  showActivityCheckinModal.value = true
+}
+
+const handleActivityCheckinSuccess = (data) => {
+  // 更新活动状态
+  const activity = activities.value.find(a => a.id === data.activityId)
+  if (activity && activity.user_participation) {
+    activity.user_participation.checked_in = true
+    activity.user_participation.checkin_time = data.result.checkinTime
+    activity.user_checked_in = true
+  }
+
+  message.success('Check In成功！')
+  showActivityCheckinModal.value = false
+
+  // 刷新用户积分
+  fetchUserPoints()
+}
+
+const submitCheckin = async () => {
+  try {
+    if (!selectedActivity.value) return
+    const activity = selectedActivity.value
+
+    checkinForm.value.checking = true
+
+    // 1. 验证Activity Time
+    const now = new Date()
+    const startTime = new Date(activity.start_time)
+    const endTime = new Date(activity.end_time)
+
+    if (now < startTime) {
+      message.error(`活动还未开始。开始时间：${formatDateTime(activity.start_time)}`)
+      checkinForm.value.checking = false
+      return
+    }
+
+    if (now > endTime) {
+      message.error('活动已结束，无法Check In')
+      checkinForm.value.checking = false
+      return
+    }
+
+    // 2. 获取当前位置
+    message.loading('正在获取您的位置...', 0)
+    let currentLocation
+    try {
+      currentLocation = await getCurrentLocation()
+      checkinForm.value.location = currentLocation
+      message.destroy()
+    } catch (locationError) {
+      message.destroy()
+      message.error(locationError.message || '获取位置失败，无法完成Check In')
+      console.error('Location error:', locationError)
+      checkinForm.value.checking = false
+      return
+    }
+
+    // 3. 验证位置距离
+    if (activity.location_verification && activity.locationCoordinates) {
+      const distance = calculateDistance(
+        currentLocation.lat,
+        currentLocation.lng,
+        activity.locationCoordinates.lat,
+        activity.locationCoordinates.lng
+      )
+
+      const maxDistance = activity.max_checkin_distance || 100
+      if (distance > maxDistance) {
+        message.error(`您距离Activity Location太远了。当前距离：${Math.round(distance)}米，要求距离：${maxDistance}meters of the activity location`)
+        checkinForm.value.checking = false
+        return
+      }
+    }
+
+    // 4. 提交Check In
+    const payload = {
+      location: currentLocation
+    }
+
+    const response = await activitiesAPI.checkinActivity(activity.id, payload)
+
+    if (response.data?.success) {
+      const data = response.data.data || {}
+      activity.user_checked_in = true
+      if (activity.user_participation) {
+        activity.user_participation.attendance_status = 'attended'
+        activity.user_participation.checkin_time = new Date().toISOString()
+      } else {
+        activity.user_participation = {
+          attendance_status: 'attended',
+          checkin_time: new Date().toISOString()
+        }
+      }
+
+      showCheckinModal.value = false
+      updateActivityAfterCheckin(activity.id, activity.user_participation)
+
+      const earned = data.pointsEarned ?? activity.reward_points ?? 0
+      if (earned > 0) {
+        message.success(`Check In成功！您获得了 ${earned} 积分 🎉`)
+      } else {
+        message.success('Check In成功！')
+      }
+
+      await fetchUserPoints()
+    }
+
+  } catch (error) {
+    message.error(error.response?.data?.error?.message || 'Check In失败')
+    console.error('Checkin error:', error)
+  } finally {
+    checkinForm.value.checking = false
+  }
+}
+
+// Helper function to calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371000 // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c // Distance in meters
+}
+
+// Helper function to update activity status after successful checkin
+const updateActivityAfterCheckin = (activityId, participation = null) => {
+  const activityIndex = activities.value.findIndex(a => a.id === activityId)
+  if (activityIndex !== -1) {
+    const activity = activities.value[activityIndex]
+    activity.user_checked_in = true
+    if (participation) {
+      activity.user_participation = participation
+    }
+
+    if (activity.isOwner && activity.status === 'published') {
+      activity.status = 'ongoing'
+    }
+  }
+}
+
+const copyCheckinCode = () => {
+  if (selectedActivity.value?.checkin_code) {
+    navigator.clipboard.writeText(selectedActivity.value.checkin_code)
+      .then(() => {
+        message.success('Check-in code copied to clipboard!')
+      })
+      .catch(() => {
+        message.error('Failed to copy check-in code')
+      })
+  }
+}
+
 // Watch for group selection changes
 watch(selectedGroupId, () => {
   fetchThoughts()
@@ -975,9 +2136,12 @@ watch(selectedGroupId, () => {
 onMounted(async () => {
   await fetchMyGroups()
   await fetchAllGroups()
+  await loadUserParticipation()
+  await loadActivities()
   await fetchThoughts()
   await fetchMapThoughts()
   await fetchVisibleUsers()
+  await fetchUserPoints() // Initialize user points
   await initGoogleMaps()
 
   // 获取我的可见性状态

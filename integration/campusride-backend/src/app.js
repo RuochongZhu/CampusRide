@@ -20,6 +20,8 @@ import groupRoutes from './routes/group.routes.js';
 import thoughtRoutes from './routes/thought.routes.js';
 import visibilityRoutes from './routes/visibility.routes.js';
 import carpoolingRoutes from './routes/carpooling.routes.js';
+import messageRoutes from './routes/message.routes.js';
+import activityCheckinRoutes from './routes/activity-checkin.routes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware.js';
@@ -56,14 +58,16 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 500, // increase limit to 500 requests per windowMs
   message: {
     success: false,
     error: {
       code: 'RATE_LIMIT_EXCEEDED',
       message: 'Too many requests from this IP, please try again later.'
     }
-  }
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 app.use('/api/', limiter);
 
@@ -96,6 +100,8 @@ app.use('/api/v1/groups', groupRoutes);
 app.use('/api/v1/thoughts', thoughtRoutes);
 app.use('/api/v1/visibility', visibilityRoutes);
 app.use('/api/v1/carpooling', carpoolingRoutes);
+app.use('/api/v1/messages', messageRoutes);
+app.use('/api/v1', activityCheckinRoutes);
 
 // Health check endpoint
 app.get('/', (req, res) => {

@@ -91,6 +91,18 @@ class SocketManager {
     socket.on('ping', () => {
       socket.emit('pong', { timestamp: new Date().toISOString() });
     });
+
+    // Handle message thread joining
+    socket.on('join_message_thread', (threadId) => {
+      socket.join(`thread:${threadId}`);
+      console.log(`💬 User ${userId} joined message thread ${threadId}`);
+    });
+
+    // Handle message thread leaving
+    socket.on('leave_message_thread', (threadId) => {
+      socket.leave(`thread:${threadId}`);
+      console.log(`👋 User ${userId} left message thread ${threadId}`);
+    });
   }
 
   handleDisconnect(socket) {
@@ -128,6 +140,17 @@ class SocketManager {
   // Send marketplace update
   sendMarketplaceUpdate(itemId, update) {
     this.io.to(`marketplace:${itemId}`).emit('marketplace_update', update);
+  }
+
+  // Send message to thread participants
+  sendMessageToThread(threadId, message) {
+    this.io.to(`thread:${threadId}`).emit('new_message', message);
+    console.log(`💬 Message sent to thread ${threadId}`);
+  }
+
+  // Send typing indicator to thread
+  sendTypingToThread(threadId, userId, isTyping) {
+    this.io.to(`thread:${threadId}`).emit('typing_indicator', { userId, isTyping });
   }
 
   // Get online users count

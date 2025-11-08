@@ -307,6 +307,127 @@ class GroupController {
       });
     }
   }
+
+  // 获取小组消息
+  async getGroupMessages(req, res) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: '小组ID无效',
+            details: errors.array()
+          }
+        });
+      }
+
+      const { groupId } = req.params;
+      const userId = req.user.id;
+      const { limit = 50, offset = 0 } = req.query;
+
+      // 首先检查用户是否是小组成员
+      const membershipResult = await groupService.checkMembership(groupId, userId);
+      if (!membershipResult.success || !membershipResult.isMember) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'ACCESS_DENIED',
+            message: '您不是该小组的成员'
+          }
+        });
+      }
+
+      const result = await groupService.getGroupMessages(groupId, { limit, offset });
+
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          error: {
+            code: 'FETCH_MESSAGES_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          messages: result.messages,
+          total: result.total
+        }
+      });
+    } catch (error) {
+      console.error('❌ Get group messages error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '获取小组消息失败'
+        }
+      });
+    }
+  }
+
+  // 发送小组消息
+  async sendGroupMessage(req, res) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: '输入数据无效',
+            details: errors.array()
+          }
+        });
+      }
+
+      const { groupId } = req.params;
+      const userId = req.user.id;
+      const { content } = req.body;
+
+      // 首先检查用户是否是小组成员
+      const membershipResult = await groupService.checkMembership(groupId, userId);
+      if (!membershipResult.success || !membershipResult.isMember) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'ACCESS_DENIED',
+            message: '您不是该小组的成员'
+          }
+        });
+      }
+
+      const result = await groupService.sendGroupMessage(groupId, userId, content);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'SEND_MESSAGE_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(201).json({
+        success: true,
+        data: { message: result.message }
+      });
+    } catch (error) {
+      console.error('❌ Send group message error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '发送消息失败'
+        }
+      });
+    }
+  }
 }
 
 // 验证规则
@@ -328,6 +449,17 @@ export const getGroupsValidation = [
 
 export const groupIdValidation = [
   param('groupId').isUUID().withMessage('小组ID必须是有效的UUID')
+];
+
+export const sendGroupMessageValidation = [
+  param('groupId').isUUID().withMessage('小组ID必须是有效的UUID'),
+  body('content').isString().isLength({ min: 1, max: 2000 }).withMessage('消息内容必须是1-2000个字符')
+];
+
+export const getGroupMessagesValidation = [
+  param('groupId').isUUID().withMessage('小组ID必须是有效的UUID'),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit必须是1-100之间的整数'),
+  query('offset').optional().isInt({ min: 0 }).withMessage('offset必须是非负整数')
 ];
 
 export default new GroupController();

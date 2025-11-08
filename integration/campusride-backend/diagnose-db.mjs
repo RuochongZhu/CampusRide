@@ -22,7 +22,7 @@ async function diagnose() {
     console.log('📋 测试 1: 检查 users 表...')
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, email, first_name, last_name, university, email_verified, created_at')
+      .select('id, email, first_name, last_name, university, verification_status, is_verified, created_at')
       .order('created_at', { ascending: false })
       .limit(5)
 
@@ -32,7 +32,7 @@ async function diagnose() {
       console.log(`✅ 用户表正常，共 ${users.length} 条最近记录:`)
       users.forEach((user, i) => {
         console.log(`   ${i + 1}. ${user.email} - ${user.first_name} ${user.last_name}`)
-        console.log(`      验证状态: ${user.email_verified ? '✅ 已验证' : '❌ 未验证'}`)
+        console.log(`      验证状态: ${user.verification_status === 'verified' || user.is_verified ? '✅ 已验证' : '❌ 未验证'}`)
         console.log(`      创建时间: ${user.created_at}`)
       })
     }
@@ -53,7 +53,7 @@ async function diagnose() {
       console.log('   Email:', specificUser.email)
       console.log('   Name:', `${specificUser.first_name} ${specificUser.last_name}`)
       console.log('   University:', specificUser.university)
-      console.log('   Verified:', specificUser.email_verified ? '✅' : '❌')
+      console.log('   Verified:', specificUser.verification_status === 'verified' || specificUser.is_verified ? '✅' : '❌')
       console.log('   Password Hash:', specificUser.password_hash ? '✅ 存在' : '❌ 不存在')
     }
     console.log('')

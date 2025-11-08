@@ -1,7 +1,7 @@
 <template>
   <a-modal
-    :visible="visible"
-    title="创建小组"
+    :open="visible"
+    title="Create Group"
     @ok="handleCreate"
     @cancel="handleCancel"
     :confirmLoading="creating"
@@ -13,28 +13,28 @@
       layout="vertical"
       class="mt-4"
     >
-      <a-form-item label="小组名称" required>
+      <a-form-item label="Group Name" required>
         <a-input
           v-model:value="formData.name"
-          placeholder="请输入小组名称"
+          placeholder="Enter group name"
           :maxlength="100"
         />
       </a-form-item>
 
-      <a-form-item label="小组描述">
+      <a-form-item label="Group Description">
         <a-textarea
           v-model:value="formData.description"
-          placeholder="介绍一下这个小组的目的和特色..."
+          placeholder="Describe the purpose and features of this group..."
           :rows="4"
           :maxlength="1000"
           show-count
         />
       </a-form-item>
 
-      <a-form-item label="封面图片">
+      <a-form-item label="Cover Image">
         <a-input
           v-model:value="formData.cover_image"
-          placeholder="图片 URL（可选）"
+          placeholder="Image URL (optional)"
         />
         <div v-if="formData.cover_image" class="mt-2">
           <img
@@ -70,7 +70,7 @@ const formData = ref({
   cover_image: ''
 })
 
-// 监听visible变化，重置表单
+// Watch visible property changes, reset form
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     formData.value = {
@@ -82,16 +82,16 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-// 关闭弹窗
+// Close modal
 const handleCancel = () => {
   emit('update:visible', false)
 }
 
-// 创建小组
+// Create group
 const handleCreate = async () => {
-  // 验证
+  // Validation
   if (!formData.value.name || formData.value.name.trim().length === 0) {
-    message.error('请输入小组名称')
+    message.error('Please enter group name')
     return
   }
 
@@ -99,12 +99,12 @@ const handleCreate = async () => {
   try {
     const response = await groupAPI.createGroup(formData.value)
     if (response.data.success) {
-      message.success('小组创建成功！')
+      message.success('Group created successfully!')
       emit('success', response.data.data.group)
       emit('update:visible', false)
     }
   } catch (error) {
-    message.error(error.response?.data?.error?.message || '创建失败')
+    message.error(error.response?.data?.error?.message || 'Creation failed')
   } finally {
     creating.value = false
   }

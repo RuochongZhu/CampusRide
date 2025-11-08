@@ -32,11 +32,31 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // 只在真正的认证错误时才处理
     if (error.response?.status === 401) {
-      // Token过期,清除并跳转登录
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      
+      // 如果已经在登录页面，不需要重定向
+      if (currentPath === '/login' || currentPath === '/register') {
+        return Promise.reject(error);
+      }
+      
+      // 检查错误代码，只在token真的过期或无效时才清除
+      const errorCode = error.response?.data?.error?.code;
+      
+      // 只有明确的token过期/无效才清除并跳转
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
+        console.warn('🔐 Token expired or invalid, redirecting to login');
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+        
+        // 保存当前路径以便登录后返回
+        const returnPath = currentPath !== '/' ? currentPath : '/home';
+        window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+      } else {
+        // 其他401错误（如ACCESS_DENIED等）不清除token，只是拒绝请求
+        console.log('⚠️ 401 error but not token issue:', errorCode);
+      }
     }
     return Promise.reject(error);
   }
@@ -223,6 +243,9 @@ export const activitiesAPI = {
   // 获取活动列表
   getActivities: (params = {}) => api.get('/activities', { params }),
 
+  // 搜索活动
+  searchActivities: (params = {}) => api.get('/activities/search', { params }),
+
   // 创建活动
   createActivity: (data) => api.post('/activities', data),
 
@@ -235,14 +258,61 @@ export const activitiesAPI = {
   // 删除活动
   deleteActivity: (id) => api.delete(`/activities/${id}`),
 
+  // 发布活动
+  publishActivity: (id) => api.post(`/activities/${id}/publish`),
+
   // 参加活动
-  joinActivity: (id) => api.post(`/activities/${id}/join`),
+  joinActivity: (id) => api.post(`/activities/${id}/register`),
 
   // 退出活动
-  leaveActivity: (id) => api.delete(`/activities/${id}/join`),
+  leaveActivity: (id) => api.delete(`/activities/${id}/register`),
+
+  // 活动签到
+  checkinActivity: (id, data) => api.post(`/activities/${id}/checkin`, data),
+
+  // 生成签到码
+  generateCheckinCode: (id) => api.post(`/activities/${id}/generate-code`),
 
   // 获取我的活动
-  getMyActivities: () => api.get('/activities/me'),
+  getMyActivities: (params = {}) => api.get('/activities/my', { params }),
+
+  // 获取活动参与者
+  getActivityParticipants: (id) => api.get(`/activities/${id}/participants`),
+
+  // 获取活动元数据
+  getActivityMeta: () => api.get('/activities/meta'),
+
+  // 获取历史活动
+  getHistoryActivities: (params = {}) => api.get('/activities/history', { params }),
+
+  // 清理过期活动
+  cleanupActivities: () => api.post('/activities/cleanup'),
+
+  // 获取清理统计
+  getCleanupStats: () => api.get('/activities/cleanup/stats'),
+
+  // 活动评论相关
+  addComment: (activityId, data) => api.post(`/activities/${activityId}/comments`, data),
+  getComments: (activityId, params = {}) => api.get(`/activities/${activityId}/comments`, { params }),
+  updateComment: (activityId, commentId, data) => api.put(`/activities/${activityId}/comments/${commentId}`, data),
+  deleteComment: (activityId, commentId) => api.delete(`/activities/${activityId}/comments/${commentId}`)
+};
+
+// ================================================
+// 活动签到相关 API
+// ================================================
+export const checkinAPI = {
+  // 检查签到资格
+  checkEligibility: (activityId) => api.get(`/activities/${activityId}/checkin/eligibility`),
+
+  // 执行签到
+  performCheckin: (activityId, data) => api.post(`/activities/${activityId}/checkin`, data),
+
+  // 获取活动签到统计
+  getActivityStats: (activityId) => api.get(`/activities/${activityId}/checkin/stats`),
+
+  // 获取用户签到历史
+  getUserHistory: (params = {}) => api.get('/checkins/history', { params })
 };
 
 // 通知相关 API
@@ -293,6 +363,12 @@ export const groupAPI = {
 
   // 删除小组
   deleteGroup: (groupId) => api.delete(`/groups/${groupId}`),
+
+  // 群组聊天相关
+  getGroupMessages: (groupId, params = {}) => api.get(`/groups/${groupId}/messages`, { params }),
+  sendGroupMessage: (groupId, data) => api.post(`/groups/${groupId}/messages`, data),
+  deleteGroupMessage: (groupId, messageId) => api.delete(`/groups/${groupId}/messages/${messageId}`),
+  markMessagesAsRead: (groupId) => api.put(`/groups/${groupId}/messages/read`)
 };
 
 // ================================================
@@ -327,6 +403,38 @@ export const visibilityAPI = {
 
   // 获取地图上可见的用户
   getMapUsers: (params) => api.get('/visibility/map', { params }),
+};
+
+// ================================================
+// 消息相关 API
+// ================================================
+export const messagesAPI = {
+  // 发送消息
+  sendMessage: (data) => api.post('/messages', data),
+
+  // 获取消息列表
+  getMessages: (params = {}) => api.get('/messages', { params }),
+
+  // 获取消息线程
+  getMessageThreads: (params = {}) => api.get('/messages/threads', { params }),
+
+  // 获取线程中的消息
+  getThreadMessages: (threadId, params = {}) => api.get(`/messages/threads/${threadId}`, { params }),
+
+  // 回复消息线程
+  replyToThread: (threadId, data) => api.post(`/messages/threads/${threadId}/reply`, data),
+
+  // 标记线程为已读
+  markThreadAsRead: (threadId) => api.put(`/messages/threads/${threadId}/read`),
+
+  // 获取未读消息数量
+  getUnreadCount: () => api.get('/messages/unread-count'),
+
+  // 删除消息
+  deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
+
+  // 归档消息
+  archiveMessage: (messageId) => api.put(`/messages/${messageId}/archive`),
 };
 
 // 导出默认API实例

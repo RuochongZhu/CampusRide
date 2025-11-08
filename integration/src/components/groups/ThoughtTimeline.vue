@@ -69,7 +69,7 @@
       <div v-else class="text-center py-12 text-gray-400">
         <MessageOutlined class="text-4xl mb-3" />
         <p class="text-sm">暂无想法</p>
-        <p class="text-xs mt-1">点击"发布想法"分享你的想法</p>
+        <p class="text-xs mt-1">点击"发布活动"分享你的想法</p>
       </div>
     </div>
   </div>

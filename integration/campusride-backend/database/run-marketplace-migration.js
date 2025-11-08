@@ -69,11 +69,11 @@ async function runMigration() {
     console.log('🔒 Created RLS policies for security');
     console.log('👁️  Created marketplace_items_with_seller view\n');
 
-    // Verify tables were created
-    const { data: tables, error: tablesError } = await supabase
+    // Verify tables were created using a lightweight HEAD query
+    const { error: tablesError } = await supabase
       .from('marketplace_items')
-      .select('count')
-      .limit(0);
+      .select('id', { head: true })
+      .limit(1);
 
     if (tablesError) {
       console.log('⚠️  Note: Please verify tables were created in Supabase dashboard');

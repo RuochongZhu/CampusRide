@@ -124,10 +124,35 @@ class VisibilityController {
 
 // 验证规则
 export const updateVisibilityValidation = [
-  body('is_visible').isBoolean().withMessage('is_visible必须是布尔值'),
-  body('current_location').optional().isObject().withMessage('当前位置必须是对象'),
-  body('current_location.lat').optional().isFloat({ min: -90, max: 90 }).withMessage('纬度必须在-90到90之间'),
-  body('current_location.lng').optional().isFloat({ min: -180, max: 180 }).withMessage('经度必须在-180到180之间')
+  body('is_visible')
+    .isBoolean()
+    .withMessage('is_visible必须是布尔值'),
+  body('current_location')
+    .optional({ nullable: true })
+    .custom((value) => {
+      // Allow null
+      if (value === null || value === undefined) {
+        return true;
+      }
+      // Must be an object if not null
+      if (typeof value !== 'object') {
+        throw new Error('当前位置必须是对象或 null');
+      }
+      // If object is provided, validate lat and lng
+      if (value.lat !== undefined) {
+        const lat = parseFloat(value.lat);
+        if (isNaN(lat) || lat < -90 || lat > 90) {
+          throw new Error('纬度必须在-90到90之间');
+        }
+      }
+      if (value.lng !== undefined) {
+        const lng = parseFloat(value.lng);
+        if (isNaN(lng) || lng < -180 || lng > 180) {
+          throw new Error('经度必须在-180到180之间');
+        }
+      }
+      return true;
+    })
 ];
 
 export const getVisibleUsersValidation = [

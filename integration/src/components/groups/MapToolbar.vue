@@ -24,13 +24,13 @@
         </a-button>
       </a-tooltip>
 
-      <!-- 发布想法 -->
+      <!-- 发布活动 -->
       <a-button
         type="primary"
         @click="$emit('post-thought')"
       >
         <template #icon><EditOutlined /></template>
-        发布想法
+        发布活动
       </a-button>
     </div>
   </div>

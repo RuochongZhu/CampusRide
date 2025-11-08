@@ -26,19 +26,26 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 // Create Supabase client for client-side operations (with anon key)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Database connection test
+// Lightweight database connectivity check used by the health endpoint.
+// We intentionally avoid selecting any non-existent columns and only
+// perform a HEAD-style query against a known table. If the table does
+// not exist yet (fresh environment), we treat that as a reachable DB
+// rather than a hard failure so the server can still boot.
 export const testConnection = async () => {
   try {
-    const { data, error } = await supabaseAdmin
+    // Use a minimal select with head=true so no rows are transferred.
+    // This verifies reachability and auth without relying on table schema.
+    const { error } = await supabaseAdmin
       .from('users')
-      .select('count')
+      .select('id', { head: true })
       .limit(1);
     
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "table does not exist"
+    // PGRST116 means the table is missing; that's OK for connectivity checks
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
     
-    console.log('✅ Database connection successful');
+    console.log('✅ Database reachable');
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);

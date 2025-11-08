@@ -348,8 +348,11 @@ export const verifyEmail = async (req, res, next) => {
       console.error('❌ Error in verification points system:', pointsError);
     }
 
-    // 重定向到前端成功页面
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?verified=true`);
+    // 返回成功响应，让前端处理跳转
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now log in.'
+    });
   } catch (error) {
     next(error);
   }
