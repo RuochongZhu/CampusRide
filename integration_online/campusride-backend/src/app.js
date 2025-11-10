@@ -50,13 +50,18 @@ app.use(helmet());
 // CORS configuration - production environment
 app.use(cors({
   origin: function(origin, callback) {
+    console.log('CORS check - Origin:', origin, 'NODE_ENV:', process.env.NODE_ENV, 'FRONTEND_URL:', process.env.FRONTEND_URL);
+
     // 生产环境只允许配置的前端URL
     if (process.env.NODE_ENV === 'production') {
       const allowedOrigins = [process.env.FRONTEND_URL].filter(Boolean);
+      console.log('Production - Allowed origins:', allowedOrigins);
+
       if (!origin || allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        console.log('CORS rejected origin:', origin);
+        callback(null, false); // 不要抛出错误，返回false即可
       }
     } else {
       // 开发环境允许所有localhost
