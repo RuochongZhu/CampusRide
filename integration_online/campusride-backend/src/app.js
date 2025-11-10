@@ -54,7 +54,9 @@ app.use(cors({
 
     // 生产环境只允许配置的前端URL
     if (process.env.NODE_ENV === 'production') {
-      const allowedOrigins = [process.env.FRONTEND_URL].filter(Boolean);
+      // 支持逗号分隔的多个域名
+      const frontendUrls = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : [];
+      const allowedOrigins = frontendUrls.filter(Boolean);
       console.log('Production - Allowed origins:', allowedOrigins);
 
       if (!origin || allowedOrigins.indexOf(origin) !== -1) {
