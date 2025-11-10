@@ -39,17 +39,40 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - required for Railway/production deployments
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - support multiple frontend URLs
+// CORS configuration - production environment
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3001', 
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:3002'
-  ],
+  origin: function(origin, callback) {
+    // 生产环境只允许配置的前端URL
+    if (process.env.NODE_ENV === 'production') {
+      const allowedOrigins = [process.env.FRONTEND_URL].filter(Boolean);
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    } else {
+      // 开发环境允许所有localhost
+      const devOrigins = [
+        process.env.FRONTEND_URL || 'http://localhost:3001',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:3002'
+      ];
+      if (!origin || devOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
