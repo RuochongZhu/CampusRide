@@ -379,22 +379,24 @@ class MessageService {
 
   // Get unread message count for user
   async getUnreadCount(userId) {
-    const client = await pool.connect();
-
     try {
-      // Use the database function to get unread count
-      const result = await client.query(
-        'SELECT get_unread_message_count($1) as count',
-        [userId]
-      );
+      // Use Supabase to query unread messages
+      const { data, error, count } = await pool
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .eq('read_status', 'unread');
 
-      return parseInt(result.rows[0].count) || 0;
+      if (error) {
+        console.error('❌ Error querying unread count:', error);
+        throw error;
+      }
+
+      return count || 0;
 
     } catch (error) {
       console.error('❌ Error in getUnreadCount service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
