@@ -6,7 +6,7 @@ import axios from 'axios';
 // 3) Railway production URL as safe default (never default to localhost in prod)
 const API_BASE_URL =
   (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
-  (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
   'https://campusride-production.up.railway.app';
 
 // 创建 axios 实例
