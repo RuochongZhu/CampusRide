@@ -1,10 +1,9 @@
 import axios from 'axios';
+import { config } from '../config/environment.js';
 
-// API 基础URL
-// FIXME: Environment variable not working in Vercel, temporarily hardcoded
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://campusride-production.up.railway.app';
-console.log('🔧 API_BASE_URL:', API_BASE_URL);
-console.log('🔧 VITE_API_BASE_URL env:', import.meta.env.VITE_API_BASE_URL);
+// API 基础URL - 优先使用环境变量，其次使用配置文件
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || config.apiUrl;
+console.log('🔧 Using API_BASE_URL:', API_BASE_URL);
 
 // 创建 axios 实例
 const api = axios.create({
