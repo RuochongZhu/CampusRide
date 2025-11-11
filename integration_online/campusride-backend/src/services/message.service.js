@@ -380,30 +380,23 @@ class MessageService {
   // Get unread message count for user
   async getUnreadCount(userId) {
     try {
-      // TODO: Fix this to use Supabase properly
-      // Temporarily return 0 to avoid 500 errors
-      console.log('⚠️ getUnreadCount temporarily disabled - returning 0');
-      return 0;
-
-      /* Original Supabase implementation - needs debugging
+      // Query unread messages using Supabase
       const { data, error, count } = await supabaseAdmin
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', userId)
-        .eq('read_status', 'unread');
+        .eq('is_read', false)
+        .eq('status', 'active');
 
       if (error) {
-        console.error('❌ Error querying unread count:', error);
         throw error;
       }
 
       return count || 0;
-      */
 
     } catch (error) {
       console.error('❌ Error in getUnreadCount service:', error);
-      // Return 0 instead of throwing to prevent 500 errors
-      return 0;
+      throw error;
     }
   }
 
