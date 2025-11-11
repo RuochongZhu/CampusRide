@@ -86,6 +86,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { authAPI } from '../utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -101,8 +102,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const resetToken = ref('')
 
-// 后端API基础URL
-const API_BASE_URL = 'http://localhost:3001/api/v1'
+// Use centralized API client
 
 // 获取URL中的token
 onMounted(() => {
@@ -160,31 +160,16 @@ const handleResetPassword = async () => {
   clearMessages()
   
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/reset-password/${resetToken.value}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        password: form.value.password
-      })
-    })
-    
-    const data = await response.json()
-    
-    if (response.ok) {
+    const { data } = await authAPI.resetPassword(resetToken.value, form.value.password)
+    if (data?.success) {
       successMessage.value = 'Password reset successfully! You can now log in with your new password.'
-      
-      // 3秒后跳转到登录页面
-      setTimeout(() => {
-        router.push('/login')
-      }, 3000)
+      setTimeout(() => { router.push('/login') }, 3000)
     } else {
-      errorMessage.value = data.error?.message || 'Failed to reset password'
+      errorMessage.value = data?.error?.message || 'Failed to reset password'
     }
   } catch (error) {
     console.error('Reset password error:', error)
-    errorMessage.value = 'Network error. Please check your connection and try again.'
+    errorMessage.value = error?.response?.data?.error?.message || 'Network error. Please check your connection and try again.'
   } finally {
     isLoading.value = false
   }

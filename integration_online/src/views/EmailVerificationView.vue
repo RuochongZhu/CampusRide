@@ -86,6 +86,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { authAPI } from '../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -96,7 +97,7 @@ const errorMessage = ref('')
 const resendEmail = ref('')
 const isResending = ref(false)
 
-const API_BASE_URL = 'http://localhost:3001/api/v1'
+// Use centralized API client
 
 // 验证邮箱
 const verifyEmail = async () => {
@@ -110,35 +111,23 @@ const verifyEmail = async () => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-email/${token}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-
-    const data = await response.json()
-
-    if (response.ok && data.success) {
-      if (data.message.includes('already verified')) {
-        verificationStatus.value = 'already_verified'
-      } else {
-        verificationStatus.value = 'success'
-      }
+    const { data } = await authAPI.verifyEmail(token)
+    if (data?.success) {
+      verificationStatus.value = data.message?.includes('already verified') ? 'already_verified' : 'success'
     } else {
       verificationStatus.value = 'error'
-      if (data.error?.code === 'TOKEN_EXPIRED') {
+      if (data?.error?.code === 'TOKEN_EXPIRED') {
         errorMessage.value = 'The verification link has expired. Please request a new verification email.'
-      } else if (data.error?.code === 'INVALID_TOKEN') {
+      } else if (data?.error?.code === 'INVALID_TOKEN') {
         errorMessage.value = 'The verification link is invalid or has already been used.'
       } else {
-        errorMessage.value = data.error?.message || 'Verification failed. Please try again.'
+        errorMessage.value = data?.error?.message || 'Verification failed. Please try again.'
       }
     }
   } catch (error) {
     console.error('Verification error:', error)
     verificationStatus.value = 'error'
-    errorMessage.value = 'Network error. Please check your connection and try again.'
+    errorMessage.value = error?.response?.data?.error?.message || 'Network error. Please check your connection and try again.'
   } finally {
     isLoading.value = false
   }
@@ -154,23 +143,12 @@ const resendVerification = async () => {
   isResending.value = true
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: resendEmail.value
-      })
-    })
-
-    const data = await response.json()
-
-    if (response.ok && data.success) {
+    const { data } = await authAPI.resendVerification(resendEmail.value)
+    if (data?.success) {
       alert('Verification email sent! Please check your inbox.')
       resendEmail.value = ''
     } else {
-      alert(data.error?.message || 'Failed to send verification email')
+      alert(data?.error?.message || 'Failed to send verification email')
     }
   } catch (error) {
     console.error('Resend error:', error)

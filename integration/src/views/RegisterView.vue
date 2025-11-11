@@ -129,6 +129,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { authAPI } from '../utils/api'
 
 const router = useRouter()
 
@@ -144,8 +145,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-// Backend API base URL
-const API_BASE_URL = 'http://localhost:3001/api/v1'
+// Use centralized API client
 
 // Clear messages
 const clearMessages = () => {
@@ -209,48 +209,23 @@ const handleRegister = async () => {
   clearMessages()
   
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        nickname: form.value.nickname.trim(),
-        email: form.value.email,
-        password: form.value.password
-      })
+    const { data } = await authAPI.register({
+      nickname: form.value.nickname.trim(),
+      email: form.value.email,
+      password: form.value.password
     })
-    
-    const data = await response.json()
-    
-    if (response.ok) {
+    if (data?.success) {
       successMessage.value = 'Registration successful! Please check your email and click the verification link.'
-
-      // Show additional instructions after 3 seconds
       setTimeout(() => {
-        successMessage.value = 'Check your email\n\nIf you haven\'t received the email, please check your spam folder or contact the administrator.'
+        successMessage.value = "Check your email\n\nIf you haven't received the email, please check your spam folder or contact the administrator."
       }, 3000)
     } else {
-      // If database error, provide temporary demo mode
-      if (data.error?.code === 'DATABASE_ERROR') {
-        // Temporary demo mode - simulate successful registration
-        localStorage.setItem('demo_user', JSON.stringify({
-          email: form.value.email
-        }))
-
-        successMessage.value = 'Demo mode: Registration successful! Please check your email for verification.'
-
-        // In demo mode, redirect directly to login page
-        setTimeout(() => {
-          router.push('/login')
-        }, 3000)
-      } else {
-        errorMessage.value = data.error?.message || 'Registration failed, please try again'
-      }
+      errorMessage.value = data?.error?.message || 'Registration failed, please try again'
     }
   } catch (error) {
     console.error('Registration error:', error)
-    errorMessage.value = 'Network error, please check your connection'
+    const msg = error?.response?.data?.error?.message || error.message || 'Network error, please check your connection'
+    errorMessage.value = msg
   } finally {
     isLoading.value = false
   }

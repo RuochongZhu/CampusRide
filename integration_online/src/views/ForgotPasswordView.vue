@@ -80,6 +80,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { authAPI } from '../utils/api'
 
 const router = useRouter()
 
@@ -89,8 +90,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-// 后端API基础URL
-const API_BASE_URL = 'http://localhost:3001/api/v1'
+// Use centralized API client
 
 // 清除提示信息
 const clearMessages = () => {
@@ -124,33 +124,20 @@ const handleForgotPassword = async () => {
   clearMessages()
   
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.value
-      })
-    })
-    
-    const data = await response.json()
-    
-    if (response.ok) {
+    const { data } = await authAPI.forgotPassword(email.value)
+    if (data?.success) {
       successMessage.value = 'Password reset email sent successfully! Please check your inbox.'
-      
-      // 3秒后提示用户检查邮箱
       setTimeout(() => {
         if (successMessage.value.includes('check your inbox')) {
-          successMessage.value += '\n\nIf you don\'t see the email, please check your spam folder.'
+          successMessage.value += "\n\nIf you don't see the email, please check your spam folder."
         }
       }, 3000)
     } else {
-      errorMessage.value = data.error?.message || 'Failed to send password reset email'
+      errorMessage.value = data?.error?.message || 'Failed to send password reset email'
     }
   } catch (error) {
     console.error('Forgot password error:', error)
-    errorMessage.value = 'Network error. Please check your connection and try again.'
+    errorMessage.value = error?.response?.data?.error?.message || 'Network error. Please check your connection and try again.'
   } finally {
     isLoading.value = false
   }

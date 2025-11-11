@@ -1,4 +1,4 @@
-import pool from '../config/database.js';
+import { supabaseAdmin } from '../config/database.js';
 import socketManager from '../config/socket.js';
 
 class MessageService {
@@ -379,22 +379,24 @@ class MessageService {
 
   // Get unread message count for user
   async getUnreadCount(userId) {
-    const client = await pool.connect();
-
     try {
-      // Use the database function to get unread count
-      const result = await client.query(
-        'SELECT get_unread_message_count($1) as count',
-        [userId]
-      );
+      // Query unread messages using Supabase
+      const { data, error, count } = await supabaseAdmin
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .eq('is_read', false)
+        .eq('status', 'active');
 
-      return parseInt(result.rows[0].count) || 0;
+      if (error) {
+        throw error;
+      }
+
+      return count || 0;
 
     } catch (error) {
       console.error('❌ Error in getUnreadCount service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 

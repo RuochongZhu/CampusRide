@@ -68,7 +68,7 @@ app.use(cors({
     } else {
       // 开发环境允许所有localhost
       const devOrigins = [
-        process.env.FRONTEND_URL || 'http://localhost:3001',
+        process.env.FRONTEND_URL || 'http://localhost:3000',
         'http://localhost:5173',
         'http://localhost:3000',
         'http://localhost:3002'

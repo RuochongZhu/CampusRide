@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// Use global variable set in index.html, fallback to Railway
-const API_BASE_URL = window.__API_BASE_URL__ || 'https://campusride-production.up.railway.app';
+// Resolve API base URL in this order:
+// 1) window.__API_BASE_URL__ set by index.html at runtime
+// 2) Vite env var VITE_API_BASE_URL (set at build/deploy time)
+// 3) Railway production URL as a safe default
+const API_BASE_URL =
+  (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
+  (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  'https://campusride-production.up.railway.app';
 console.log('📡 API module loaded, using:', API_BASE_URL);
 
 // 创建 axios 实例
@@ -71,11 +77,14 @@ export const authAPI = {
   // 登录
   login: (data) => api.post('/auth/login', data),
 
+  // 游客登录
+  guestLogin: () => api.post('/auth/guest-login'),
+
   // 登出
   logout: () => api.post('/auth/logout'),
 
-  // 验证邮箱
-  verifyEmail: (token) => api.post('/auth/verify-email', { token }),
+  // 验证邮箱（后端为 GET /auth/verify-email/:token）
+  verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
 
   // 重发验证邮件
   resendVerification: (email) => api.post('/auth/resend-verification', { email }),
@@ -83,8 +92,8 @@ export const authAPI = {
   // 忘记密码
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
 
-  // 重置密码
-  resetPassword: (token, newPassword) => api.post('/auth/reset-password', { token, new_password: newPassword }),
+  // 重置密码（后端为 POST /auth/reset-password/:token）
+  resetPassword: (token, newPassword) => api.post(`/auth/reset-password/${token}`, { password: newPassword }),
 
   // 刷新Token
   refreshToken: (refreshToken) => api.post('/auth/refresh', { refresh_token: refreshToken }),

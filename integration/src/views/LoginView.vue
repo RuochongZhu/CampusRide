@@ -133,6 +133,7 @@ required
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { authAPI } from '../utils/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -144,8 +145,7 @@ const showResendButton = ref(false)
 const resendEmail = ref('')
 const isResending = ref(false)
 
-// Backend API base URL
-const API_BASE_URL = 'http://localhost:3001/api/v1'
+// Use centralized API client
 
 // Clear error message
 const clearError = () => {
@@ -211,31 +211,19 @@ const guestLogin = async () => {
   isLoading.value = true
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/guest-login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-
-    const data = await response.json()
-
-    if (response.ok) {
-      // Save guest token and data
+    const { data } = await authAPI.guestLogin()
+    if (data?.success) {
       localStorage.setItem('userToken', data.data.token)
       localStorage.setItem('userData', JSON.stringify(data.data.user))
-
       errorMessage.value = ''
       const redirect = router.currentRoute.value.query.redirect || '/home'
-      setTimeout(() => {
-        router.push(redirect)
-      }, 500)
+      setTimeout(() => router.push(redirect), 500)
     } else {
-      errorMessage.value = data.error?.message || 'Guest login failed'
+      errorMessage.value = data?.error?.message || 'Guest login failed'
     }
   } catch (error) {
     console.error('Guest login error:', error)
-    errorMessage.value = 'Network error. Please check your connection and try again.'
+    errorMessage.value = error?.response?.data?.error?.message || 'Network error. Please check your connection and try again.'
   } finally {
     isLoading.value = false
   }
@@ -248,27 +236,16 @@ const resendVerification = async () => {
   isResending.value = true
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: resendEmail.value
-      })
-    })
-
-    const data = await response.json()
-
-    if (response.ok && data.success) {
+    const { data } = await authAPI.resendVerification(resendEmail.value)
+    if (data?.success) {
       errorMessage.value = 'Verification email sent! Please check your inbox.'
       showResendButton.value = false
     } else {
-      errorMessage.value = data.error?.message || 'Failed to send verification email'
+      errorMessage.value = data?.error?.message || 'Failed to send verification email'
     }
   } catch (error) {
     console.error('Resend verification error:', error)
-    errorMessage.value = 'Network error, please try again later'
+    errorMessage.value = error?.response?.data?.error?.message || 'Network error, please try again later'
   } finally {
     isResending.value = false
   }
