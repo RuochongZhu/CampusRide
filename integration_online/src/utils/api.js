@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 // API 基础URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// FIXME: Environment variable not working in Vercel, temporarily hardcoded
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://campusride-production.up.railway.app';
+console.log('🔧 API_BASE_URL:', API_BASE_URL);
+console.log('🔧 VITE_API_BASE_URL env:', import.meta.env.VITE_API_BASE_URL);
 
 // 创建 axios 实例
 const api = axios.create({
