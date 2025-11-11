@@ -1,9 +1,41 @@
 import axios from 'axios';
-import { config } from '../config/environment.js';
 
-// API 基础URL - 优先使用环境变量，其次使用配置文件
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || config.apiUrl;
-console.log('🔧 Using API_BASE_URL:', API_BASE_URL);
+// 智能检测API地址
+function getApiBaseUrl() {
+  // 优先使用环境变量
+  if (import.meta.env.VITE_API_BASE_URL) {
+    console.log('✅ Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+
+  // 根据域名自动判断
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    console.log('🌍 Hostname:', hostname);
+
+    // 生产域名
+    if (hostname === 'campusgo.college' || hostname === 'www.campusgo.college') {
+      const url = 'https://campusride-production.up.railway.app';
+      console.log('✅ Production detected, using:', url);
+      return url;
+    }
+
+    // 本地开发
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      const url = 'http://localhost:3001';
+      console.log('💻 Development detected, using:', url);
+      return url;
+    }
+  }
+
+  // 默认生产环境
+  const defaultUrl = 'https://campusride-production.up.railway.app';
+  console.log('⚠️ Using default production URL:', defaultUrl);
+  return defaultUrl;
+}
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('🔧 Final API_BASE_URL:', API_BASE_URL);
 
 // 创建 axios 实例
 const api = axios.create({
