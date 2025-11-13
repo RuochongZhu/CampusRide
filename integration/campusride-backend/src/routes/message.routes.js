@@ -15,6 +15,7 @@ router.get('/threads', asyncHandler(messageController.getMessageThreads.bind(mes
 router.get('/threads/:threadId', asyncHandler(messageController.getThreadMessages.bind(messageController)));
 router.post('/threads/:threadId/reply', asyncHandler(messageController.replyToThread.bind(messageController)));
 router.put('/threads/:threadId/read', asyncHandler(messageController.markThreadAsRead.bind(messageController)));
+router.get('/threads/:threadId/reply-status', asyncHandler(messageController.checkReplyStatus.bind(messageController)));
 router.get('/unread-count', asyncHandler(messageController.getUnreadCount.bind(messageController)));
 
 // Message management

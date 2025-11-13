@@ -5,12 +5,13 @@ class MessageController {
   // Send a new message
   async sendMessage(req, res) {
     try {
-      // Validation rules
-      await body('activityId').isUUID().withMessage('Valid activity ID is required').run(req);
-      await body('receiverId').isUUID().withMessage('Valid receiver ID is required').run(req);
-      await body('subject').trim().isLength({ min: 2, max: 255 }).withMessage('Subject must be 2-255 characters').run(req);
-      await body('content').trim().isLength({ min: 10, max: 2000 }).withMessage('Content must be 10-2000 characters').run(req);
-      await body('messageType').optional().isIn(['activity_inquiry', 'activity_update', 'general', 'support']).withMessage('Invalid message type').run(req);
+      // Validation rules (updated for new format)
+      await body('receiver_id').isUUID().withMessage('Valid receiver ID is required').run(req);
+      await body('subject').optional().trim().isLength({ min: 2, max: 255 }).withMessage('Subject must be 2-255 characters').run(req);
+      await body('content').trim().isLength({ min: 1, max: 2000 }).withMessage('Content must be 1-2000 characters').run(req);
+      await body('message_type').optional().isIn(['activity_inquiry', 'activity_update', 'general', 'support']).withMessage('Invalid message type').run(req);
+      await body('context_type').optional().isString().withMessage('Context type must be string').run(req);
+      await body('context_id').optional().isString().withMessage('Context ID must be string').run(req);
       await body('priority').optional().isIn(['low', 'normal', 'high']).withMessage('Invalid priority').run(req);
 
       const errors = validationResult(req);
@@ -26,8 +27,14 @@ class MessageController {
 
       const userId = req.user.id;
       const messageData = {
-        ...req.body,
-        senderId: userId
+        senderId: userId,
+        receiverId: req.body.receiver_id,
+        subject: req.body.subject,
+        content: req.body.content,
+        messageType: req.body.message_type || 'general',
+        contextType: req.body.context_type || 'general',
+        contextId: req.body.context_id,
+        priority: req.body.priority || 'normal'
       };
 
       const result = await messageService.sendMessage(messageData);
@@ -39,6 +46,18 @@ class MessageController {
       });
     } catch (error) {
       console.error('❌ Error sending message:', error);
+
+      // Handle reply restriction errors with specific status
+      if (error.message.includes('REPLY_REQUIRED')) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'REPLY_REQUIRED',
+            message: 'You must wait for the recipient to reply before sending more messages'
+          }
+        });
+      }
+
       res.status(500).json({
         success: false,
         error: {
@@ -97,6 +116,7 @@ class MessageController {
     try {
       await query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer').run(req);
       await query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100').run(req);
+      await query('with_user_id').optional().isUUID().withMessage('with_user_id must be a valid UUID').run(req);
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -112,7 +132,8 @@ class MessageController {
       const userId = req.user.id;
       const filters = {
         page: parseInt(req.query.page) || 1,
-        limit: parseInt(req.query.limit) || 20
+        limit: parseInt(req.query.limit) || 20,
+        with_user_id: req.query.with_user_id || null
       };
 
       const result = await messageService.getMessageThreads(userId, filters);
@@ -205,6 +226,18 @@ class MessageController {
       });
     } catch (error) {
       console.error('❌ Error replying to thread:', error);
+
+      // Handle reply restriction errors with specific status
+      if (error.message.includes('REPLY_REQUIRED')) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'REPLY_REQUIRED',
+            message: 'You must wait for the recipient to reply before sending more messages'
+          }
+        });
+      }
+
       res.status(500).json({
         success: false,
         error: {
@@ -337,10 +370,58 @@ class MessageController {
       });
     } catch (error) {
       console.error('❌ Error archiving message:', error);
+
+      // Handle reply restriction errors with specific status
+      if (error.message.includes('REPLY_REQUIRED')) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'REPLY_REQUIRED',
+            message: 'You must wait for the recipient to reply before sending more messages'
+          }
+        });
+      }
+
       res.status(500).json({
         success: false,
         error: {
           message: error.message || 'Failed to archive message'
+        }
+      });
+    }
+  }
+
+  // Check reply status for a thread (NEW METHOD)
+  async checkReplyStatus(req, res) {
+    try {
+      await param('threadId').isUUID().withMessage('Valid thread ID is required').run(req);
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Validation failed',
+            details: errors.array()
+          }
+        });
+      }
+
+      const userId = req.user.id;
+      const { threadId } = req.params;
+
+      const result = await messageService.getReplyStatus(threadId, userId);
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error('❌ Error checking reply status:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          message: error.message || 'Failed to check reply status'
         }
       });
     }

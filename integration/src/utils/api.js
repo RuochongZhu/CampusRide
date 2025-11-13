@@ -1,13 +1,7 @@
 import axios from 'axios';
 
-// Resolve API base URL in this order:
-// 1) window.__API_BASE_URL__ (set at runtime in index.html)
-// 2) VITE_API_BASE_URL (build/deploy time)
-// 3) Railway production URL as safe default (never default to localhost in prod)
-const API_BASE_URL =
-  (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
-  (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-  'https://campusride-production.up.railway.app';
+// Resolve API base URL - Local development only
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // 创建 axios 实例
 const api = axios.create({
@@ -435,6 +429,9 @@ export const messagesAPI = {
 
   // 标记线程为已读
   markThreadAsRead: (threadId) => api.put(`/messages/threads/${threadId}/read`),
+
+  // 检查回复状态 (NEW)
+  checkReplyStatus: (threadId) => api.get(`/messages/threads/${threadId}/reply-status`),
 
   // 获取未读消息数量
   getUnreadCount: () => api.get('/messages/unread-count'),
