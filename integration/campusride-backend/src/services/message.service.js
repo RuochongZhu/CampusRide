@@ -186,62 +186,45 @@ class MessageService {
   // Create new message thread
   async createNewThread(threadData) {
     try {
-      // Generate thread ID
-      const threadId = crypto.randomUUID();
+      // Use the new universal function instead of direct insert
+      const { data, error } = await supabaseAdmin
+        .rpc('create_universal_message_thread', {
+          sender_id_param: threadData.senderId,
+          receiver_id_param: threadData.receiverId,
+          subject_param: threadData.subject || 'New Message',
+          content_param: threadData.content,
+          message_type_param: threadData.messageType || 'general',
+          activity_id_param: threadData.activityId || null,
+          context_type_param: threadData.contextType || 'general',
+          context_id_param: threadData.contextId || null
+        });
 
-      // Insert initial message
-      const { data: message, error: messageError } = await supabaseAdmin
+      if (error) throw error;
+
+      const threadId = data;
+
+      // Get the created message with user details
+      const { data: messages, error: messageError } = await supabaseAdmin
         .from('messages')
-        .insert({
-          thread_id: threadId,
-          sender_id: threadData.senderId,
-          receiver_id: threadData.receiverId,
-          subject: threadData.subject,
-          content: threadData.content,
-          message_type: threadData.messageType,
-          context_type: threadData.contextType,
-          context_id: threadData.contextId,
-          priority: threadData.priority,
-          is_read: false,
-          status: 'active'
-        })
-        .select('*')
+        .select(`
+          *,
+          sender:users!sender_id(id, first_name, last_name, nickname, email),
+          receiver:users!receiver_id(id, first_name, last_name, nickname, email)
+        `)
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
       if (messageError) throw messageError;
 
-      // Insert participants
-      const participantsData = [
-        {
-          thread_id: threadId,
-          user_id: threadData.senderId,
-          joined_at: new Date().toISOString(),
-          status: 'active'
-        },
-        {
-          thread_id: threadId,
-          user_id: threadData.receiverId,
-          joined_at: new Date().toISOString(),
-          status: 'active'
-        }
-      ];
-
-      const { error: participantsError } = await supabaseAdmin
-        .from('message_participants')
-        .insert(participantsData);
-
-      if (participantsError) throw participantsError;
-
-      // Get message with user details
-      const enrichedMessage = await this.getMessageWithUserDetails(message.id);
-
       // Send real-time notification
       if (socketManager) {
-        socketManager.sendMessageToThread(threadId, enrichedMessage);
+        socketManager.sendMessageToThread(threadId, messages);
       }
 
       return {
-        message: enrichedMessage,
+        message: messages,
         threadId: threadId
       };
 
@@ -501,42 +484,31 @@ class MessageService {
       }
 
       // Check if user can send message (reply restriction)
-      const canSend = await this.checkCanSendMessage(threadId, userId);
+      const { data: canSend, error: canSendError } = await supabaseAdmin
+        .rpc('can_user_send_message', {
+          thread_id_param: threadId,
+          user_id_param: userId
+        });
+
+      if (canSendError) throw canSendError;
+
       if (!canSend) {
         throw new Error('REPLY_REQUIRED: You must wait for the recipient to reply before sending more messages');
       }
 
-      // Get thread info for receiver_id
-      const { data: threadInfo, error: threadError } = await supabaseAdmin
-        .from('message_participants')
-        .select('user_id')
-        .eq('thread_id', threadId)
-        .neq('user_id', userId)
-        .eq('status', 'active')
-        .single();
+      // Use the database function to create reply
+      const { data: messageId, error: replyError } = await supabaseAdmin
+        .rpc('reply_to_universal_message_thread', {
+          thread_id_param: threadId,
+          sender_id_param: userId,
+          content_param: content,
+          reply_to_param: replyToId
+        });
 
-      if (threadError) throw threadError;
+      if (replyError) throw replyError;
 
-      // Insert new message
-      const { data: message, error: messageError } = await supabaseAdmin
-        .from('messages')
-        .insert({
-          thread_id: threadId,
-          sender_id: userId,
-          receiver_id: threadInfo.user_id,
-          content: content,
-          reply_to: replyToId,
-          message_type: 'general',
-          is_read: false,
-          status: 'active'
-        })
-        .select('*')
-        .single();
-
-      if (messageError) throw messageError;
-
-      // Get message with user details
-      const enrichedMessage = await this.getMessageWithUserDetails(message.id);
+      // Get the created message with user details
+      const enrichedMessage = await this.getMessageWithUserDetails(messageId);
 
       // Send real-time notification
       if (socketManager) {
