@@ -437,6 +437,9 @@ export const messagesAPI = {
   // 标记线程为已读
   markThreadAsRead: (threadId) => api.put(`/messages/threads/${threadId}/read`),
 
+  // 检查回复状态 (NEW)
+  checkReplyStatus: (threadId) => api.get(`/messages/threads/${threadId}/reply-status`),
+
   // 获取未读消息数量
   getUnreadCount: () => api.get('/messages/unread-count'),
 

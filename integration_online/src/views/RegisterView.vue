@@ -145,7 +145,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-// Use centralized API client (axios with dynamic base URL)
+// Use centralized API client
 
 // Clear messages
 const clearMessages = () => {
