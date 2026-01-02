@@ -1,0 +1,71 @@
+MARKETPLACE API AND DATABASE SCHEMA ANALYSIS
+=============================================
+
+SELLER INFORMATION STORAGE LOCATIONS:
+
+1. PRIMARY TABLE: marketplace_items
+   Column: seller_id (UUID)
+   - Foreign key to users table
+   - Stores the UUID of the item creator/seller
+   - Used for authorization (seller can update/delete their own items)
+   - Cannot be changed after item creation
+   - ON DELETE CASCADE ensures cleanup when seller deleted
+
+2. SECONDARY TABLE: marketplace_conversations
+   Column: seller_id (UUID)
+   Column: buyer_id (UUID)
+   - seller_id stores seller's UUID from auth.users
+   - buyer_id stores buyer's UUID from auth.users
+   - Enables private messaging between buyer and seller
+   - Constraint: UNIQUE(item_id, buyer_id, seller_id)
+
+3. RELATED TABLE: marketplace_comments
+   Column: user_id (UUID) - Comment author
+   - Links to items which have seller_id
+   - Seller notified via item.seller_id when new comment created
+
+DATABASE VIEW: marketplace_items_with_seller
+- Automatically joins seller information
+- Returns: seller_first_name, seller_last_name, seller_university, seller_points
+
+API RESPONSE PATTERN:
+All item responses include nested seller object:
+{
+  "item": {
+    "id": "uuid",
+    "seller_id": "seller-uuid",
+    "title": "...",
+    "seller": {
+      "id": "seller-uuid",
+      "first_name": "...",
+      "last_name": "...",
+      "university": "...",
+      "points": "..." (when viewing item detail)
+    }
+  }
+}
+
+KEY ENDPOINTS:
+- POST /items - Create (stores req.user.id as seller_id)
+- GET /items - List (includes seller in each item)
+- GET /items/:id - Detail (includes seller with points)
+- PUT /items/:id - Update (checks seller_id === req.user.id)
+- DELETE /items/:id - Delete (checks seller_id === req.user.id)
+- GET /my-items - My items (filters by seller_id === req.user.id)
+- POST /items/:id/conversation - Start conversation (captures item.seller_id)
+- GET /conversations - Get conversations (filters by buyer_id or seller_id)
+
+AUTHORIZATION PATTERN:
+if (item.seller_id !== req.user.id) {
+  throw Error "Not authorized to update this item"
+}
+
+NOTIFICATION PATTERN:
+if (item.seller_id !== comment.user_id) {
+  io.to(`user-${item.seller_id}`).emit('new-comment', {...});
+}
+
+FILE LOCATIONS:
+- Controller: integration/campusride-backend/src/controllers/marketplace.controller.js
+- Routes: integration/campusride-backend/src/routes/marketplace.routes.js
+- Schema: integration/campusride-backend/database/migrations/004_marketplace_schema.sql

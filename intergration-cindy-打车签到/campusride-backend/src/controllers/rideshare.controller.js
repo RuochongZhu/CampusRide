@@ -286,7 +286,7 @@ export const deleteRide = async (req, res, next) => {
     // 检查权限
     const { data: ride, error: fetchError } = await supabaseAdmin
       .from('rides')
-      .select('driver_id, status')
+      .select('driver_id, status, departure_time')
       .eq('id', id)
       .single();
 
@@ -296,6 +296,16 @@ export const deleteRide = async (req, res, next) => {
 
     if (ride.driver_id !== userId) {
       throw new AppError('Not authorized to delete this ride', 403, ERROR_CODES.ACCESS_DENIED);
+    }
+
+    // 检查是否可以取消(出发前2小时)
+    const departureTime = new Date(ride.departure_time);
+    const now = new Date();
+    const timeDiff = departureTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+    if (hoursDiff < 2) {
+      throw new AppError('司机不能在出发前2小时内取消行程', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 标记为已取消而不是删除
@@ -536,7 +546,7 @@ export const cancelBooking = async (req, res, next) => {
     const hoursDiff = timeDiff / (1000 * 60 * 60);
 
     if (hoursDiff < 2) {
-      throw new AppError('Cannot cancel booking less than 2 hours before departure', 400, ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError('乘客不能在出发前2小时内取消预订', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 取消预订

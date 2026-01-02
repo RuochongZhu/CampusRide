@@ -2,7 +2,7 @@
 <div class="min-h-screen bg-[#EDEEE8]">
 
 <!-- Hero Section -->
-<section class="pt-24 pb-16 bg-gradient-to-r from-[#C24D45] to-[#63B5B7] text-white relative overflow-hidden">
+<section class="pt-20 md:pt-24 pb-8 md:pb-16 bg-gradient-to-r from-[#C24D45] to-[#63B5B7] text-white relative overflow-hidden">
 <div class="absolute inset-0 bg-grid-pattern opacity-20"></div>
 <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-20"></div>
 <div class="max-w-7xl mx-auto px-4">
@@ -17,11 +17,11 @@ class="h-full"
 >
 <swiper-slide v-for="(slide, index) in heroSlides" :key="index">
 <div class="flex flex-col items-start">
-<h2 class="text-4xl font-bold mb-4">{{ slide.title }}</h2>
-<p class="text-lg mb-8">{{ slide.description }}</p>
-<img :src="slide.image" class="w-full h-64 object-cover rounded-lg mb-8" />
+<h2 class="text-2xl md:text-4xl font-bold mb-2 md:mb-4">{{ slide.title }}</h2>
+<p class="text-sm md:text-lg mb-4 md:mb-8">{{ slide.description }}</p>
+<img :src="slide.image" class="w-full h-40 md:h-64 object-cover rounded-lg mb-4 md:mb-8" />
 <router-link :to="slide.link">
-<button class="bg-white text-[#C24D45] px-6 py-3 hover:bg-[#EDEEE8] whitespace-nowrap rounded-lg transition-colors duration-300">Get Started</button>
+<button class="bg-white text-[#C24D45] px-4 md:px-6 py-2 md:py-3 text-sm md:text-base hover:bg-[#EDEEE8] whitespace-nowrap rounded-lg transition-colors duration-300">Get Started</button>
 </router-link>
 </div>
 </swiper-slide>
@@ -31,35 +31,37 @@ class="h-full"
 </section>
 
 <!-- Popular Routes -->
-<section class="py-16 bg-[#EDEEE8]">
+<section class="py-8 md:py-16 bg-[#EDEEE8]">
 <div class="max-w-7xl mx-auto px-4">
-<div class="flex justify-between items-center mb-8">
-<h3 class="text-2xl font-bold text-[#333333]">Popular Routes</h3>
-<router-link to="/rideshare" class="text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
-View Carpooling
-<RightOutlined class="ml-2" />
+<div class="flex justify-between items-center mb-4 md:mb-8">
+<h3 class="text-xl md:text-2xl font-bold text-[#333333]">Popular Routes</h3>
+<router-link to="/rideshare" class="text-sm md:text-base text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
+<span class="hidden sm:inline">View Carpooling</span>
+<span class="sm:hidden">View</span>
+<RightOutlined class="ml-1 md:ml-2" />
 </router-link>
 </div>
 <swiper
 :modules="swiperModules"
-:slides-per-view="3.2"
-:space-between="20"
-class="w-full hover:scale-[1.02] transition-transform duration-300"
+:slides-per-view="1.2"
+:space-between="12"
+:breakpoints="routesBreakpoints"
+class="w-full"
 >
 <swiper-slide v-for="route in popularRoutes" :key="route.id">
 <router-link to="/rideshare">
-<div class="bg-white rounded-lg shadow-sm p-6 cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg backdrop-blur-sm bg-opacity-90">
-<div class="flex items-center mb-4">
-<EnvironmentOutlined class="text-xl text-[#63B5B7] mr-2" />
+<div class="bg-white rounded-lg shadow-sm p-4 md:p-6 cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg backdrop-blur-sm bg-opacity-90">
+<div class="flex items-center mb-3 md:mb-4">
+<EnvironmentOutlined class="text-lg md:text-xl text-[#63B5B7] mr-2" />
 <div>
-<div class="font-medium text-[#333333]">{{ route.from }}</div>
-<div class="text-sm text-[#666666]">To: {{ route.to }}</div>
+<div class="font-medium text-sm md:text-base text-[#333333]">{{ route.from }}</div>
+<div class="text-xs md:text-sm text-[#666666]">To: {{ route.to }}</div>
 </div>
 </div>
-<div class="text-sm text-[#666666] mb-2">
+<div class="text-xs md:text-sm text-[#666666] mb-1 md:mb-2">
 <ClockCircleOutlined class="mr-1" /> {{ route.time }}
 </div>
-<div class="text-sm text-[#666666]">
+<div class="text-xs md:text-sm text-[#666666]">
 <TeamOutlined class="mr-1" /> {{ route.riders }} active carpools
 </div>
 </div>
@@ -70,32 +72,34 @@ class="w-full hover:scale-[1.02] transition-transform duration-300"
 </section>
 
 <!-- Marketplace Highlights -->
-<section class="py-16 bg-white">
+<section class="py-8 md:py-16 bg-white">
 <div class="max-w-7xl mx-auto px-4">
-<div class="flex justify-between items-center mb-8">
-<h3 class="text-2xl font-bold text-[#333333]">Marketplace Highlights</h3>
-<router-link to="/marketplace" class="text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
-Campus Marketplace
-<RightOutlined class="ml-2" />
+<div class="flex justify-between items-center mb-4 md:mb-8">
+<h3 class="text-xl md:text-2xl font-bold text-[#333333]">Marketplace Highlights</h3>
+<router-link to="/marketplace" class="text-sm md:text-base text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
+<span class="hidden sm:inline">Campus Marketplace</span>
+<span class="sm:hidden">View</span>
+<RightOutlined class="ml-1 md:ml-2" />
 </router-link>
 </div>
 <swiper
 :modules="swiperModules"
-:slides-per-view="4.2"
-:space-between="20"
-class="w-full hover:scale-[1.02] transition-transform duration-300"
+:slides-per-view="1.5"
+:space-between="12"
+:breakpoints="marketplaceBreakpoints"
+class="w-full"
 >
 <swiper-slide v-for="item in marketplaceItems" :key="item.id">
 <router-link to="/marketplace">
 <div class="bg-[#EDEEE8] rounded-lg shadow-sm overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg backdrop-blur-sm bg-opacity-90">
-<img :src="item.image" class="w-full h-48 object-cover" />
-<div class="p-4">
-<h4 class="font-medium mb-2 text-[#333333]">{{ item.title }}</h4>
+<img :src="item.image" class="w-full h-32 md:h-48 object-cover" />
+<div class="p-3 md:p-4">
+<h4 class="font-medium mb-1 md:mb-2 text-sm md:text-base text-[#333333] truncate">{{ item.title }}</h4>
 <div class="flex items-center justify-between">
-<span class="text-lg font-bold text-[#C24D45]">${{ item.price }}</span>
+<span class="text-base md:text-lg font-bold text-[#C24D45]">${{ item.price }}</span>
 <div class="flex items-center">
-<StarFilled class="text-[#F9D367] mr-1" />
-<span class="text-sm text-[#666666]">{{ item.rating }}</span>
+<StarFilled class="text-[#F9D367] mr-1 text-sm" />
+<span class="text-xs md:text-sm text-[#666666]">{{ item.rating }}</span>
 </div>
 </div>
 </div>
@@ -107,32 +111,34 @@ class="w-full hover:scale-[1.02] transition-transform duration-300"
 </section>
 
 <!-- Popular Activities -->
-<section class="py-16 bg-white">
+<section class="py-8 md:py-16 bg-white">
 <div class="max-w-7xl mx-auto px-4">
-<div class="flex justify-between items-center mb-8">
-<h3 class="text-2xl font-bold text-[#333333]">Popular Activities</h3>
-<router-link to="/activities" class="text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
-Campus Activities
-<RightOutlined class="ml-2" />
+<div class="flex justify-between items-center mb-4 md:mb-8">
+<h3 class="text-xl md:text-2xl font-bold text-[#333333]">Popular Activities</h3>
+<router-link to="/activities" class="text-sm md:text-base text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
+<span class="hidden sm:inline">Campus Activities</span>
+<span class="sm:hidden">View</span>
+<RightOutlined class="ml-1 md:ml-2" />
 </router-link>
 </div>
 <swiper
 :modules="swiperModules"
-:slides-per-view="4.2"
-:space-between="20"
-class="w-full hover:scale-[1.02] transition-transform duration-300"
+:slides-per-view="1.5"
+:space-between="12"
+:breakpoints="activitiesBreakpoints"
+class="w-full"
 >
 <swiper-slide v-for="activity in activities" :key="activity.id">
 <router-link to="/activities">
 <div class="bg-[#EDEEE8] rounded-lg shadow-sm overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg backdrop-blur-sm bg-opacity-90">
-<img :src="activity.image" class="w-full h-48 object-cover" />
-<div class="p-4">
-<h4 class="font-medium mb-2 text-[#333333]">{{ activity.title }}</h4>
+<img :src="activity.image" class="w-full h-32 md:h-48 object-cover" />
+<div class="p-3 md:p-4">
+<h4 class="font-medium mb-1 md:mb-2 text-sm md:text-base text-[#333333] truncate">{{ activity.title }}</h4>
 <div class="flex items-center justify-between">
-<span class="text-sm text-[#666666]">{{ activity.date }}</span>
+<span class="text-xs md:text-sm text-[#666666]">{{ activity.date }}</span>
 <div class="flex items-center">
-<TeamOutlined class="text-[#63B5B7] mr-1" />
-<span class="text-sm text-[#666666]">{{ activity.participants }}</span>
+<TeamOutlined class="text-[#63B5B7] mr-1 text-sm" />
+<span class="text-xs md:text-sm text-[#666666]">{{ activity.participants }}</span>
 </div>
 </div>
 </div>
@@ -144,30 +150,32 @@ class="w-full hover:scale-[1.02] transition-transform duration-300"
 </section>
 
 <!-- Top Contributors -->
-<section class="py-16 bg-[#EDEEE8]">
+<section class="py-8 md:py-16 bg-[#EDEEE8]">
 <div class="max-w-7xl mx-auto px-4">
-<div class="flex justify-between items-center mb-8">
-<h3 class="text-2xl font-bold text-[#333333]">Top Contributors</h3>
-<router-link to="/leaderboard" class="text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
-View Leaderboard
-<RightOutlined class="ml-2" />
+<div class="flex justify-between items-center mb-4 md:mb-8">
+<h3 class="text-xl md:text-2xl font-bold text-[#333333]">Top Contributors</h3>
+<router-link to="/leaderboard" class="text-sm md:text-base text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
+<span class="hidden sm:inline">View Leaderboard</span>
+<span class="sm:hidden">View</span>
+<RightOutlined class="ml-1 md:ml-2" />
 </router-link>
 </div>
-<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
 <div v-for="(user, index) in topContributors" :key="user.id"
-class="flex items-center justify-between py-4 border-b last:border-0">
+class="flex items-center justify-between py-3 md:py-4 border-b last:border-0">
 <div class="flex items-center">
-<span class="w-8 text-xl font-bold text-[#666666]">#{{ index + 1 }}</span>
-<img :src="user.avatar" class="w-10 h-10 rounded-full mx-4" />
+<span class="w-6 md:w-8 text-lg md:text-xl font-bold text-[#666666]">#{{ index + 1 }}</span>
+<img :src="user.avatar" class="w-8 h-8 md:w-10 md:h-10 rounded-full mx-2 md:mx-4" />
 <div>
-<div class="font-medium text-[#333333]">{{ user.name }}</div>
-<div class="text-sm text-[#666666]">{{ user.points }} points</div>
+<div class="font-medium text-sm md:text-base text-[#333333]">{{ user.name }}</div>
+<div class="text-xs md:text-sm text-[#666666]">{{ user.points }} points</div>
 </div>
 </div>
-<div v-if="user.badge" class="flex items-center">
+<div v-if="user.badge" class="hidden sm:flex items-center">
 <TrophyOutlined class="text-[#F9D367] mr-2" />
 <span class="text-sm text-[#666666]">{{ user.badge }}</span>
 </div>
+<TrophyOutlined v-if="user.badge" class="sm:hidden text-[#F9D367]" />
 </div>
 </div>
 </div>
@@ -190,6 +198,38 @@ import {
 } from '@ant-design/icons-vue'
 
 const swiperModules = [Pagination, Autoplay, EffectFade]
+
+// Swiper responsive breakpoints
+const routesBreakpoints = {
+  // Mobile: 1.2 slides
+  320: { slidesPerView: 1.2, spaceBetween: 12 },
+  // Tablet: 2.2 slides
+  640: { slidesPerView: 2.2, spaceBetween: 16 },
+  // Desktop: 3.2 slides
+  1024: { slidesPerView: 3.2, spaceBetween: 20 }
+}
+
+const marketplaceBreakpoints = {
+  // Mobile: 1.5 slides
+  320: { slidesPerView: 1.5, spaceBetween: 12 },
+  // Small tablet: 2.2 slides
+  480: { slidesPerView: 2.2, spaceBetween: 14 },
+  // Tablet: 3.2 slides
+  768: { slidesPerView: 3.2, spaceBetween: 16 },
+  // Desktop: 4.2 slides
+  1024: { slidesPerView: 4.2, spaceBetween: 20 }
+}
+
+const activitiesBreakpoints = {
+  // Mobile: 1.5 slides
+  320: { slidesPerView: 1.5, spaceBetween: 12 },
+  // Small tablet: 2.2 slides
+  480: { slidesPerView: 2.2, spaceBetween: 14 },
+  // Tablet: 3.2 slides
+  768: { slidesPerView: 3.2, spaceBetween: 16 },
+  // Desktop: 4.2 slides
+  1024: { slidesPerView: 4.2, spaceBetween: 20 }
+}
 
 const heroSlides = [
   {

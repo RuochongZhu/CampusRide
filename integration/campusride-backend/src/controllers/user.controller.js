@@ -4,11 +4,20 @@ import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
 // 获取当前用户资料
 export const getProfile = async (req, res, next) => {
   try {
+    // Guest users do not exist in the database; return token-derived profile
+    if (req.user?.isGuest) {
+      return res.json({
+        success: true,
+        data: { user: req.user }
+      });
+    }
+
     const userId = req.user.id;
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('id, student_id, email, first_name, last_name, university, major, role, points, created_at, last_login_at')
+      // Keep this list aligned with the actual schema (last_login_at does not exist in Supabase)
+      .select('id, student_id, email, first_name, last_name, university, major, role, points, created_at, avatar_url')
       .eq('id', userId)
       .single();
 
@@ -29,23 +38,21 @@ export const getProfile = async (req, res, next) => {
 export const updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { firstName, lastName, major, bio, phone } = req.body;
+    const { firstName, lastName, major, bio, phone, avatar_url } = req.body;
 
     // 构建更新数据
     const updateData = {};
     if (firstName) updateData.first_name = firstName;
     if (lastName) updateData.last_name = lastName;
     if (major) updateData.major = major;
-    if (bio !== undefined) updateData.bio = bio;
     if (phone !== undefined) updateData.phone = phone;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     
-    updateData.updated_at = new Date().toISOString();
-
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', userId)
-      .select('id, student_id, email, first_name, last_name, university, major, bio, phone, role, points, created_at, updated_at')
+      .select('id, student_id, email, first_name, last_name, university, major, phone, role, points, created_at, avatar_url')
       .single();
 
     if (error) {

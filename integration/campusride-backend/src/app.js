@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -22,6 +21,12 @@ import visibilityRoutes from './routes/visibility.routes.js';
 import carpoolingRoutes from './routes/carpooling.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import activityCheckinRoutes from './routes/activity-checkin.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
+import userProfileRoutes from './routes/user-profile.routes.js';
+import ratingRoutes from './routes/rating.routes.js';
+import friendsRoutes from './routes/friends.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import announcementRoutes from './routes/announcement.routes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware.js';
@@ -37,19 +42,36 @@ import { swaggerUi, specs } from './config/swagger.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet());
 
 // CORS configuration - support multiple frontend URLs
+const frontendUrlsFromEnv = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map((url) => url.trim()).filter(Boolean)
+  : [];
+
+const devOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:3002',
+  'http://127.0.0.1:3002',
+  'http://localhost:3003',
+  'http://127.0.0.1:3003'
+];
+
+const allowedOrigins = [...new Set([...frontendUrlsFromEnv, ...devOrigins])];
+
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3001', 
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:3002'
-  ],
+  origin: (origin, callback) => {
+    // Allow non-browser requests (no Origin header)
+    if (!origin) return callback(null, true);
+    return callback(null, allowedOrigins.includes(origin));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -102,6 +124,15 @@ app.use('/api/v1/visibility', visibilityRoutes);
 app.use('/api/v1/carpooling', carpoolingRoutes);
 app.use('/api/v1/messages', messageRoutes);
 app.use('/api/v1', activityCheckinRoutes);
+app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/users', userProfileRoutes);
+app.use('/api/v1/ratings', ratingRoutes);
+app.use('/api/v1/friends', friendsRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/announcements', announcementRoutes);
+
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
 
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -118,52 +149,6 @@ app.use(notFound);
 
 // Global error handler
 app.use(errorHandler);
-
-// Create HTTP server and initialize Socket.IO
-const server = createServer(app);
-
-// Initialize Socket.IO
-let socketInitialized = false;
-
-const initializeSocket = async () => {
-  if (!socketInitialized && process.env.NODE_ENV !== 'test') {
-    try {
-      await socketManager.initialize(server);
-      socketInitialized = true;
-      console.log('🔄 Socket.IO initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize Socket.IO:', error);
-    }
-  }
-};
-
-// Start server
-if (process.env.NODE_ENV !== 'test') {
-  server.listen(PORT, async () => {
-    console.log(`🚀 CampusRide API server running on port ${PORT}`);
-    console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-    
-    // Initialize Socket.IO after server starts
-    await initializeSocket();
-  });
-}
-
-// Graceful shutdown handler
-process.on('SIGINT', async () => {
-  console.log('\n👋 Gracefully shutting down server...');
-  
-  try {
-    await socketManager.shutdown();
-    server.close(() => {
-      console.log('✅ Server closed successfully');
-      process.exit(0);
-    });
-  } catch (error) {
-    console.error('❌ Error during shutdown:', error);
-    process.exit(1);
-  }
-});
 
 export default app;
 export { socketManager }; 

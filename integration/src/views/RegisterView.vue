@@ -44,17 +44,25 @@
               />
             </div>
 
-            <!-- Email Address -->
+            <!-- Email Address with Cornell suffix -->
             <div class="mb-4">
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Cornell Email Address</label>
-              <input
-                type="email"
-                id="email"
-                v-model="form.email"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B31B1B] focus:border-transparent"
-                placeholder="your-netid@cornell.edu"
-                required
-              />
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Cornell NetID</label>
+              <div class="flex items-center border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-[#B31B1B] focus-within:border-transparent">
+                <input
+                  type="text"
+                  id="email"
+                  v-model="emailUsername"
+                  @input="validateEmailUsername"
+                  class="flex-1 px-3 py-2 border-0 focus:outline-none focus:ring-0"
+                  :class="{ 'border-red-500': emailError }"
+                  placeholder="netid"
+                  required
+                  pattern="[a-zA-Z0-9._-]+"
+                />
+                <span class="px-3 py-2 text-gray-600 bg-gray-50 border-l">@cornell.edu</span>
+              </div>
+              <p v-if="emailError" class="mt-1 text-sm text-red-600">{{ emailError }}</p>
+              <p v-else class="mt-1 text-xs text-gray-500">Enter your Cornell NetID (only letters, numbers, dots, underscores)</p>
             </div>
 
             <!-- Password -->
@@ -64,10 +72,23 @@
                 type="password"
                 id="password"
                 v-model="form.password"
+                @input="validatePassword"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B31B1B] focus:border-transparent"
-                placeholder="8 characters, letters and numbers"
+                :class="{ 'border-red-500': passwordError }"
+                placeholder="At least 8 characters"
                 required
+                minlength="8"
               />
+              <p v-if="passwordError" class="mt-1 text-sm text-red-600">{{ passwordError }}</p>
+              <div v-else class="mt-1">
+                <p class="text-xs text-gray-500 mb-1">Password must contain:</p>
+                <ul class="text-xs text-gray-500 space-y-0.5 pl-4">
+                  <li :class="{ 'text-green-600': passwordChecks.length }">✓ At least 8 characters</li>
+                  <li :class="{ 'text-green-600': passwordChecks.uppercase }">✓ One uppercase letter (A-Z)</li>
+                  <li :class="{ 'text-green-600': passwordChecks.lowercase }">✓ One lowercase letter (a-z)</li>
+                  <li :class="{ 'text-green-600': passwordChecks.number }">✓ One number (0-9)</li>
+                </ul>
+              </div>
             </div>
 
             <!-- Confirm Password -->
@@ -127,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '../utils/api'
 
@@ -136,14 +157,97 @@ const router = useRouter()
 // Form data
 const form = ref({
   nickname: '',
-  email: '',
   password: '',
   confirmPassword: ''
+})
+
+// Email username (NetID) - separate from full email
+const emailUsername = ref('')
+const emailError = ref('')
+
+// Password validation
+const passwordError = ref('')
+const passwordChecks = ref({
+  length: false,
+  uppercase: false,
+  lowercase: false,
+  number: false
+})
+
+// Compute full email
+const fullEmail = computed(() => {
+  return emailUsername.value ? `${emailUsername.value}@cornell.edu` : ''
 })
 
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+
+// Validate email username (NetID)
+const validateEmailUsername = () => {
+  const username = emailUsername.value.trim()
+
+  if (!username) {
+    emailError.value = 'NetID is required'
+    return false
+  }
+
+  // Only allow letters, numbers, dots, underscores, hyphens
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+    emailError.value = 'Only letters, numbers, dots, underscores and hyphens allowed'
+    return false
+  }
+
+  if (username.length < 2) {
+    emailError.value = 'NetID must be at least 2 characters'
+    return false
+  }
+
+  if (username.length > 50) {
+    emailError.value = 'NetID must be less than 50 characters'
+    return false
+  }
+
+  emailError.value = ''
+  return true
+}
+
+// Validate password
+const validatePassword = () => {
+  const pwd = form.value.password
+
+  // Update checks
+  passwordChecks.value = {
+    length: pwd.length >= 8,
+    uppercase: /[A-Z]/.test(pwd),
+    lowercase: /[a-z]/.test(pwd),
+    number: /[0-9]/.test(pwd)
+  }
+
+  // Check all requirements
+  if (!passwordChecks.value.length) {
+    passwordError.value = 'Password must be at least 8 characters'
+    return false
+  }
+
+  if (!passwordChecks.value.uppercase) {
+    passwordError.value = 'Password must contain at least one uppercase letter'
+    return false
+  }
+
+  if (!passwordChecks.value.lowercase) {
+    passwordError.value = 'Password must contain at least one lowercase letter'
+    return false
+  }
+
+  if (!passwordChecks.value.number) {
+    passwordError.value = 'Password must contain at least one number'
+    return false
+  }
+
+  passwordError.value = ''
+  return true
+}
 
 // Use centralized API client
 
@@ -157,39 +261,36 @@ const clearMessages = () => {
 const validateForm = () => {
   clearMessages()
 
-  if (!form.value.nickname || !form.value.email || !form.value.password || !form.value.confirmPassword) {
-    errorMessage.value = 'Please fill in all required fields'
+  // Validate nickname
+  if (!form.value.nickname) {
+    errorMessage.value = 'Please enter your display name'
     return false
   }
-  
-  // Nickname validation
+
   if (form.value.nickname.trim().length < 2) {
     errorMessage.value = 'Display name must be at least 2 characters'
     return false
   }
-  
+
   if (form.value.nickname.trim().length > 50) {
     errorMessage.value = 'Display name must be less than 50 characters'
     return false
   }
-  
-  // Cornell email validation
-  // Gmail support temporarily disabled - uncomment line below to re-enable Gmail testing
-  // if (!form.value.email.endsWith('@cornell.edu') && !form.value.email.endsWith('@gmail.com')) {
-  if (!form.value.email.endsWith('@cornell.edu')) {
-    errorMessage.value = 'Email must end with @cornell.edu'
-    return false
-  }
-  
-  // Password validation: exactly 8 characters, letters and numbers only
-  if (form.value.password.length !== 8) {
-    errorMessage.value = 'Password must be exactly 8 characters'
+
+  // Validate email username (NetID)
+  if (!validateEmailUsername()) {
     return false
   }
 
-  const passwordRegex = /^[a-zA-Z0-9]{8}$/
-  if (!passwordRegex.test(form.value.password)) {
-    errorMessage.value = 'Password must be 8 characters with letters and numbers only'
+  // Validate password
+  if (!form.value.password) {
+    errorMessage.value = 'Please enter a password'
+    return false
+  }
+
+  // Use the password validation function
+  if (!validatePassword()) {
+    // Error message already set by validatePassword
     return false
   }
 
@@ -204,14 +305,14 @@ const validateForm = () => {
 // Handle registration
 const handleRegister = async () => {
   if (!validateForm()) return
-  
+
   isLoading.value = true
   clearMessages()
-  
+
   try {
     const { data } = await authAPI.register({
       nickname: form.value.nickname.trim(),
-      email: form.value.email,
+      email: fullEmail.value,  // Use the computed full email
       password: form.value.password
     })
     if (data?.success) {

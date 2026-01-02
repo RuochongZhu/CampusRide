@@ -10,8 +10,8 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
-    host: true
+    port: 5173,
+    host: process.env.VITE_HOST || '127.0.0.1'
   },
   build: {
     outDir: 'dist',

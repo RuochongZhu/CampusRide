@@ -410,12 +410,18 @@ export const deleteRide = async (req, res, next) => {
       throw new AppError('Not authorized to delete this ride', 403, ERROR_CODES.ACCESS_DENIED);
     }
 
-    // 检查是否可以取消（行程开始前）
+    // 检查是否可以取消（出发前2小时）
     const departureTime = new Date(ride.departure_time);
     const now = new Date();
+    const timeDiff = departureTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
 
     if (now >= departureTime) {
       throw new AppError('Trip has started, cancellation is unavailable', 409, ERROR_CODES.OPERATION_NOT_ALLOWED);
+    }
+
+    if (hoursDiff < 2) {
+      throw new AppError('司机不能在出发前2小时内取消行程', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 获取所有相关的预订
@@ -946,12 +952,18 @@ export const cancelBooking = async (req, res, next) => {
       throw new AppError('Ride not found', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
     }
 
-    // 检查是否可以取消（行程开始前）
+    // 检查是否可以取消（出发前2小时）
     const departureTime = new Date(ride.departure_time);
     const now = new Date();
+    const timeDiff = departureTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
 
     if (now >= departureTime) {
       throw new AppError('Trip has started, cancellation is unavailable', 409, ERROR_CODES.OPERATION_NOT_ALLOWED);
+    }
+
+    if (hoursDiff < 2) {
+      throw new AppError('乘客不能在出发前2小时内取消预订', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 更新预订状态

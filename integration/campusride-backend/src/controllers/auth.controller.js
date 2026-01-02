@@ -15,7 +15,7 @@ import {
 // 生成JWT token
 const generateToken = (userId) => {
   return jwt.sign(
-    { userId, type: 'access' },
+    { id: userId, userId, type: 'access' },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
@@ -47,14 +47,24 @@ export const register = async (req, res, next) => {
       throw new AppError('Email must end with @cornell.edu', 400, ERROR_CODES.INVALID_FORMAT);
     }
 
-    // 密码验证: 必须是8位字母和数字的组合
-    if (password.length !== 8) {
-      throw new AppError('Password must be exactly 8 characters', 400, ERROR_CODES.VALIDATION_ERROR);
+    // 密码验证: 至少8位，包含大小写字母和数字
+    if (password.length < 8) {
+      throw new AppError('Password must be at least 8 characters', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
-    const passwordRegex = /^[a-zA-Z0-9]{8}$/;
-    if (!passwordRegex.test(password)) {
-      throw new AppError('Password must contain only letters and numbers', 400, ERROR_CODES.VALIDATION_ERROR);
+    // Check for uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      throw new AppError('Password must contain at least one uppercase letter', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Check for lowercase letter
+    if (!/[a-z]/.test(password)) {
+      throw new AppError('Password must contain at least one lowercase letter', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Check for number
+    if (!/[0-9]/.test(password)) {
+      throw new AppError('Password must contain at least one number', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 检查用户是否已存在
@@ -552,14 +562,24 @@ export const resetPassword = async (req, res, next) => {
       throw new AppError('Password is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
     }
 
-    // 密码验证: 必须是8位字母和数字的组合
-    if (password.length !== 8) {
-      throw new AppError('Password must be exactly 8 characters', 400, ERROR_CODES.VALIDATION_ERROR);
+    // 密码验证: 至少8位，包含大小写字母和数字
+    if (password.length < 8) {
+      throw new AppError('Password must be at least 8 characters', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
-    const passwordRegex = /^[a-zA-Z0-9]{8}$/;
-    if (!passwordRegex.test(password)) {
-      throw new AppError('Password must contain only letters and numbers', 400, ERROR_CODES.VALIDATION_ERROR);
+    // Check for uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      throw new AppError('Password must contain at least one uppercase letter', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Check for lowercase letter
+    if (!/[a-z]/.test(password)) {
+      throw new AppError('Password must contain at least one lowercase letter', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Check for number
+    if (!/[0-9]/.test(password)) {
+      throw new AppError('Password must contain at least one number', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 查找用户（通过email verification token字段）
@@ -618,7 +638,7 @@ export const guestLogin = async (req, res, next) => {
   try {
     // 生成游客token
     const guestToken = jwt.sign(
-      { userId: 'guest', type: 'guest' },
+      { id: 'guest', userId: 'guest', type: 'guest' },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );

@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 
-import app from './app.js';
+import { createServer } from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import app, { socketManager } from './app.js';
 import { validateDatabase, initializeDatabase, createSampleData } from './utils/database-init.js';
+import { cleanupService } from './services/cleanup.service.js';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number.parseInt(process.env.PORT || '', 10) || 3001;
+const BIND_HOST = process.env.BIND_HOST || '127.0.0.1';
 
 // 启动服务器
 async function startServer() {
@@ -41,34 +46,57 @@ async function startServer() {
       }
     }
 
-    // 启动服务器
-    const server = app.listen(PORT, () => {
-      console.log('');
-      console.log('🎉 CampusRide Backend Server is running!');
-      console.log('');
-      console.log(`📍 Server URL: http://localhost:${PORT}`);
-      console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
-      console.log(`🔧 Health Check: http://localhost:${PORT}/api/v1/health`);
-      console.log('');
-      console.log('🌟 Available API Endpoints:');
-      console.log('   Authentication: /api/v1/auth/*');
-      console.log('   Users:         /api/v1/users/*');
-      console.log('   Leaderboard:   /api/v1/leaderboard/*');
-      console.log('   Rideshare:     /api/v1/rideshare/*');
-      console.log('   Marketplace:   /api/v1/marketplace/*');
-      console.log('   Activities:    /api/v1/activities/*');
-      console.log('   Points:        /api/v1/points/*');
-      console.log('   Notifications: /api/v1/notifications/*');
-      console.log('');
-      console.log('🚦 Press Ctrl+C to stop the server');
-      console.log('');
+    // Create HTTP server so Socket.IO can attach
+    const server = createServer(app);
+
+    // Start listening (bind to localhost by default to work in restricted sandboxes)
+    await new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(PORT, BIND_HOST, resolve);
     });
+
+    console.log('');
+    console.log('🎉 CampusRide Backend Server is running!');
+    console.log('');
+    console.log(`📍 Server URL: http://localhost:${PORT}`);
+    console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+    console.log(`🔧 Health Check: http://localhost:${PORT}/api/v1/health`);
+    console.log('');
+    console.log('🌟 Available API Endpoints:');
+    console.log('   Authentication: /api/v1/auth/*');
+    console.log('   Users:         /api/v1/users/*');
+    console.log('   Leaderboard:   /api/v1/leaderboard/*');
+    console.log('   Rideshare:     /api/v1/rideshare/*');
+    console.log('   Marketplace:   /api/v1/marketplace/*');
+    console.log('   Activities:    /api/v1/activities/*');
+    console.log('   Points:        /api/v1/points/*');
+    console.log('   Notifications: /api/v1/notifications/*');
+    console.log('');
+    console.log('🚦 Press Ctrl+C to stop the server');
+    console.log('');
+
+    // Initialize Socket.IO after server starts
+    if (process.env.NODE_ENV !== 'test') {
+      try {
+        await socketManager.initialize(server);
+        global.socketManager = socketManager;
+        console.log('🔄 Socket.IO initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize Socket.IO:', error);
+      }
+
+      // Start cleanup service for scheduled tasks
+      cleanupService.start();
+    }
 
     // 优雅关闭处理
     const gracefulShutdown = async (signal) => {
       console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
-      
+
       try {
+        // Stop cleanup service
+        cleanupService.stop();
+
         // 关闭服务器
         await new Promise((resolve) => {
           server.close(() => {
@@ -78,9 +106,7 @@ async function startServer() {
         });
 
         // 关闭Socket.io连接
-        if (global.socketManager) {
-          await global.socketManager.shutdown();
-        }
+        await socketManager.shutdown();
 
         console.log('✅ Graceful shutdown completed');
         process.exit(0);
@@ -111,8 +137,13 @@ async function startServer() {
   }
 }
 
-// 如果直接运行此脚本，启动服务器
-if (import.meta.url === `file://${process.argv[1]}`) {
+// 如果直接运行此脚本，启动服务器（兼容相对/绝对路径）
+const isDirectRun = () => {
+  if (!process.argv[1]) return false;
+  return path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+};
+
+if (isDirectRun()) {
   startServer();
 }
 

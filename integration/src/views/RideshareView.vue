@@ -1,67 +1,143 @@
 <template>
   <div class="min-h-screen bg-gray-50 pt-16">
-    <main class="container mx-auto px-4 py-8">
-      <!-- Hero Section -->
-      <div class="relative rounded-xl overflow-hidden mb-12" style="min-height: 400px;">
+    <main class="container mx-auto px-3 md:px-4 py-4 md:py-8">
+      <!-- Hero Section - Responsive -->
+      <div class="relative rounded-xl overflow-hidden mb-6 md:mb-12" style="min-height: 200px;">
         <div class="absolute inset-0 bg-gradient-to-r from-red-900/90 to-transparent z-10"></div>
         <img
           src="https://public.readdy.ai/ai/img_res/200804c4fc3d12ef039423316cbf6d11.jpg"
           alt="Rideshare experience"
           class="absolute inset-0 w-full h-full object-cover"
         />
-        <div class="relative z-20 flex flex-col justify-center h-full max-w-2xl p-8 text-white">
-          <h1 class="text-4xl md:text-5xl font-bold mb-4">Share Your Journey</h1>
-          <p class="text-xl mb-6">Connect with drivers and passengers for a more affordable, sustainable, and social way to travel.</p>
+        <div class="relative z-20 flex flex-col justify-center h-full max-w-2xl p-4 md:p-8 text-white" style="min-height: 200px;">
+          <h1 class="text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4">Share Your Journey</h1>
+          <p class="text-sm md:text-xl mb-4 md:mb-6">Connect with drivers and passengers for a more affordable, sustainable, and social way to travel.</p>
         </div>
       </div>
       <!-- Main Booking and Ride Sections -->
-      <div class="flex flex-col lg:flex-row gap-8">
+      <div class="flex flex-col lg:flex-row gap-4 md:gap-8">
         <!-- Left Panel - Passenger/Driver Forms -->
-        <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-lg p-6 h-fit">
-          <div class="flex items-center bg-gray-100 rounded-full p-1 mb-6">
+        <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-lg p-4 md:p-6 h-fit">
+          <div class="flex items-center bg-gray-100 rounded-full p-1 mb-4 md:mb-6">
             <button
-              :class="['px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-1', userMode === 'passenger' ? 'bg-red-600 text-white' : 'text-gray-600']"
+              :class="['px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap flex-1', userMode === 'passenger' ? 'bg-red-600 text-white' : 'text-gray-600']"
               @click="userMode = 'passenger'"
             >
               Passenger
             </button>
             <button
-              :class="['px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-1', userMode === 'driver' ? 'bg-red-600 text-white' : 'text-gray-600']"
+              :class="['px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap flex-1', userMode === 'driver' ? 'bg-red-600 text-white' : 'text-gray-600']"
               @click="userMode = 'driver'"
             >
               Driver
             </button>
           </div>
-          <h2 class="text-2xl font-bold mb-6">{{ userMode === 'passenger' ? 'Search Rides' : 'Post a Trip' }}</h2>
+          <!-- Passenger Mode Toggle -->
+          <div v-if="userMode === 'passenger'" class="flex items-center bg-blue-50 rounded-lg p-1 mb-4">
+            <button
+              :class="['px-2 md:px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all flex-1', passengerMode === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600']"
+              @click="passengerMode = 'search'"
+            >
+              Search Rides
+            </button>
+            <button
+              :class="['px-2 md:px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all flex-1', passengerMode === 'post' ? 'bg-blue-600 text-white' : 'text-gray-600']"
+              @click="passengerMode = 'post'"
+            >
+              Post Request
+            </button>
+          </div>
+
+          <h2 class="text-lg md:text-2xl font-bold mb-4 md:mb-6">
+            {{ userMode === 'passenger'
+              ? (passengerMode === 'search' ? 'Search Rides' : 'Post Ride Request')
+              : 'Post a Trip' }}
+          </h2>
 
           <!-- Passenger Search Form -->
-          <div v-if="userMode === 'passenger'">
-            <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Origin</label>
+          <div v-if="userMode === 'passenger' && passengerMode === 'search'">
+            <div class="mb-3 md:mb-4">
+              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Origin</label>
               <input
                 ref="passengerOriginInput"
                 v-model="searchForm.origin"
                 placeholder="Enter pickup location"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                class="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Destination</label>
+            <div class="mb-3 md:mb-4">
+              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Destination</label>
               <input
                 ref="passengerDestInput"
                 v-model="searchForm.destination"
                 placeholder="Enter destination"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                class="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Date</label>
+            <div class="mb-3 md:mb-4">
+              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Date</label>
               <a-date-picker v-model:value="searchForm.date" class="w-full" :disabled-date="disabledDate" format="YYYY-MM-DD" />
             </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Minimum Seats</label>
+            <div class="mb-3 md:mb-4">
+              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Minimum Seats</label>
               <a-input-number v-model:value="searchForm.minSeats" :min="1" :max="8" class="w-full" />
             </div>
+
+            <!-- Advanced Filters Toggle -->
+            <div class="mb-4">
+              <a-button type="link" @click="showAdvancedFilters = !showAdvancedFilters" class="p-0">
+                {{ showAdvancedFilters ? '▼' : '▶' }} Advanced Filters
+              </a-button>
+            </div>
+
+            <!-- Advanced Filters -->
+            <div v-if="showAdvancedFilters" class="mb-4 space-y-4">
+              <div>
+                <label class="block text-gray-700 mb-2">Max Price per Seat ($)</label>
+                <a-input-number
+                  v-model:value="searchForm.maxPrice"
+                  :min="0"
+                  class="w-full"
+                  :formatter="value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
+                  :parser="value => value.replace(/\$\s?|(,*)/g, '')"
+                />
+              </div>
+
+              <div>
+                <label class="block text-gray-700 mb-2">Departure Time Range</label>
+                <a-time-picker
+                  v-model:value="searchForm.timeFrom"
+                  class="w-full mb-2"
+                  format="HH:mm"
+                  placeholder="From"
+                />
+                <a-time-picker
+                  v-model:value="searchForm.timeTo"
+                  class="w-full"
+                  format="HH:mm"
+                  placeholder="To"
+                />
+              </div>
+
+              <div>
+                <label class="block text-gray-700 mb-2">Preferences</label>
+                <a-checkbox v-model:checked="searchForm.noSmoking">No Smoking</a-checkbox>
+                <br />
+                <a-checkbox v-model:checked="searchForm.petsAllowed">Pets Allowed</a-checkbox>
+              </div>
+
+              <div>
+                <label class="block text-gray-700 mb-2">Sort By</label>
+                <a-select v-model:value="searchForm.sortBy" class="w-full">
+                  <a-select-option value="price_asc">Price: Low to High</a-select-option>
+                  <a-select-option value="price_desc">Price: High to Low</a-select-option>
+                  <a-select-option value="time_asc">Time: Earliest First</a-select-option>
+                  <a-select-option value="time_desc">Time: Latest First</a-select-option>
+                  <a-select-option value="rating_desc">Rating: High to Low</a-select-option>
+                </a-select>
+              </div>
+            </div>
+
             <button
               @click="searchRides"
               :disabled="loading"
@@ -69,10 +145,76 @@
             >
               {{ loading ? 'Searching...' : 'Find Rides' }}
             </button>
+
+            <!-- Clear Filters Button -->
+            <button
+              v-if="hasActiveFilters"
+              @click="clearFilters"
+              class="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-md font-medium transition-all"
+            >
+              Clear All Filters
+            </button>
+          </div>
+
+          <!-- Passenger Post Request Form -->
+          <div v-if="userMode === 'passenger' && passengerMode === 'post'">
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Origin</label>
+              <input
+                ref="passengerRequestOriginInput"
+                v-model="passengerRequestForm.origin"
+                placeholder="Enter pickup location"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Destination</label>
+              <input
+                ref="passengerRequestDestInput"
+                v-model="passengerRequestForm.destination"
+                placeholder="Enter destination"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Date</label>
+              <a-date-picker v-model:value="passengerRequestForm.date" class="w-full" :disabled-date="disabledDate" format="YYYY-MM-DD" />
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Preferred Time</label>
+              <a-time-picker v-model:value="passengerRequestForm.time" class="w-full" format="HH:mm" />
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Seats Needed</label>
+              <a-input-number v-model:value="passengerRequestForm.seats" :min="1" :max="8" class="w-full" />
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Max Price per Seat ($)</label>
+              <a-input-number v-model:value="passengerRequestForm.price" :min="0" class="w-full" :formatter="value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')" :parser="value => value.replace(/\$\s?|(,*)/g, '')" />
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Time Flexibility</label>
+              <a-select v-model:value="passengerRequestForm.flexibility" class="w-full">
+                <a-select-option value="exact">Exact time</a-select-option>
+                <a-select-option value="flexible">±2 hours</a-select-option>
+                <a-select-option value="very_flexible">Any time that day</a-select-option>
+              </a-select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2">Description (Optional)</label>
+              <a-textarea v-model:value="passengerRequestForm.description" placeholder="Any additional details..." :rows="3" />
+            </div>
+            <button
+              @click="postPassengerRequest"
+              :disabled="posting"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-medium transition-all disabled:bg-gray-400"
+            >
+              {{ posting ? 'Posting...' : 'Post Ride Request' }}
+            </button>
           </div>
 
           <!-- Driver Post Form -->
-          <div v-else>
+          <div v-if="userMode === 'driver'">
             <div class="mb-4">
               <label class="block text-gray-700 mb-2">Origin</label>
               <input
@@ -123,100 +265,166 @@
 
         <!-- Right Panel - Available Rides -->
         <div class="w-full lg:w-2/3">
-          <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-2xl font-bold">Available Rides</h2>
+          <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4 md:mb-6">
+            <div class="flex justify-between items-center mb-4 md:mb-6">
+              <h2 class="text-lg md:text-2xl font-bold">Available Rides</h2>
               <button
                 @click="loadRides"
-                class="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-all"
+                class="px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-all"
               >
                 🔄 Refresh
               </button>
             </div>
 
             <!-- Loading State -->
-            <div v-if="loading" class="text-center py-12">
-              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p class="text-gray-500">Loading rides...</p>
+            <div v-if="loading" class="text-center py-8 md:py-12">
+              <div class="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+              <p class="text-gray-500 text-sm md:text-base">Loading rides...</p>
             </div>
 
             <!-- Ride Cards -->
-            <div v-else class="space-y-4">
-              <div v-for="ride in availableRides" :key="ride.id" class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" @click="viewRideDetails(ride)">
-                <div class="flex flex-col md:flex-row gap-4">
-                  <div class="md:w-1/4">
-                    <div class="relative">
-                      <img
-                        :src="ride.driver?.avatar_url || 'https://public.readdy.ai/ai/img_res/0b81ac2ae733527fd246b41f1c5e355a.jpg'"
-                        :alt="getDriverName(ride.driver)"
-                        class="w-full h-32 object-cover rounded-lg"
+            <div v-else class="space-y-3 md:space-y-4">
+              <div v-for="ride in availableRides" :key="ride.id" class="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow cursor-pointer" @click="viewRideDetails(ride)">
+                <div class="flex flex-col gap-3 md:gap-4">
+                  <!-- Mobile: Horizontal compact layout -->
+                  <div class="flex items-start gap-3 md:hidden">
+                    <div class="flex-shrink-0">
+                      <ClickableAvatar
+                        v-if="ride.driver"
+                        :user="ride.driver"
+                        :size="48"
+                        @message="handleUserMessage"
                       />
-                      <div class="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow">
-                        <div class="flex items-center px-2">
-                          <star-filled class="text-yellow-400 mr-1" />
-                          <span class="font-medium">{{ (ride.driver?.points || 0) / 100 || '4.5' }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-bold text-sm mb-1 truncate">{{ ride.title }}</h3>
+                      <p class="text-xs text-gray-600 truncate">{{ ride.departure_location }}</p>
+                      <p class="text-xs text-gray-500">→ {{ ride.destination_location }}</p>
+                      <div class="flex items-center justify-between mt-2">
+                        <span class="text-lg font-bold text-red-600">${{ ride.price_per_seat }}</span>
+                        <span class="text-xs bg-gray-100 rounded-full px-2 py-0.5">{{ ride.remaining_seats || ride.available_seats }} seats</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Desktop: Original layout -->
+                  <div class="hidden md:flex md:flex-row gap-4">
+                    <div class="md:w-1/4">
+                      <div class="relative flex justify-center">
+                        <ClickableAvatar
+                          v-if="ride.driver"
+                          :user="ride.driver"
+                          :size="96"
+                          @message="handleUserMessage"
+                        />
+                        <div class="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow">
+                          <div class="flex items-center px-2">
+                            <star-filled class="text-yellow-400 mr-1" />
+                            <span class="font-medium">{{ (ride.driver?.points || 0) / 100 || '4.5' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="mt-2 text-center">
+                        <p class="font-medium">{{ getDriverName(ride.driver) }}</p>
+                        <p class="text-sm text-gray-600">{{ ride.driver?.university || 'Cornell University' }}</p>
+                      </div>
+                    </div>
+                    <div class="md:w-2/4">
+                      <h3 class="font-bold text-lg mb-2">{{ ride.title }}</h3>
+                      <div class="flex items-start mb-3">
+                        <div class="mr-3 mt-1">
+                          <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                          <div class="w-0.5 h-12 bg-gray-300 mx-auto my-1"></div>
+                          <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                        </div>
+                        <div>
+                          <p class="font-medium">{{ ride.departure_location }}</p>
+                          <p class="text-sm text-gray-500 mb-6">{{ formatDateTime(ride.departure_time) }}</p>
+                          <p class="font-medium">{{ ride.destination_location }}</p>
+                          <p class="text-sm text-gray-500">{{ ride.arrival_time ? 'Est. arrival: ' + formatDateTime(ride.arrival_time) : '' }}</p>
+                        </div>
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        <div class="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center">
+                          <team-outlined class="mr-1" />{{ ride.remaining_seats || ride.available_seats }} seats available
+                        </div>
+                        <div class="bg-green-100 text-green-700 rounded-full px-3 py-1 text-sm flex items-center">
+                          {{ ride.status }}
                         </div>
                       </div>
                     </div>
-                    <div class="mt-2 text-center">
-                      <p class="font-medium">{{ getDriverName(ride.driver) }}</p>
-                      <p class="text-sm text-gray-600">{{ ride.driver?.university || 'Cornell University' }}</p>
-                    </div>
-                  </div>
-                  <div class="md:w-2/4">
-                    <h3 class="font-bold text-lg mb-2">{{ ride.title }}</h3>
-                    <div class="flex items-start mb-3">
-                      <div class="mr-3 mt-1">
-                        <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                        <div class="w-0.5 h-12 bg-gray-300 mx-auto my-1"></div>
-                        <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                      </div>
+                    <div class="md:w-1/4 flex flex-col justify-between">
                       <div>
-                        <p class="font-medium">{{ ride.departure_location }}</p>
-                        <p class="text-sm text-gray-500 mb-6">{{ formatDateTime(ride.departure_time) }}</p>
-                        <p class="font-medium">{{ ride.destination_location }}</p>
-                        <p class="text-sm text-gray-500">{{ ride.arrival_time ? 'Est. arrival: ' + formatDateTime(ride.arrival_time) : '' }}</p>
+                        <p class="text-2xl font-bold text-red-600">${{ ride.price_per_seat }}</p>
+                        <p class="text-sm text-gray-500">per person</p>
                       </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                      <div class="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center">
-                        <team-outlined class="mr-1" />{{ ride.remaining_seats || ride.available_seats }} seats available
-                      </div>
-                      <div class="bg-green-100 text-green-700 rounded-full px-3 py-1 text-sm flex items-center">
-                        {{ ride.status }}
-                      </div>
+                      <!-- Dynamic button based on booking status -->
+                      <template v-if="ride.is_booked_by_user">
+                        <button
+                          class="bg-green-600 text-white py-2 px-4 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
+                          disabled
+                        >
+                          ✓ Booked
+                        </button>
+                      </template>
+                      <template v-else-if="ride.remaining_seats === 0">
+                        <button
+                          class="bg-gray-400 text-white py-2 px-4 rounded-md font-medium mt-4 cursor-not-allowed"
+                          disabled
+                        >
+                          Fully Booked
+                        </button>
+                      </template>
+                      <template v-else>
+                        <button
+                          class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium mt-4 transition-all"
+                          @click.stop="openBookingModal(ride)"
+                        >
+                          Book Seat
+                        </button>
+                      </template>
                     </div>
                   </div>
-                  <div class="md:w-1/4 flex flex-col justify-between">
-                    <div>
-                      <p class="text-2xl font-bold text-red-600">${{ ride.price_per_seat }}</p>
-                      <p class="text-sm text-gray-500">per person</p>
-                    </div>
-                    <button
-                      class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium mt-4 transition-all"
-                      @click.stop="openBookingModal(ride)"
-                      :disabled="ride.remaining_seats === 0"
-                    >
-                      {{ ride.remaining_seats === 0 ? 'Full' : 'Book Seat' }}
-                    </button>
+
+                  <!-- Mobile Book Button -->
+                  <div class="md:hidden">
+                    <template v-if="ride.is_booked_by_user">
+                      <button class="w-full bg-green-600 text-white py-2 rounded-md text-sm font-medium cursor-not-allowed opacity-75" disabled>
+                        ✓ Booked
+                      </button>
+                    </template>
+                    <template v-else-if="ride.remaining_seats === 0">
+                      <button class="w-full bg-gray-400 text-white py-2 rounded-md text-sm font-medium cursor-not-allowed" disabled>
+                        Fully Booked
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button
+                        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md text-sm font-medium transition-all"
+                        @click.stop="openBookingModal(ride)"
+                      >
+                        Book Seat
+                      </button>
+                    </template>
                   </div>
                 </div>
               </div>
 
-              <div v-if="availableRides.length === 0" class="text-center py-8">
-                <inbox-outlined style="font-size: 48px" class="text-gray-300 mb-4" />
-                <p class="text-gray-500">No rides available. Be the first to post!</p>
+              <div v-if="availableRides.length === 0" class="text-center py-6 md:py-8">
+                <inbox-outlined style="font-size: 36px" class="text-gray-300 mb-3 md:mb-4 md:text-5xl" />
+                <p class="text-gray-500 text-sm md:text-base">No rides available. Be the first to post!</p>
               </div>
             </div>
 
             <!-- Pagination -->
-            <div v-if="totalRides > 0" class="mt-6 flex justify-center">
+            <div v-if="totalRides > 0" class="mt-4 md:mt-6 flex justify-center">
               <a-pagination
                 v-model:current="currentPage"
                 :total="totalRides"
                 :pageSize="pageSize"
                 @change="onPageChange"
                 show-less-items
+                :simple="windowWidth < 640"
               />
             </div>
           </div>
@@ -295,10 +503,11 @@
       >
         <div v-if="selectedRide" class="space-y-4">
           <div class="flex items-center gap-4 mb-4">
-            <img
-              :src="selectedRide.driver?.avatar_url || 'https://public.readdy.ai/ai/img_res/0b81ac2ae733527fd246b41f1c5e355a.jpg'"
-              :alt="getDriverName(selectedRide.driver)"
-              class="w-20 h-20 rounded-full object-cover"
+            <ClickableAvatar
+              v-if="selectedRide.driver"
+              :user="selectedRide.driver"
+              :size="80"
+              @message="handleUserMessage"
             />
             <div>
               <h3 class="font-bold text-lg">{{ getDriverName(selectedRide.driver) }}</h3>
@@ -326,13 +535,33 @@
             <p class="text-gray-700">{{ selectedRide.description }}</p>
           </div>
 
-          <button
-            class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-md font-medium mt-4"
-            @click="openBookingModal(selectedRide)"
-            :disabled="selectedRide.remaining_seats === 0"
-          >
-            {{ selectedRide.remaining_seats === 0 ? 'Ride is Full' : 'Book This Ride' }}
-          </button>
+          <template v-if="selectedRide.is_booked_by_user">
+            <!-- Already booked by user -->
+            <button
+              class="w-full bg-green-600 text-white py-3 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
+              disabled
+            >
+              ✓ You Have Booked This Ride
+            </button>
+          </template>
+          <template v-else-if="selectedRide.remaining_seats === 0">
+            <!-- Ride is full -->
+            <button
+              class="w-full bg-gray-400 text-white py-3 rounded-md font-medium mt-4 cursor-not-allowed"
+              disabled
+            >
+              This Ride is Full
+            </button>
+          </template>
+          <template v-else>
+            <!-- Available for booking -->
+            <button
+              class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-md font-medium mt-4"
+              @click="openBookingModal(selectedRide)"
+            >
+              Book This Ride
+            </button>
+          </template>
         </div>
       </a-modal>
     </main>
@@ -340,7 +569,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { notification } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {
@@ -350,22 +579,49 @@ import {
 import {
   Select as ASelect, SelectOption as ASelectOption, Tag as ATag, Pagination as APagination,
   Modal as AModal, Input as AInput, DatePicker as ADatePicker, TimePicker as ATimePicker,
-  InputNumber as AInputNumber, Textarea as ATextarea
+  InputNumber as AInputNumber, Textarea as ATextarea, Checkbox as ACheckbox
 } from 'ant-design-vue';
 import { carpoolingAPI } from '@/utils/api';
+import ClickableAvatar from '@/components/common/ClickableAvatar.vue';
+
+// Window width for responsive pagination
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
 
 // Refs
 const userMode = ref('passenger');
+const passengerMode = ref('search'); // 'search' or 'post'
 const loading = ref(false);
 const posting = ref(false);
 const bookingRide = ref(false);
+const showAdvancedFilters = ref(false);
 
 // Search Form (Passenger)
 const searchForm = ref({
   origin: '',
   destination: '',
   date: null,
-  minSeats: 1
+  minSeats: 1,
+  maxPrice: null,
+  timeFrom: null,
+  timeTo: null,
+  noSmoking: false,
+  petsAllowed: false,
+  sortBy: 'time_asc'
+});
+
+// Passenger Request Form
+const passengerRequestForm = ref({
+  origin: '',
+  destination: '',
+  date: null,
+  time: null,
+  seats: 1,
+  price: 50,
+  flexibility: 'flexible',
+  description: ''
 });
 
 // Driver Form
@@ -399,6 +655,8 @@ const bookingForm = ref({
 // Google Maps refs
 const passengerOriginInput = ref(null);
 const passengerDestInput = ref(null);
+const passengerRequestOriginInput = ref(null);
+const passengerRequestDestInput = ref(null);
 const driverOriginInput = ref(null);
 const driverDestInput = ref(null);
 let googleMapsLoaded = false;
@@ -418,7 +676,7 @@ const initGoogleMaps = async () => {
 
     // Load Google Maps script
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap&loading=async`;
     script.async = true;
     script.defer = true;
 
@@ -490,6 +748,40 @@ const setupAutocomplete = () => {
             searchForm.value.destination = place.formatted_address;
           } else if (place.name) {
             searchForm.value.destination = place.name;
+          }
+        });
+        setupCount++;
+      }
+
+      // Passenger Request Origin Input
+      if (passengerRequestOriginInput.value) {
+        const autocomplete5 = new google.maps.places.Autocomplete(passengerRequestOriginInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' }
+        });
+        autocomplete5.addListener('place_changed', () => {
+          const place = autocomplete5.getPlace();
+          if (place.formatted_address) {
+            passengerRequestForm.value.origin = place.formatted_address;
+          } else if (place.name) {
+            passengerRequestForm.value.origin = place.name;
+          }
+        });
+        setupCount++;
+      }
+
+      // Passenger Request Destination Input
+      if (passengerRequestDestInput.value) {
+        const autocomplete6 = new google.maps.places.Autocomplete(passengerRequestDestInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' }
+        });
+        autocomplete6.addListener('place_changed', () => {
+          const place = autocomplete6.getPlace();
+          if (place.formatted_address) {
+            passengerRequestForm.value.destination = place.formatted_address;
+          } else if (place.name) {
+            passengerRequestForm.value.destination = place.name;
           }
         });
         setupCount++;
@@ -580,8 +872,55 @@ const searchRides = async () => {
     params.minSeats = searchForm.value.minSeats;
   }
 
+  // Advanced filters
+  if (searchForm.value.maxPrice !== null && searchForm.value.maxPrice > 0) {
+    params.maxPrice = searchForm.value.maxPrice;
+  }
+  if (searchForm.value.timeFrom) {
+    params.timeFrom = dayjs(searchForm.value.timeFrom).format('HH:mm');
+  }
+  if (searchForm.value.timeTo) {
+    params.timeTo = dayjs(searchForm.value.timeTo).format('HH:mm');
+  }
+  if (searchForm.value.noSmoking) {
+    params.noSmoking = true;
+  }
+  if (searchForm.value.petsAllowed) {
+    params.petsAllowed = true;
+  }
+  if (searchForm.value.sortBy) {
+    params.sortBy = searchForm.value.sortBy;
+  }
+
   currentPage.value = 1;
   await loadRides(params);
+};
+
+// Computed property to check if any advanced filters are active
+const hasActiveFilters = computed(() => {
+  return searchForm.value.maxPrice !== null ||
+    searchForm.value.timeFrom !== null ||
+    searchForm.value.timeTo !== null ||
+    searchForm.value.noSmoking ||
+    searchForm.value.petsAllowed ||
+    searchForm.value.sortBy !== 'time_asc';
+});
+
+// Clear all filters
+const clearFilters = () => {
+  searchForm.value = {
+    origin: searchForm.value.origin,
+    destination: searchForm.value.destination,
+    date: searchForm.value.date,
+    minSeats: 1,
+    maxPrice: null,
+    timeFrom: null,
+    timeTo: null,
+    noSmoking: false,
+    petsAllowed: false,
+    sortBy: 'time_asc'
+  };
+  searchRides();
 };
 
 // Post trip (Driver)
@@ -653,6 +992,84 @@ const postTrip = async () => {
     notification.error({
       message: 'Error',
       description: error.response?.data?.error?.message || 'Failed to post trip. Please try again.'
+    });
+  } finally {
+    posting.value = false;
+  }
+};
+
+// Post passenger request
+const postPassengerRequest = async () => {
+  // Validation
+  if (!passengerRequestForm.value.origin || !passengerRequestForm.value.destination) {
+    notification.error({
+      message: 'Missing Information',
+      description: 'Please fill in origin and destination.'
+    });
+    return;
+  }
+
+  if (!passengerRequestForm.value.date || !passengerRequestForm.value.time) {
+    notification.error({
+      message: 'Missing Information',
+      description: 'Please select preferred date and time.'
+    });
+    return;
+  }
+
+  try {
+    posting.value = true;
+
+    // Combine date and time
+    const departureDateTime = dayjs(passengerRequestForm.value.date)
+      .hour(dayjs(passengerRequestForm.value.time).hour())
+      .minute(dayjs(passengerRequestForm.value.time).minute())
+      .toISOString();
+
+    // Auto-generate title from origin and destination
+    const autoTitle = `[REQUEST] ${passengerRequestForm.value.origin} → ${passengerRequestForm.value.destination}`;
+
+    const response = await carpoolingAPI.createRide({
+      title: autoTitle,
+      departureLocation: passengerRequestForm.value.origin,
+      destinationLocation: passengerRequestForm.value.destination,
+      departureTime: departureDateTime,
+      availableSeats: passengerRequestForm.value.seats,
+      pricePerSeat: passengerRequestForm.value.price,
+      description: passengerRequestForm.value.description || '',
+      rideType: 'request', // Mark as passenger request
+      flexibility: passengerRequestForm.value.flexibility
+    });
+
+    if (response.data.success) {
+      notification.success({
+        message: 'Success!',
+        description: 'Your ride request has been posted. Drivers can now see it and contact you.'
+      });
+
+      // Reset form
+      passengerRequestForm.value = {
+        origin: '',
+        destination: '',
+        date: null,
+        time: null,
+        seats: 1,
+        price: 50,
+        flexibility: 'flexible',
+        description: ''
+      };
+
+      // Reload rides
+      await loadRides();
+
+      // Switch to search mode to see results
+      passengerMode.value = 'search';
+    }
+  } catch (error) {
+    console.error('Post passenger request error:', error);
+    notification.error({
+      message: 'Error',
+      description: error.response?.data?.error?.message || 'Failed to post request. Please try again.'
     });
   } finally {
     posting.value = false;
@@ -740,6 +1157,12 @@ const getDriverName = (driver) => {
   return `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || 'Driver';
 };
 
+// Handle user message from ClickableAvatar
+const handleUserMessage = (user) => {
+  // This will be handled by the ClickableAvatar component internally
+  // It navigates to /messages with userId query parameter
+};
+
 // Watch for mode changes and reinitialize Google Maps
 watch(userMode, async () => {
   await nextTick();
@@ -750,10 +1173,16 @@ watch(userMode, async () => {
 
 // Lifecycle
 onMounted(async () => {
+  // Add resize listener
+  window.addEventListener('resize', handleResize);
   // 立即开始加载 Google Maps（异步加载，不阻塞）
   initGoogleMaps();
   // 加载拼车列表
   await loadRides();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 </script>
 

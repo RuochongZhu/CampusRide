@@ -32,7 +32,7 @@ router.get('/',
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { limit = 20, offset = 0, type, is_read } = req.query;
 
       const result = await notificationService.getUserNotifications(userId, {
@@ -99,7 +99,7 @@ router.put('/:id/read',
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const notificationId = req.params.id;
 
       const result = await notificationService.markAsRead(notificationId, userId);
@@ -138,7 +138,7 @@ router.put('/mark-all-read',
   requireRegisteredUser,
   asyncHandler(async (req, res) => {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const result = await notificationService.markAllAsRead(userId);
 
@@ -193,7 +193,7 @@ router.delete('/:id',
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const notificationId = req.params.id;
 
       const result = await notificationService.deleteNotification(notificationId, userId);

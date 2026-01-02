@@ -48,3 +48,6 @@ COMMENT ON CONSTRAINT no_self_rating ON ratings IS 'Users cannot rate themselves
 
 
 
+
+
+

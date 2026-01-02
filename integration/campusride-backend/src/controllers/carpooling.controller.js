@@ -18,7 +18,9 @@ export const createRide = async (req, res, next) => {
       preferences,
       contactInfo,
       recurringType = 'once',
-      rules = []
+      rules = [],
+      rideType = 'offer',
+      flexibility
     } = req.body;
 
     // 基础验证
@@ -59,7 +61,9 @@ export const createRide = async (req, res, next) => {
         contact_info: contactInfo || {},
         recurring_type: recurringType,
         rules: rules,
-        status: 'active'
+        status: 'active',
+        ride_type: rideType,
+        flexibility: flexibility
       })
       .select(`
         *,
@@ -85,6 +89,7 @@ export const createRide = async (req, res, next) => {
 // 搜索拼车行程
 export const getRides = async (req, res, next) => {
   try {
+    const userId = req.user?.id; // Get user ID from authenticated user (optional)
     const {
       page = 1,
       limit = 20,
@@ -92,7 +97,12 @@ export const getRides = async (req, res, next) => {
       destination,
       date,
       minSeats,
-      maxPrice
+      maxPrice,
+      timeFrom,
+      timeTo,
+      noSmoking,
+      petsAllowed,
+      sortBy = 'time_asc'
     } = req.query;
 
     // 构建查询条件
@@ -123,12 +133,53 @@ export const getRides = async (req, res, next) => {
       query = query.lte('price_per_seat', parseFloat(maxPrice));
     }
 
+    // Advanced filters
+    if (noSmoking === 'true') {
+      query = query.or('allow_smoking.is.null,allow_smoking.eq.false');
+    }
+    if (petsAllowed === 'true') {
+      query = query.eq('pets_allowed', true);
+    }
+
+    // Time range filtering (if both timeFrom and timeTo are provided)
+    // Note: This requires extracting time from departure_time timestamp
+    // For simplicity, we'll handle this in post-processing if needed
+
     // 分页
     const offset = (page - 1) * limit;
-    query = query.range(offset, offset + parseInt(limit) - 1)
-                 .order('departure_time', { ascending: true });
 
-    const { data: rides, error, count } = await query;
+    // Sorting
+    let orderColumn = 'departure_time';
+    let orderAscending = true;
+
+    switch (sortBy) {
+      case 'price_asc':
+        orderColumn = 'price_per_seat';
+        orderAscending = true;
+        break;
+      case 'price_desc':
+        orderColumn = 'price_per_seat';
+        orderAscending = false;
+        break;
+      case 'time_asc':
+        orderColumn = 'departure_time';
+        orderAscending = true;
+        break;
+      case 'time_desc':
+        orderColumn = 'departure_time';
+        orderAscending = false;
+        break;
+      case 'rating_desc':
+        // Will need to join with user ratings later
+        orderColumn = 'departure_time';
+        orderAscending = true;
+        break;
+    }
+
+    query = query.range(offset, offset + parseInt(limit) - 1)
+                 .order(orderColumn, { ascending: orderAscending });
+
+    let { data: rides, error, count } = await query;
 
     if (error) {
       console.error('Error fetching rides:', error);
@@ -166,9 +217,22 @@ export const getRides = async (req, res, next) => {
     // 批量获取bookings信息
     const { data: allBookings } = await supabaseAdmin
       .from('ride_bookings')
-      .select('ride_id, seats_booked, status')
+      .select('ride_id, seats_booked, status, passenger_id')
       .in('ride_id', rideIds)
       .neq('status', 'cancelled');
+
+    // 获取当前用户的预订信息 (如果已认证)
+    let userBookings = [];
+    if (userId) {
+      const { data: currentUserBookings } = await supabaseAdmin
+        .from('ride_bookings')
+        .select('ride_id, status')
+        .in('ride_id', rideIds)
+        .eq('passenger_id', userId)
+        .neq('status', 'cancelled');
+
+      userBookings = currentUserBookings || [];
+    }
 
     // 组装数据
     const ridesWithDetails = rides.map(ride => {
@@ -179,12 +243,18 @@ export const getRides = async (req, res, next) => {
       const bookings = allBookings?.filter(b => b.ride_id === ride.id) || [];
       const bookedSeats = bookings.reduce((sum, booking) => sum + booking.seats_booked, 0);
 
+      // 检查当前用户是否已预订
+      const userBooking = userBookings.find(b => b.ride_id === ride.id);
+      const isBookedByUser = !!userBooking;
+
       return {
         ...ride,
         driver: driver || null,
         bookings: bookings,
         booked_seats: bookedSeats,
-        remaining_seats: ride.available_seats - bookedSeats
+        remaining_seats: ride.available_seats - bookedSeats,
+        is_booked_by_user: isBookedByUser,
+        user_booking_status: userBooking?.status || null
       };
     });
 

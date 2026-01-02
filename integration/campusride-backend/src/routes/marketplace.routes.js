@@ -1,9 +1,9 @@
 import express from 'express';
-import { 
-  createItem, 
-  getItems, 
-  getItemById, 
-  updateItem, 
+import {
+  createItem,
+  getItems,
+  getItemById,
+  updateItem,
   deleteItem,
   getMyItems,
   favoriteItem,
@@ -11,6 +11,13 @@ import {
   getMyFavorites,
   searchItems
 } from '../controllers/marketplace.controller.js';
+import {
+  getItemComments,
+  createComment,
+  likeComment,
+  unlikeComment,
+  deleteComment
+} from '../controllers/marketplace-comments.controller.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 import { authenticateToken, requireRegisteredUser } from '../middleware/auth.middleware.js';
 
@@ -51,5 +58,21 @@ router.delete('/items/:id/favorite', requireRegisteredUser, asyncHandler(unfavor
 
 // GET /api/v1/marketplace/favorites (requires registered user)
 router.get('/favorites', requireRegisteredUser, asyncHandler(getMyFavorites));
+
+// Comment management
+// GET /api/v1/marketplace/items/:itemId/comments - Get comments for an item (guests can view)
+router.get('/items/:itemId/comments', asyncHandler(getItemComments));
+
+// POST /api/v1/marketplace/items/:itemId/comments - Create a comment (requires registered user)
+router.post('/items/:itemId/comments', requireRegisteredUser, asyncHandler(createComment));
+
+// DELETE /api/v1/marketplace/comments/:commentId - Delete a comment (requires registered user)
+router.delete('/comments/:commentId', requireRegisteredUser, asyncHandler(deleteComment));
+
+// POST /api/v1/marketplace/comments/:commentId/like - Like a comment (requires registered user)
+router.post('/comments/:commentId/like', requireRegisteredUser, asyncHandler(likeComment));
+
+// DELETE /api/v1/marketplace/comments/:commentId/like - Unlike a comment (requires registered user)
+router.delete('/comments/:commentId/like', requireRegisteredUser, asyncHandler(unlikeComment));
 
 export default router; 

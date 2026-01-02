@@ -1,6 +1,6 @@
 <template>
   <a-modal
-    :open="visible"
+    :open="open"
     title="Post Activity"
     @ok="handlePost"
     @cancel="handleCancel"
@@ -222,7 +222,7 @@ import { getCurrentLocation } from '@/utils/geocoding'
 import dayjs from 'dayjs'
 
 const props = defineProps({
-  visible: {
+  open: {
     type: Boolean,
     default: false
   },
@@ -236,7 +236,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:visible', 'success'])
+const emit = defineEmits(['update:open', 'success'])
 
 const posting = ref(false)
 const gettingLocation = ref(false)
@@ -261,8 +261,8 @@ const formData = ref({
   location_verification: true
 })
 
-// Watch visible property changes, reset form
-watch(() => props.visible, (newVal) => {
+// Watch open property changes, reset form
+watch(() => props.open, (newVal) => {
   if (newVal) {
     formData.value = {
       title: '',
@@ -333,7 +333,7 @@ watch(() => formData.value.location_address, (newAddress) => {
 
 // Close modal
 const handleCancel = () => {
-  emit('update:visible', false)
+  emit('update:open', false)
 }
 
 // Post activity
@@ -385,7 +385,7 @@ const handlePost = async () => {
 
   posting.value = true
   try {
-    // Prepare activity data (using camelCase field names for backend API)
+    // Prepare activity data - ensure field names match backend validation
     const activityData = {
       title: formData.value.title.trim(),
       description: formData.value.content.trim(),
@@ -393,14 +393,22 @@ const handlePost = async () => {
       type: formData.value.type,
       startTime: dayjs(formData.value.start_time).toISOString(),
       endTime: dayjs(formData.value.end_time).toISOString(),
-      location: formData.value.location?.address || formData.value.location_address,
-      locationCoordinates: formData.value.location,
-      maxParticipants: formData.value.max_participants,
+      location: formData.value.location?.address || formData.value.location_address || '',
+      // Only send coordinates if they are numeric
+      locationCoordinates: (formData.value.location?.lat && formData.value.location?.lng)
+        ? {
+            lat: parseFloat(formData.value.location.lat),
+            lng: parseFloat(formData.value.location.lng)
+          }
+        : null,
+      maxParticipants: formData.value.max_participants || null,
       rewardPoints: formData.value.reward_points || 0,
       locationVerification: formData.value.location_verification,
       status: 'published',
-      group_id: formData.value.group_id
+      group_id: formData.value.group_id || null
     }
+
+    console.log('📤 Sending activity data:', activityData)
 
     // Call create activity API
     const response = await activitiesAPI.createActivity(activityData)
@@ -408,11 +416,11 @@ const handlePost = async () => {
     if (response.data.success) {
       message.success('Activity posted successfully!')
       emit('success', response.data.data.activity)
-      emit('update:visible', false)
+      emit('update:open', false)
     }
   } catch (error) {
-    console.error('Failed to post activity:', error)
-    console.error('Error details:', error.response?.data)
+    console.error('❌ Failed to post activity:', error)
+    console.error('📋 Error details:', error.response?.data)
 
     // Show detailed validation errors
     if (error.response?.data?.error?.details) {

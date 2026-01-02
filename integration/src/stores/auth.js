@@ -88,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await userAPI.getMe()
 
       if (response.data.success) {
-        user.value = response.data.user
+        user.value = response.data.data?.user
         localStorage.setItem('userData', JSON.stringify(user.value))
         return { success: true, user: user.value }
       } else {
@@ -110,7 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await userAPI.updateMe(updateData)
 
       if (response.data.success) {
-        user.value = { ...user.value, ...response.data.user }
+        user.value = { ...user.value, ...response.data.data?.user }
         localStorage.setItem('userData', JSON.stringify(user.value))
         return { success: true, user: user.value }
       } else {
@@ -167,6 +167,12 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     updateProfile,
     clearError,
-    initializeAuth
+    initializeAuth,
+    updateUserAvatar: (avatarUrl) => {
+      if (user.value) {
+        user.value.avatar_url = avatarUrl
+        localStorage.setItem('userData', JSON.stringify(user.value))
+      }
+    }
   }
 })

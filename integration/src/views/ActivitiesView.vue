@@ -1,110 +1,183 @@
 <template>
   <div class="min-h-screen bg-[#EDEEE8] main-content pt-16">
-    <div class="pt-8 pb-16 max-w-7xl mx-auto px-4">
-      
+    <div class="pt-4 md:pt-8 pb-8 md:pb-16 max-w-7xl mx-auto px-3 md:px-4">
+
       <!-- Groups Grid -->
-      <div class="mb-8">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-[#333333]">Campus Groups</h2>
-          <div class="flex space-x-3">
+      <div class="mb-4 md:mb-8">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 md:mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-[#333333]">Campus Groups</h2>
+          <div class="flex flex-wrap items-center gap-2">
             <a-button
               type="default"
-              class="!rounded-button"
+              size="small"
+              class="!rounded-button text-xs md:text-sm h-8 flex items-center"
               @click="showBrowseGroupsModal = true"
             >
-              <TeamOutlined /> Browse Groups
+              <TeamOutlined /> <span class="hidden sm:inline ml-1">Browse</span>
             </a-button>
             <a-button
               type="default"
-              class="!rounded-button"
+              size="small"
+              class="!rounded-button text-xs md:text-sm h-8 flex items-center"
               @click="showCreateGroupModal = true"
             >
-              <PlusOutlined /> Create Group
+              <PlusOutlined /> <span class="hidden sm:inline ml-1">Create</span>
             </a-button>
             <a-button
               type="primary"
-              class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
+              size="small"
+              class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] text-xs md:text-sm h-8 flex items-center"
               @click="showPostThoughtModal = true"
             >
-              <EditOutlined /> Post Activity
+              <EditOutlined /> <span class="hidden sm:inline ml-1">Post Activity</span>
             </a-button>
             <a-button
               type="default"
-              class="!rounded-button"
+              size="small"
+              class="!rounded-button text-xs md:text-sm h-8 hidden sm:flex items-center"
               @click="() => $router.push('/activities/history')"
             >
-              <HistoryOutlined /> Participation History
+              <HistoryOutlined class="mr-1" /> History
             </a-button>
             <a-button
               :type="isVisible ? 'default' : 'dashed'"
-              class="!rounded-button"
+              size="small"
+              class="!rounded-button text-xs md:text-sm h-8 flex items-center"
               @click="toggleVisibility"
             >
               <EyeOutlined v-if="isVisible" />
               <EyeInvisibleOutlined v-else />
-              {{ isVisible ? 'Visible' : 'Invisible' }}
+              <span class="hidden sm:inline ml-1">{{ isVisible ? 'Visible' : 'Invisible' }}</span>
             </a-button>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- System Groups Row (Carpooling & Marketplace) -->
+        <div class="grid grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
+          <!-- System Group: Carpooling -->
+          <div
+            class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-sm p-3 md:p-6 hover:shadow-md transition-all cursor-pointer border-2 border-blue-200"
+            @click="goToSystemGroup('carpooling')"
+          >
+            <div class="flex items-center justify-between mb-2 md:mb-4">
+              <div class="flex items-center space-x-2 md:space-x-3">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                  <CarOutlined class="text-sm md:text-base" />
+                </div>
+                <h3 class="text-sm md:text-lg font-medium text-[#333333]">Carpooling</h3>
+              </div>
+              <a-tag color="blue" class="text-xs hidden sm:inline">System</a-tag>
+            </div>
+            <p class="text-xs md:text-sm text-[#666666] mb-2 md:mb-4 line-clamp-2 hidden sm:block">Find and share rides with fellow students.</p>
+            <div class="flex items-center justify-between text-xs md:text-sm">
+              <div class="flex items-center text-gray-500">
+                <TeamOutlined class="mr-1" />
+                <span>{{ systemGroupStats.carpooling?.memberCount || 0 }}</span>
+              </div>
+              <a-button
+                type="primary"
+                size="small"
+                class="!rounded-button bg-blue-500 border-none hover:bg-blue-600 whitespace-nowrap text-xs h-7"
+                @click.stop="openSystemGroupChat('carpooling')"
+              >
+                <MessageOutlined />
+                <span class="hidden md:inline ml-1">Chat</span>
+              </a-button>
+            </div>
+          </div>
+
+          <!-- System Group: Marketplace -->
+          <div
+            class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-sm p-3 md:p-6 hover:shadow-md transition-all cursor-pointer border-2 border-green-200"
+            @click="goToSystemGroup('marketplace')"
+          >
+            <div class="flex items-center justify-between mb-2 md:mb-4">
+              <div class="flex items-center space-x-2 md:space-x-3">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-green-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                  <ShopOutlined class="text-sm md:text-base" />
+                </div>
+                <h3 class="text-sm md:text-lg font-medium text-[#333333]">Marketplace</h3>
+              </div>
+              <a-tag color="green" class="text-xs hidden sm:inline">System</a-tag>
+            </div>
+            <p class="text-xs md:text-sm text-[#666666] mb-2 md:mb-4 line-clamp-2 hidden sm:block">Buy and sell items with other students.</p>
+            <div class="flex items-center justify-between text-xs md:text-sm">
+              <div class="flex items-center text-gray-500">
+                <TeamOutlined class="mr-1" />
+                <span>{{ systemGroupStats.marketplace?.memberCount || 0 }}</span>
+              </div>
+              <a-button
+                type="primary"
+                size="small"
+                class="!rounded-button bg-green-500 border-none hover:bg-green-600 whitespace-nowrap text-xs h-7"
+                @click.stop="openSystemGroupChat('marketplace')"
+              >
+                <MessageOutlined />
+                <span class="hidden md:inline ml-1">Chat</span>
+              </a-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular Groups Grid -->
+        <div v-if="myGroups.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           <div
             v-for="group in myGroups"
             :key="group.id"
-            class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all cursor-pointer"
+            class="bg-white rounded-lg shadow-sm p-4 md:p-6 hover:shadow-md transition-all cursor-pointer"
             :class="selectedGroupId === group.id ? 'ring-2 ring-[#C24D45]' : ''"
             @click="goToGroupDetail(group.id)"
           >
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium text-[#333333]">{{ group.name }}</h3>
+            <div class="flex items-center justify-between mb-2 md:mb-4">
+              <h3 class="text-base md:text-lg font-medium text-[#333333] truncate">{{ group.name }}</h3>
             </div>
-            <p class="text-sm text-[#666666] mb-4 line-clamp-2">{{ group.description || 'No description' }}</p>
-            <div class="flex items-center justify-between text-sm">
-              <div class="flex items-center space-x-4">
-                <div class="flex items-center text-gray-500">
-                  <TeamOutlined class="mr-1" />
-                  <span>{{ group.member_count || 0 }} Members</span>
-                </div>
+            <p class="text-xs md:text-sm text-[#666666] mb-3 md:mb-4 line-clamp-2">{{ group.description || 'No description' }}</p>
+            <div class="flex items-center justify-between text-xs md:text-sm">
+              <div class="flex items-center text-gray-500">
+                <TeamOutlined class="mr-1" />
+                <span>{{ group.member_count || 0 }}</span>
               </div>
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center space-x-1 md:space-x-2">
                 <a-button
                   type="primary"
                   size="small"
-                  class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap"
+                  class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap text-xs h-7"
                   @click.stop="openGroupChat(group)"
                 >
-                  <MessageOutlined class="mr-1" />
-                  Group Chat
+                  <MessageOutlined />
+                  <span class="hidden sm:inline ml-1">Chat</span>
                 </a-button>
                 <a-button
                   v-if="group.my_role === 'creator'"
                   type="default"
                   danger
                   size="small"
-                  class="!rounded-button whitespace-nowrap"
+                  class="!rounded-button whitespace-nowrap text-xs h-7 hidden sm:inline-flex"
                   @click.stop="deleteGroupHandler(group.id)"
                 >
-                  Delete Group
+                  Delete
                 </a-button>
                 <a-button
                   v-else
                   type="default"
                   danger
                   size="small"
-                  class="!rounded-button whitespace-nowrap"
+                  class="!rounded-button whitespace-nowrap text-xs h-7 hidden sm:inline-flex"
                   @click.stop="leaveGroupHandler(group.id)"
                 >
-                  Leave Group
+                  Leave
                 </a-button>
               </div>
             </div>
           </div>
         </div>
-        <div v-if="myGroups.length === 0" class="text-center py-12 text-gray-400">
-          <TeamOutlined class="text-5xl mb-4" />
-          <p>You haven't joined any groups yet</p>
+        <div v-if="myGroups.length === 0" class="text-center py-8 md:py-12 text-gray-400">
+          <TeamOutlined class="text-4xl md:text-5xl mb-3 md:mb-4" />
+          <p class="text-sm md:text-base">You haven't joined any groups yet</p>
           <a-button
             type="primary"
-            class="mt-4 !rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
+            size="small"
+            class="mt-3 md:mt-4 !rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35]"
             @click="showBrowseGroupsModal = true"
           >
             Browse Groups
@@ -113,24 +186,24 @@
       </div>
 
       <!-- Activity Feed Section -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
         <div class="lg:col-span-2">
-          <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
-              <div class="mb-4 md:mb-0">
-                <a-radio-group v-model:value="feedFilter" button-style="solid">
-                  <a-radio-button value="all">All Activities</a-radio-button>
+          <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col gap-3 md:gap-4 mb-4">
+              <div class="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <a-radio-group v-model:value="feedFilter" button-style="solid" size="small">
+                  <a-radio-button value="all">All</a-radio-button>
                   <a-radio-button value="groups">My Groups</a-radio-button>
-                  <a-radio-button value="urgent">Urgent Needs</a-radio-button>
+                  <a-radio-button value="urgent">Urgent</a-radio-button>
                 </a-radio-group>
               </div>
-              <div class="flex items-center space-x-4">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div class="flex items-center">
-                  <span class="text-sm text-[#666666] mr-2">Distance:</span>
-                  <a-slider v-model:value="distanceFilter" :min="500" :max="5000" :step="500" class="w-32" />
-                  <span class="text-sm text-[#666666] ml-2">{{ distanceFilter / 1000 }}km</span>
+                  <span class="text-xs md:text-sm text-[#666666] mr-2">Dist:</span>
+                  <a-slider v-model:value="distanceFilter" :min="500" :max="5000" :step="500" class="w-20 md:w-32" />
+                  <span class="text-xs md:text-sm text-[#666666] ml-2">{{ distanceFilter / 1000 }}km</span>
                 </div>
-                <a-select v-model:value="sortOption" class="w-32">
+                <a-select v-model:value="sortOption" class="w-24 md:w-32" size="small">
                   <a-select-option value="newest">Newest</a-select-option>
                   <a-select-option value="closest">Closest</a-select-option>
                 </a-select>
@@ -138,165 +211,178 @@
             </div>
 
             <!-- Activity Cards -->
-            <div v-if="activitiesLoading" class="py-12 flex justify-center">
+            <div v-if="activitiesLoading" class="py-8 md:py-12 flex justify-center">
               <a-spin />
             </div>
-            <div v-else-if="activitiesError" class="py-12 text-center text-red-500">
+            <div v-else-if="activitiesError" class="py-8 md:py-12 text-center text-red-500 text-sm">
               {{ activitiesError }}
             </div>
-            <div v-else-if="filteredActivities.length === 0" class="py-12 text-center text-gray-500">
-              <p class="text-lg font-medium mb-2">No activities found</p>
-              <p class="text-sm">Try adjusting your filters or create a new activity.</p>
+            <div v-else-if="filteredActivities.length === 0" class="py-8 md:py-12 text-center text-gray-500">
+              <p class="text-base md:text-lg font-medium mb-1 md:mb-2">No activities found</p>
+              <p class="text-xs md:text-sm">Try adjusting your filters or create a new activity.</p>
             </div>
-            <div v-else class="space-y-6">
-              <div 
-                v-for="activity in filteredActivities" 
+            <div v-else class="space-y-4 md:space-y-6">
+              <div
+                v-for="activity in filteredActivities"
                 :key="activity.id"
-                class="bg-[#FAFAFA] rounded-lg p-4 hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                class="bg-[#FAFAFA] rounded-lg p-3 md:p-4 hover:shadow-md transition-all duration-300 cursor-pointer"
                 @mouseenter="highlightRadarDot(activity.id)"
                 @mouseleave="resetRadarDot()"
               >
                 <div class="flex justify-between items-start">
-                  <div class="flex space-x-3">
-                    <img :src="activity.user.avatar" class="w-10 h-10 rounded-full" />
-                    <div>
-                      <div class="flex items-center space-x-2">
-                        <h3 class="font-medium text-[#333333]">{{ activity.title }}</h3>
-                        <a-tag :color="activity.category.color">{{ activity.category.name }}</a-tag>
+                  <div class="flex space-x-2 md:space-x-3">
+                    <ClickableAvatar :user="activity.user" :size="32" @message="handleUserMessage" />
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-1 md:gap-2">
+                        <h3 class="font-medium text-sm md:text-base text-[#333333] truncate max-w-[150px] md:max-w-none">{{ activity.title }}</h3>
+                        <a-tag :color="activity.category.color" class="text-xs">{{ activity.category.name }}</a-tag>
                       </div>
-                      <div class="flex items-center text-sm text-[#666666] space-x-2">
-                        <span>{{ activity.user.name }}</span>
+                      <div class="flex items-center text-xs md:text-sm text-[#666666] space-x-1 md:space-x-2">
+                        <span class="truncate max-w-[80px] md:max-w-none">{{ activity.user.name }}</span>
                         <span>•</span>
-                        <span>{{ activity.group }}</span>
+                        <span class="truncate max-w-[60px] md:max-w-none">{{ activity.group }}</span>
                       </div>
                     </div>
                   </div>
-                  <div class="text-sm text-[#666666]">{{ activity.timeAgo }}</div>
+                  <div class="text-xs text-[#666666] whitespace-nowrap ml-2">{{ activity.timeAgo }}</div>
                 </div>
-                
-                <p class="text-[#333333] my-3">{{ activity.description }}</p>
-                
-                <div class="flex flex-wrap gap-2 mb-3">
-                  <a-tag v-for="tag in activity.tags" :key="tag" color="blue">{{ tag }}</a-tag>
+
+                <p class="text-xs md:text-sm text-[#333333] my-2 md:my-3 line-clamp-2">{{ activity.description }}</p>
+
+                <div class="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-3">
+                  <a-tag v-for="tag in activity.tags.slice(0, 3)" :key="tag" color="blue" class="text-xs">{{ tag }}</a-tag>
+                  <span v-if="activity.tags.length > 3" class="text-xs text-gray-400">+{{ activity.tags.length - 3 }}</span>
                 </div>
-                
-                <div class="flex items-center justify-between text-sm text-[#666666]">
-                  <div class="flex items-center space-x-4">
-                    <div class="flex items-center">
-                      <EnvironmentOutlined class="mr-1" />
-                      <span>{{ activity.locationLabel }} ({{ activity.distance }})</span>
-                    </div>
-                    <div class="flex items-center">
-                      <ClockCircleOutlined class="mr-1" />
-                      <span v-if="activity.expiresIn === 'Started'">In Progress</span>
-                      <span v-else>Starting countdown: {{ activity.expiresIn }}</span>
-                    </div>
-                    <div class="flex items-center">
-                      <TeamOutlined class="mr-1" />
-                      <span>{{ activity.participants }} participating</span>
-                    </div>
+
+                <div class="flex flex-wrap items-center gap-2 md:gap-4 text-xs text-[#666666] mb-2 md:mb-3">
+                  <div class="flex items-center">
+                    <EnvironmentOutlined class="mr-1" />
+                    <span class="truncate max-w-[100px] md:max-w-none">{{ activity.locationLabel }}</span>
                   </div>
                   <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-1.5">
-                      <div
-                        class="h-1.5 rounded-full transition-all"
-                        :class="activity.timeProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'"
-                        :style="{ width: Math.min(activity.timeProgress, 100) + '%' }"
-                      ></div>
-                    </div>
-                    <span class="ml-1">{{ Math.min(Math.round(activity.timeProgress), 100) }}%</span>
+                    <ClockCircleOutlined class="mr-1" />
+                    <span>{{ activity.expiresIn }}</span>
+                  </div>
+                  <div class="flex items-center">
+                    <TeamOutlined class="mr-1" />
+                    <span>{{ activity.participants }}</span>
                   </div>
                 </div>
-                
-                <div class="flex justify-between items-center mt-4">
-                  <!-- 积分和费用信息 -->
-                  <div class="flex items-center space-x-3">
-                    <span v-if="activity.entry_fee && activity.entry_fee > 0" class="text-sm text-orange-600 font-medium flex items-center">
-                      <span class="mr-1">💰</span>
-                      ${{ activity.entry_fee }}
+
+                <!-- Progress bar -->
+                <div class="flex items-center text-xs mb-2 md:mb-3">
+                  <div class="flex-1 bg-gray-200 rounded-full h-1.5">
+                    <div
+                      class="h-1.5 rounded-full transition-all"
+                      :class="activity.timeProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'"
+                      :style="{ width: Math.min(activity.timeProgress, 100) + '%' }"
+                    ></div>
+                  </div>
+                  <span class="ml-2">{{ Math.min(Math.round(activity.timeProgress), 100) }}%</span>
+                </div>
+
+                <!-- Info tags and action buttons -->
+                <div class="flex items-center justify-between gap-2">
+                  <!-- Points and status tags -->
+                  <div class="flex items-center gap-1 flex-shrink-0">
+                    <span v-if="activity.entry_fee && activity.entry_fee > 0" class="text-xs text-orange-600 font-medium whitespace-nowrap">
+                      💰 ${{ activity.entry_fee }}
                     </span>
-                    <span v-if="activity.reward_points && activity.reward_points > 0" class="text-sm text-green-600 font-medium flex items-center">
-                      <span class="mr-1">⭐</span>
-                      +{{ activity.reward_points }} pts
+                    <span v-if="activity.reward_points && activity.reward_points > 0" class="text-xs text-green-600 font-medium whitespace-nowrap">
+                      ⭐ +{{ activity.reward_points }}pts
                     </span>
-                    <a-tag v-if="activity.status === 'completed'" color="gray">Completed</a-tag>
-                    <a-tag v-else-if="activity.isOwner" color="blue">My Activity</a-tag>
-                    <a-tag v-else-if="activity.isRegistered" color="green">Registered</a-tag>
+                    <a-tag v-if="activity.status === 'completed'" color="gray" class="text-xs !m-0">Done</a-tag>
+                    <a-tag v-else-if="activity.isOwner" color="blue" class="text-xs !m-0">Mine</a-tag>
+                    <a-tag v-else-if="activity.isRegistered" color="green" class="text-xs !m-0">Joined</a-tag>
                   </div>
 
-                  <!-- 操作按钮区域 -->
-                  <div class="flex space-x-2">
+                  <!-- Action buttons - inline row -->
+                  <div class="flex items-center gap-1 flex-shrink-0">
                     <a-button
-                      class="!rounded-button whitespace-nowrap"
-                      @click="() => $router.push(`/activities/${activity.id}`)"
+                      size="small"
+                      class="!rounded-button text-xs h-7 w-7 p-0 flex items-center justify-center"
+                      @click.stop="() => $router.push(`/activities/${activity.id}`)"
                     >
-                      <EyeOutlined /> View Details
+                      <EyeOutlined />
                     </a-button>
                     <a-button
-                      class="!rounded-button whitespace-nowrap"
-                      @click="shareActivity(activity)"
+                      size="small"
+                      class="!rounded-button text-xs h-7 w-7 p-0 hidden sm:flex items-center justify-center"
+                      @click.stop="shareActivity(activity)"
                     >
-                      <ShareAltOutlined /> Share
+                      <ShareAltOutlined />
                     </a-button>
 
-                    <!-- 活动创建者功能 -->
+                    <!-- Owner actions -->
                     <template v-if="activity.isOwner">
                       <a-button
-                        class="!rounded-button whitespace-nowrap"
-                        @click="editActivity(activity)"
+                        size="small"
+                        class="!rounded-button text-xs h-7 w-7 p-0 hidden sm:flex items-center justify-center"
+                        @click.stop="editActivity(activity)"
                       >
-                        <EditOutlined /> Edit
+                        <EditOutlined />
                       </a-button>
                       <a-button
-                        class="!rounded-button whitespace-nowrap"
-                        @click="showParticipants(activity)"
+                        size="small"
+                        class="!rounded-button text-xs h-7 w-7 p-0 flex items-center justify-center"
+                        @click.stop="showParticipants(activity)"
                       >
-                        <TeamOutlined /> Participants
+                        <TeamOutlined />
                       </a-button>
                       <a-button
                         v-if="activity.status === 'ongoing'"
                         type="primary"
-                        class="!rounded-button bg-[#52C41A] border-none hover:bg-[#45A117] whitespace-nowrap"
-                        @click="generateCheckinCode(activity)"
+                        size="small"
+                        class="!rounded-button bg-[#52C41A] border-none hover:bg-[#45A117] text-xs h-7 w-7 p-0 flex items-center justify-center"
+                        @click.stop="generateCheckinCode(activity)"
                       >
-                        <QrcodeOutlined /> Generate Code
+                        <QrcodeOutlined />
                       </a-button>
                     </template>
 
-                    <!-- 参与者功能 -->
+                    <!-- Participant actions -->
                     <template v-else>
-                      <!-- 注册/Cancel注册按钮 -->
+                      <a-button
+                        v-if="activity.isRegistered"
+                        size="small"
+                        class="!rounded-button bg-[#FA8C16] border-none hover:bg-[#D46B08] text-white text-xs h-7 w-7 p-0 flex items-center justify-center"
+                        @click.stop="openActivityChat(activity)"
+                      >
+                        <MessageOutlined />
+                      </a-button>
+
                       <template v-if="activity.status !== 'completed'">
                         <a-button
                           v-if="!activity.isRegistered"
                           type="primary"
-                          class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] whitespace-nowrap"
-                          @click="registerForActivity(activity)"
+                          size="small"
+                          class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] text-xs h-7 px-2 flex items-center"
+                          @click.stop="registerForActivity(activity)"
                           :disabled="activity.max_participants && activity.current_participants >= activity.max_participants"
                           :loading="activity.registering"
                         >
                           <UserAddOutlined v-if="!activity.registering" />
-                          {{ activity.registering ? 'Joining...' : (activity.max_participants && activity.current_participants >= activity.max_participants ? 'Full' : 'Join Activity') }}
+                          <span class="hidden sm:inline ml-1">Join</span>
                         </a-button>
 
                         <a-button
                           v-else
-                          class="!rounded-button bg-gray-500 border-none hover:bg-gray-600 text-white whitespace-nowrap"
-                          @click="cancelRegistration(activity)"
+                          size="small"
+                          class="!rounded-button bg-gray-500 border-none hover:bg-gray-600 text-white text-xs h-7 w-7 p-0 hidden sm:flex items-center justify-center"
+                          @click.stop="cancelRegistration(activity)"
                           :loading="activity.cancelling"
                         >
                           <UserDeleteOutlined v-if="!activity.cancelling" />
-                          {{ activity.cancelling ? 'Cancelling...' : 'Cancel Registration' }}
                         </a-button>
 
-                        <!-- Check In按钮（仅当活动In Progress且已注册） -->
                         <a-button
                           v-if="canCheckin(activity)"
                           type="primary"
-                          class="!rounded-button bg-[#FA8C16] border-none hover:bg-[#D46B08] whitespace-nowrap"
-                          @click="openActivityCheckinModal(activity)"
+                          size="small"
+                          class="!rounded-button bg-[#FA8C16] border-none hover:bg-[#D46B08] text-xs h-7 w-7 p-0 flex items-center justify-center"
+                          @click.stop="openActivityCheckinModal(activity)"
                         >
-                          <CheckCircleOutlined /> Check In
+                          <CheckCircleOutlined />
                         </a-button>
                       </template>
                     </template>
@@ -306,47 +392,21 @@
             </div>
 
             <!-- Pagination -->
-            <div class="mt-6 flex justify-center">
-              <a-pagination v-model:current="currentPage" :total="totalPages" />
+            <div class="mt-4 md:mt-6 flex justify-center">
+              <a-pagination v-model:current="currentPage" :total="totalPages" size="small" :simple="true" />
             </div>
           </div>
         </div>
 
-        <!-- Right Sidebar -->
-        <div class="space-y-6">
-          <!-- User Points Widget -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-medium text-[#333333]">My Points</h2>
-              <div class="text-2xl">⭐</div>
-            </div>
-            <div class="space-y-3">
-              <div class="flex justify-between items-center">
-                <span class="text-sm text-[#666666]">Current Balance</span>
-                <span class="font-bold text-xl text-[#C24D45]">{{ userPoints.current_balance }}</span>
-              </div>
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-[#666666]">Total Earned</span>
-                <span class="text-green-600">+{{ userPoints.total_earned }}</span>
-              </div>
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-[#666666]">Total Spent</span>
-                <span class="text-orange-600">-{{ userPoints.total_spent }}</span>
-              </div>
-            </div>
-            <div class="mt-4 pt-3 border-t border-gray-100">
-              <p class="text-xs text-gray-500 text-center">
-                Earn points by joining and completing activities!
-              </p>
-            </div>
-          </div>
-
+        <!-- Right Sidebar - Hidden on mobile, shown as collapsible on tablet -->
+        <div class="hidden lg:block space-y-4 md:space-y-6">
           <!-- Nearby Radar Widget -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-lg font-medium text-[#333333]">Nearby Radar</h2>
+          <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+            <div class="flex justify-between items-center mb-3 md:mb-4">
+              <h2 class="text-base md:text-lg font-medium text-[#333333]">Nearby Radar</h2>
               <a-button
                 type="link"
+                size="small"
                 class="text-[#C24D45]"
                 @click="toggleMapExpand"
               >
@@ -355,21 +415,21 @@
             </div>
 
             <!-- Google Maps Container -->
-            <div id="small-map" class="relative bg-[#F5F5F5] rounded-lg overflow-hidden mb-4 h-64"></div>
+            <div id="small-map" class="relative bg-[#F5F5F5] rounded-lg overflow-hidden mb-3 md:mb-4 h-48 md:h-64"></div>
 
             <!-- Radar Legend -->
-            <div class="flex justify-between text-sm text-[#666666]">
+            <div class="flex flex-wrap justify-between gap-2 text-xs text-[#666666]">
               <div class="flex items-center">
-                <div class="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
-                <span>Thought Locations</span>
+                <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-red-500 mr-1"></div>
+                <span>Activities</span>
               </div>
               <div class="flex items-center">
-                <div class="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
-                <span>Visible Users</span>
+                <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-blue-500 mr-1"></div>
+                <span>Users</span>
               </div>
               <div class="flex items-center">
-                <div class="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
-                <span>My Location</span>
+                <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-green-500 mr-1"></div>
+                <span>Me</span>
               </div>
             </div>
           </div>
@@ -522,10 +582,15 @@
               class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div class="flex items-center space-x-4 flex-grow">
-                <img
-                  :src="participant.avatar || 'https://via.placeholder.com/40'"
-                  class="w-12 h-12 rounded-full"
-                  alt="Avatar"
+                <ClickableAvatar
+                  :user="{
+                    id: participant.id,
+                    name: participant.name,
+                    email: participant.email,
+                    avatar_url: participant.avatar
+                  }"
+                  size="large"
+                  @message="handleUserMessage"
                 />
                 <div class="flex-grow">
                   <div class="flex items-center space-x-2">
@@ -662,6 +727,19 @@
         :activity="selectedActivityForCheckin"
         @checkin-success="handleActivityCheckinSuccess"
       />
+
+      <!-- Activity Chat Modal -->
+      <ActivityChatModal
+        v-model:visible="showActivityChatModal"
+        :activity="selectedActivityForChat"
+      />
+
+      <!-- System Group Chat Modal -->
+      <GroupChatModal
+        v-if="showSystemGroupChatModal"
+        v-model:visible="showSystemGroupChatModal"
+        :group="selectedSystemGroup"
+      />
     </div>
   </div>
 </template>
@@ -686,7 +764,9 @@ import {
   CheckCircleOutlined,
   QrcodeOutlined,
   DeleteOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  CarOutlined,
+  ShopOutlined
 } from '@ant-design/icons-vue'
 import { Modal as AModal, Select as ASelect, SelectOption as ASelectOption, Tag as ATag, RadioGroup as ARadioGroup, RadioButton as ARadioButton, Slider as ASlider, Button as AButton, Pagination as APagination } from 'ant-design-vue'
 import { groupAPI, thoughtAPI, visibilityAPI, activitiesAPI, pointsAPI } from '@/utils/api'
@@ -694,6 +774,8 @@ import CreateGroupModal from '@/components/groups/CreateGroupModal.vue'
 import PostThoughtModal from '@/components/groups/PostThoughtModal.vue'
 import GroupChatModal from '@/components/groups/GroupChatModal.vue'
 import ActivityCheckinModal from '@/components/activities/ActivityCheckinModal.vue'
+import ActivityChatModal from '@/components/activities/ActivityChatModal.vue'
+import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
@@ -750,6 +832,18 @@ const participantsList = ref([])
 // New checkin modal state
 const showActivityCheckinModal = ref(false)
 const selectedActivityForCheckin = ref(null)
+
+// Activity chat modal state
+const showActivityChatModal = ref(false)
+const selectedActivityForChat = ref(null)
+
+// System groups state
+const systemGroupStats = ref({
+  carpooling: { memberCount: 0, activityCount: 0 },
+  marketplace: { memberCount: 0, activityCount: 0 }
+})
+const showSystemGroupChatModal = ref(false)
+const selectedSystemGroup = ref(null)
 
 // Google Maps instances
 let smallMap = null
@@ -823,14 +917,25 @@ const formatTimeAgo = (dateString) => {
   return `${diffInWeeks} wk${diffInWeeks > 1 ? 's' : ''} ago`
 }
 
-const formatTimeUntil = (targetTime) => {
-  if (!targetTime) return '—'
+const formatTimeUntil = (startTime, endTime) => {
+  if (!startTime) return '—'
   const now = new Date()
-  const target = new Date(targetTime)
-  if (Number.isNaN(target.getTime())) return '—'
-  if (target <= now) return 'Started'
+  const start = new Date(startTime)
+  if (Number.isNaN(start.getTime())) return '—'
 
-  const diffMs = target - now
+  // Check if activity has ended
+  if (endTime) {
+    const end = new Date(endTime)
+    if (!Number.isNaN(end.getTime()) && now >= end) {
+      return 'Completed'
+    }
+  }
+
+  // Check if activity has started
+  if (start <= now) return 'In Progress'
+
+  // Calculate time until start
+  const diffMs = start - now
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
   if (diffHours >= 24) {
@@ -875,8 +980,11 @@ const formatActivity = (raw) => {
       color: CATEGORY_COLORS[categoryKey] || 'blue'
     },
     user: {
+      id: raw.organizer_id || raw.organizer?.id,
+      email: raw.organizer?.email,
       name: organizerName || raw.organizer?.email || 'Campus Organizer',
-      avatar: raw.organizer?.avatar_url || DEFAULT_ACTIVITY_AVATAR
+      avatar: raw.organizer?.avatar_url || DEFAULT_ACTIVITY_AVATAR,
+      avatar_url: raw.organizer?.avatar_url || DEFAULT_ACTIVITY_AVATAR
     },
     group: raw.organizer?.university || 'Campus Community',
     timeAgo: formatTimeAgo(raw.created_at),
@@ -884,7 +992,7 @@ const formatActivity = (raw) => {
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     locationLabel: raw.location || raw.location_coordinates?.address || 'Location TBD',
     distance: raw.location_coordinates ? 'Nearby' : '—',
-    expiresIn: formatTimeUntil(raw.start_time),
+    expiresIn: formatTimeUntil(raw.start_time, raw.end_time),
     participants: raw.current_participants || 0,
     successRate: raw.max_participants
       ? Math.min(100, Math.round(((raw.current_participants || 0) / raw.max_participants) * 100))
@@ -1151,6 +1259,25 @@ const shareActivity = (activity) => {
 const joinActivity = (activity) => {
   alert(`Joined "${activity.title}"! The organizer will be notified.`)
   activity.participants++
+}
+
+// System group methods
+const goToSystemGroup = (groupType) => {
+  if (groupType === 'carpooling') {
+    router.push('/rideshare')
+  } else if (groupType === 'marketplace') {
+    router.push('/marketplace')
+  }
+}
+
+const openSystemGroupChat = (groupType) => {
+  selectedSystemGroup.value = {
+    id: `system-${groupType}`,
+    name: groupType === 'carpooling' ? 'Carpooling' : 'Marketplace',
+    type: groupType,
+    isSystemGroup: true
+  }
+  showSystemGroupChatModal.value = true
 }
 
 // === Groups API Methods ===
@@ -1429,7 +1556,7 @@ const updateMapMarkers = () => {
   thoughtMarkers = []
   userMarkers = []
 
-  // Add thought markers (red)
+  // Add thought markers (with user avatar)
   mapThoughts.value.forEach(thought => {
     console.log('📍 Adding thought marker:', thought)
     if (thought.location && thought.location.lat && thought.location.lng) {
@@ -1439,24 +1566,50 @@ const updateMapMarkers = () => {
         ? thought.content.substring(0, maxLength) + '...'
         : thought.content
 
-      const marker = new window.google.maps.Marker({
-        position: { lat: thought.location.lat, lng: thought.location.lng },
-        map: smallMap,
-        title: thought.content,
-        icon: {
+      // Create marker with avatar if available
+      const avatarUrl = thought.user?.avatar_url
+      let markerIcon
+
+      if (avatarUrl) {
+        markerIcon = {
+          url: avatarUrl,
+          scaledSize: new window.google.maps.Size(36, 36),
+          anchor: new window.google.maps.Point(18, 18),
+          origin: new window.google.maps.Point(0, 0)
+        }
+      } else {
+        markerIcon = {
           path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: '#EF4444',
           fillOpacity: 0.8,
           strokeWeight: 2,
           strokeColor: '#FFF',
-          scale: 8
+          scale: 12
         }
+      }
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: thought.location.lat, lng: thought.location.lng },
+        map: smallMap,
+        title: thought.content,
+        icon: markerIcon
       })
 
       const infoWindow = new window.google.maps.InfoWindow({
         content: `<div style="padding: 8px; max-width: 200px;">
-          <div style="font-weight: bold; margin-bottom: 4px; color: #333;">${thought.user?.first_name || 'User'}</div>
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
+                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
+            <span style="font-weight: bold; color: #333;">${thought.user?.first_name || 'User'}</span>
+          </div>
           <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
+          <div style="margin-top: 8px;">
+            <button onclick="window.openMessageChat && window.openMessageChat('${thought.user?.id}')"
+                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+              Send Message
+            </button>
+          </div>
         </div>`
       })
 
@@ -1468,32 +1621,64 @@ const updateMapMarkers = () => {
       // Hide on mouse leave
       marker.addListener('mouseout', () => {
         infoWindow.close()
+      })
+
+      // Click to open chat
+      marker.addListener('click', () => {
+        if (thought.user?.id) {
+          handleUserMessage({ id: thought.user.id, name: thought.user.first_name })
+        }
       })
 
       thoughtMarkers.push(marker)
     }
   })
 
-  // Add user markers (blue)
+  // Add user markers (with avatar)
   visibleUsers.value.forEach(user => {
     if (user.current_location && user.current_location.lat && user.current_location.lng) {
-      const marker = new window.google.maps.Marker({
-        position: { lat: user.current_location.lat, lng: user.current_location.lng },
-        map: smallMap,
-        title: user.first_name,
-        icon: {
+      const avatarUrl = user.avatar_url
+      let markerIcon
+
+      if (avatarUrl) {
+        markerIcon = {
+          url: avatarUrl,
+          scaledSize: new window.google.maps.Size(36, 36),
+          anchor: new window.google.maps.Point(18, 18),
+          origin: new window.google.maps.Point(0, 0)
+        }
+      } else {
+        markerIcon = {
           path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: '#3B82F6',
           fillOpacity: 0.8,
           strokeWeight: 2,
           strokeColor: '#FFF',
-          scale: 8
+          scale: 12
         }
+      }
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: user.current_location.lat, lng: user.current_location.lng },
+        map: smallMap,
+        title: user.first_name,
+        icon: markerIcon
       })
 
       const infoWindow = new window.google.maps.InfoWindow({
         content: `<div style="padding: 8px;">
-          <div style="font-weight: bold; color: #333;">${user.first_name || 'User'}</div>
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
+                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
+            <span style="font-weight: bold; color: #333;">${user.first_name || 'User'}</span>
+          </div>
+          <div style="margin-top: 8px;">
+            <button onclick="window.openMessageChat && window.openMessageChat('${user.id}')"
+                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+              Send Message
+            </button>
+          </div>
         </div>`
       })
 
@@ -1505,6 +1690,13 @@ const updateMapMarkers = () => {
       // Hide on mouse leave
       marker.addListener('mouseout', () => {
         infoWindow.close()
+      })
+
+      // Click to open chat
+      marker.addListener('click', () => {
+        if (user.id) {
+          handleUserMessage({ id: user.id, name: user.first_name })
+        }
       })
 
       userMarkers.push(marker)
@@ -1515,7 +1707,7 @@ const updateMapMarkers = () => {
 const updateLargeMapMarkers = () => {
   if (!largeMap || !window.google) return
 
-  // Copy small map markers to large map
+  // Copy small map markers to large map with avatars
   mapThoughts.value.forEach(thought => {
     if (thought.location && thought.location.lat && thought.location.lng) {
       // Truncate overly long content
@@ -1524,69 +1716,127 @@ const updateLargeMapMarkers = () => {
         ? thought.content.substring(0, maxLength) + '...'
         : thought.content
 
-      const marker = new window.google.maps.Marker({
-        position: { lat: thought.location.lat, lng: thought.location.lng },
-        map: largeMap,
-        title: thought.content,
-        icon: {
+      const avatarUrl = thought.user?.avatar_url
+      let markerIcon
+
+      if (avatarUrl) {
+        markerIcon = {
+          url: avatarUrl,
+          scaledSize: new window.google.maps.Size(40, 40),
+          anchor: new window.google.maps.Point(20, 20),
+          origin: new window.google.maps.Point(0, 0)
+        }
+      } else {
+        markerIcon = {
           path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: '#EF4444',
           fillOpacity: 0.8,
           strokeWeight: 2,
           strokeColor: '#FFF',
-          scale: 10
+          scale: 12
         }
+      }
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: thought.location.lat, lng: thought.location.lng },
+        map: largeMap,
+        title: thought.content,
+        icon: markerIcon
       })
 
       const infoWindow = new window.google.maps.InfoWindow({
         content: `<div style="padding: 8px; max-width: 200px;">
-          <div style="font-weight: bold; margin-bottom: 4px; color: #333;">${thought.user?.first_name || '用户'}</div>
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
+                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
+            <span style="font-weight: bold; color: #333;">${thought.user?.first_name || 'User'}</span>
+          </div>
           <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
+          <div style="margin-top: 8px;">
+            <button onclick="window.openMessageChat && window.openMessageChat('${thought.user?.id}')"
+                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+              Send Message
+            </button>
+          </div>
         </div>`
       })
 
-      // 鼠标悬停时显示
       marker.addListener('mouseover', () => {
         infoWindow.open(largeMap, marker)
       })
 
-      // 鼠标离开时隐藏
       marker.addListener('mouseout', () => {
         infoWindow.close()
+      })
+
+      marker.addListener('click', () => {
+        if (thought.user?.id) {
+          handleUserMessage({ id: thought.user.id, name: thought.user.first_name })
+        }
       })
     }
   })
 
   visibleUsers.value.forEach(user => {
     if (user.current_location && user.current_location.lat && user.current_location.lng) {
-      const marker = new window.google.maps.Marker({
-        position: { lat: user.current_location.lat, lng: user.current_location.lng },
-        map: largeMap,
-        title: user.first_name,
-        icon: {
+      const avatarUrl = user.avatar_url
+      let markerIcon
+
+      if (avatarUrl) {
+        markerIcon = {
+          url: avatarUrl,
+          scaledSize: new window.google.maps.Size(40, 40),
+          anchor: new window.google.maps.Point(20, 20),
+          origin: new window.google.maps.Point(0, 0)
+        }
+      } else {
+        markerIcon = {
           path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: '#3B82F6',
           fillOpacity: 0.8,
           strokeWeight: 2,
           strokeColor: '#FFF',
-          scale: 10
+          scale: 12
         }
+      }
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: user.current_location.lat, lng: user.current_location.lng },
+        map: largeMap,
+        title: user.first_name,
+        icon: markerIcon
       })
 
       const infoWindow = new window.google.maps.InfoWindow({
         content: `<div style="padding: 8px;">
-          <div style="font-weight: bold; color: #333;">${user.first_name || '用户'}</div>
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
+                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
+            <span style="font-weight: bold; color: #333;">${user.first_name || 'User'}</span>
+          </div>
+          <div style="margin-top: 8px;">
+            <button onclick="window.openMessageChat && window.openMessageChat('${user.id}')"
+                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+              Send Message
+            </button>
+          </div>
         </div>`
       })
 
-      // 鼠标悬停时显示
       marker.addListener('mouseover', () => {
         infoWindow.open(largeMap, marker)
       })
 
-      // 鼠标离开时隐藏
       marker.addListener('mouseout', () => {
         infoWindow.close()
+      })
+
+      marker.addListener('click', () => {
+        if (user.id) {
+          handleUserMessage({ id: user.id, name: user.first_name })
+        }
       })
     }
   })
@@ -1823,6 +2073,20 @@ const removeParticipant = async (participant) => {
 const messageParticipant = (participant) => {
   message.info(`Opening chat with ${participant.name}...`)
   // In real implementation, this would open a chat/messaging interface
+}
+
+// Handle user message from ClickableAvatar
+const handleUserMessage = (user) => {
+  router.push({
+    path: '/messages',
+    query: { userId: user.id }
+  })
+}
+
+// Open activity chat modal
+const openActivityChat = (activity) => {
+  selectedActivityForChat.value = activity
+  showActivityChatModal.value = true
 }
 
 // Get participant status color

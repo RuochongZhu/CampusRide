@@ -7,7 +7,7 @@
     >
       <div class="text-center">
         <a-spin size="large" />
-        <p class="text-gray-600 mt-4">加载地图中...</p>
+        <p class="text-gray-600 mt-4">Loading map...</p>
       </div>
     </div>
 
@@ -18,9 +18,9 @@
     >
       <div class="text-center max-w-md p-6">
         <EnvironmentOutlined style="font-size: 64px" class="text-red-400 mb-4" />
-        <p class="text-red-600 font-medium mb-2">地图加载失败</p>
+        <p class="text-red-600 font-medium mb-2">Map loading failed</p>
         <p class="text-sm text-gray-600 mb-4">{{ error }}</p>
-        <a-button type="primary" @click="initMap">重试</a-button>
+        <a-button type="primary" @click="initMap">Retry</a-button>
       </div>
     </div>
 
@@ -29,19 +29,23 @@
       v-if="!loading && !error"
       class="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-lg p-3 shadow-lg z-20"
     >
-      <div class="text-xs font-semibold text-gray-600 mb-2">图例</div>
+      <div class="text-xs font-semibold text-gray-600 mb-2">Legend</div>
       <div class="space-y-1">
         <div class="flex items-center text-xs text-gray-600">
           <div class="w-3 h-3 bg-[#C24D45] rounded-full mr-2"></div>
-          <span>想法位置</span>
+          <span>Thought Locations</span>
         </div>
         <div class="flex items-center text-xs text-gray-600">
-          <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-          <span>用户位置</span>
+          <div class="w-3 h-3 bg-blue-500 rounded-full mr-2 ring-2 ring-blue-300"></div>
+          <span>Visible Users</span>
+        </div>
+        <div class="flex items-center text-xs text-gray-600">
+          <div class="w-3 h-3 bg-green-500 rounded-full mr-2 ring-2 ring-green-300 animate-pulse"></div>
+          <span>My Location</span>
         </div>
         <div class="flex items-center text-xs text-gray-600">
           <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-          <span>校园活动</span>
+          <span>Campus Activities</span>
         </div>
       </div>
     </div>
@@ -51,21 +55,21 @@
       v-if="!loading && !error"
       class="absolute top-4 right-4 bg-white/95 backdrop-blur rounded-lg p-3 shadow-lg z-20"
     >
-      <div class="text-xs text-gray-500 mb-1">统计</div>
+      <div class="text-xs text-gray-500 mb-1">Statistics</div>
       <div class="flex items-center space-x-4">
         <div class="text-center">
           <div class="text-lg font-bold text-[#C24D45]">{{ thoughts.length }}</div>
-          <div class="text-xs text-gray-500">想法</div>
+          <div class="text-xs text-gray-500">Thoughts</div>
         </div>
         <div class="w-px h-8 bg-gray-300"></div>
         <div class="text-center">
           <div class="text-lg font-bold text-blue-500">{{ users.length }}</div>
-          <div class="text-xs text-gray-500">用户</div>
+          <div class="text-xs text-gray-500">Users</div>
         </div>
         <div class="w-px h-8 bg-gray-300"></div>
         <div class="text-center">
           <div class="text-lg font-bold text-orange-500">{{ activities.length }}</div>
-          <div class="text-xs text-gray-500">活动</div>
+          <div class="text-xs text-gray-500">Activities</div>
         </div>
       </div>
     </div>
@@ -74,8 +78,10 @@
 
 <script setup>
 import { ref, onMounted, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { Loader } from '@googlemaps/js-api-loader'
 import { EnvironmentOutlined } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   thoughts: {
@@ -89,10 +95,17 @@ const props = defineProps({
   activities: {
     type: Array,
     default: () => []
+  },
+  myLocation: {
+    type: Object,
+    default: null
   }
 })
 
-const emit = defineEmits(['marker-hover', 'marker-click'])
+const emit = defineEmits(['marker-hover', 'marker-click', 'user-click'])
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const mapContainer = ref(null)
 const loading = ref(true)
@@ -101,10 +114,62 @@ let map = null
 let thoughtMarkers = []
 let userMarkers = []
 let activityMarkers = []
+let myLocationMarker = null
 let infoWindow = null
 
 // 获取 API Key
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+
+// Create avatar marker icon
+const createAvatarMarkerIcon = (avatarUrl, isCurrentUser = false) => {
+  const size = isCurrentUser ? 48 : 40
+  const borderColor = isCurrentUser ? '#10B981' : '#3B82F6' // green for current user, blue for others
+  const borderWidth = isCurrentUser ? 4 : 3
+  const glowColor = isCurrentUser ? 'rgba(16, 185, 129, 0.4)' : 'transparent'
+
+  return {
+    url: `data:image/svg+xml,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size + 8}" height="${size + 16}">
+        <defs>
+          <clipPath id="circle">
+            <circle cx="${(size + 8) / 2}" cy="${size / 2}" r="${size / 2 - borderWidth}"/>
+          </clipPath>
+          ${isCurrentUser ? `
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          ` : ''}
+        </defs>
+        ${isCurrentUser ? `<circle cx="${(size + 8) / 2}" cy="${size / 2}" r="${size / 2 + 2}" fill="${glowColor}" filter="url(#glow)"/>` : ''}
+        <circle cx="${(size + 8) / 2}" cy="${size / 2}" r="${size / 2}" fill="${borderColor}"/>
+        <circle cx="${(size + 8) / 2}" cy="${size / 2}" r="${size / 2 - borderWidth}" fill="#fff"/>
+        <image href="${avatarUrl || 'https://via.placeholder.com/40'}" x="${4 + borderWidth}" y="${borderWidth}" width="${size - borderWidth * 2}" height="${size - borderWidth * 2}" clip-path="url(#circle)" preserveAspectRatio="xMidYMid slice"/>
+        <polygon points="${(size + 8) / 2 - 6},${size} ${(size + 8) / 2 + 6},${size} ${(size + 8) / 2},${size + 12}" fill="${borderColor}"/>
+      </svg>
+    `)}`,
+    scaledSize: new google.maps.Size(size + 8, size + 16),
+    anchor: new google.maps.Point((size + 8) / 2, size + 12)
+  }
+}
+
+// Create simple avatar marker for fallback
+const createSimpleAvatarMarker = (user, isCurrentUser = false) => {
+  const size = isCurrentUser ? 48 : 40
+  const borderColor = isCurrentUser ? '#10B981' : '#3B82F6'
+
+  return {
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: size / 2,
+    fillColor: borderColor,
+    fillOpacity: 1,
+    strokeColor: 'white',
+    strokeWeight: 3
+  }
+}
 
 // 初始化地图
 const initMap = async () => {
@@ -114,7 +179,7 @@ const initMap = async () => {
   try {
     // 检查 API Key
     if (!GOOGLE_MAPS_API_KEY) {
-      throw new Error('请在 .env 文件中配置 VITE_GOOGLE_MAPS_API_KEY')
+      throw new Error('Please configure VITE_GOOGLE_MAPS_API_KEY in .env file')
     }
 
     // 加载 Google Maps API
@@ -129,13 +194,14 @@ const initMap = async () => {
     await nextTick()
 
     if (!mapContainer.value) {
-      throw new Error('地图容器未找到')
+      throw new Error('Map container not found')
     }
 
     // 创建地图
     map = new google.maps.Map(mapContainer.value, {
-      center: { lat: 37.7749, lng: -122.4194 }, // 默认旧金山
-      zoom: 13,
+      center: { lat: 42.4534, lng: -76.4735 }, // Cornell University
+      zoom: 15,
+      mapTypeId: google.maps.MapTypeId.SATELLITE, // Use satellite view
       mapTypeControl: true,
       streetViewControl: true,
       fullscreenControl: true,
@@ -156,14 +222,15 @@ const initMap = async () => {
     renderThoughtMarkers()
     renderUserMarkers()
     renderActivityMarkers()
+    renderMyLocationMarker()
 
     // 如果有标记，自动调整视图
     fitMapToMarkers()
 
     loading.value = false
   } catch (err) {
-    console.error('地图初始化失败:', err)
-    error.value = err.message || '地图加载失败，请检查网络连接'
+    console.error('Map initialization failed:', err)
+    error.value = err.message || 'Map loading failed, please check network connection'
     loading.value = false
   }
 }
@@ -181,6 +248,10 @@ const renderThoughtMarkers = () => {
       return
     }
 
+    // Create avatar-based marker for thoughts
+    const avatarUrl = thought.user?.avatar_url || 'https://via.placeholder.com/40'
+    const isCurrentUser = thought.user?.id === authStore.userId
+
     const marker = new google.maps.Marker({
       position: {
         lat: thought.location.lat,
@@ -190,11 +261,11 @@ const renderThoughtMarkers = () => {
       title: thought.content.substring(0, 50),
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 12,
+        scale: 14,
         fillColor: '#C24D45',
         fillOpacity: 1,
         strokeColor: 'white',
-        strokeWeight: 2
+        strokeWeight: 3
       },
       animation: google.maps.Animation.DROP
     })
@@ -202,30 +273,36 @@ const renderThoughtMarkers = () => {
     // 点击事件
     marker.addListener('click', () => {
       const content = `
-        <div style="max-width: 250px; padding: 8px;">
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <img src="${thought.user?.avatar_url || ''}"
-                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px;"
-                 onerror="this.src='https://via.placeholder.com/32'" />
+        <div style="max-width: 280px; padding: 12px;">
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <img src="${thought.user?.avatar_url || 'https://via.placeholder.com/40'}"
+                 style="width: 44px; height: 44px; border-radius: 50%; margin-right: 12px; border: 2px solid #C24D45; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/40'" />
             <div>
-              <div style="font-weight: 600; color: #333;">
+              <div style="font-weight: 600; color: #333; font-size: 14px;">
                 ${thought.user?.first_name || ''} ${thought.user?.last_name || ''}
               </div>
-              <div style="font-size: 12px; color: #666;">
-                ${new Date(thought.created_at).toLocaleString('zh-CN')}
+              <div style="font-size: 11px; color: #666;">
+                ${new Date(thought.created_at).toLocaleString('en-US')}
               </div>
             </div>
           </div>
-          <div style="color: #333; line-height: 1.5;">
+          <div style="color: #333; line-height: 1.6; font-size: 13px; background: #f9f9f9; padding: 10px; border-radius: 8px;">
             ${thought.content}
           </div>
           ${
             thought.location.address
-              ? `<div style="font-size: 12px; color: #666; margin-top: 8px;">
+              ? `<div style="font-size: 11px; color: #666; margin-top: 10px;">
                   📍 ${thought.location.address}
                  </div>`
               : ''
           }
+          ${thought.user?.id !== authStore.userId ? `
+          <button onclick="window.dispatchEvent(new CustomEvent('chat-with-user', {detail: {userId: '${thought.user?.id}', userName: '${thought.user?.first_name} ${thought.user?.last_name}'}}));"
+                  style="margin-top: 12px; width: 100%; padding: 8px 16px; background: #C24D45; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+            💬 Chat
+          </button>
+          ` : ''}
         </div>
       `
       infoWindow.setContent(content)
@@ -243,7 +320,7 @@ const renderThoughtMarkers = () => {
   })
 }
 
-// 渲染用户标记
+// 渲染用户标记 - 使用头像
 const renderUserMarkers = () => {
   if (!map) return
 
@@ -256,47 +333,128 @@ const renderUserMarkers = () => {
       return
     }
 
+    // Skip current user (they have a separate marker)
+    if (user.id === authStore.userId) {
+      return
+    }
+
+    const avatarUrl = user.avatar || user.avatar_url || 'https://via.placeholder.com/40'
+
+    // Create avatar-based marker for users
     const marker = new google.maps.Marker({
       position: {
         lat: user.location.lat,
         lng: user.location.lng
       },
       map: map,
-      title: user.name,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: user.has_thought ? 10 : 8,
-        fillColor: '#3B82F6',
-        fillOpacity: 0.9,
-        strokeColor: 'white',
-        strokeWeight: 2
-      }
+      title: user.name || `${user.first_name} ${user.last_name}`,
+      icon: createAvatarMarkerIcon(avatarUrl, false)
     })
 
-    // 点击事件
+    // 点击事件 - 显示用户信息和聊天按钮
     marker.addListener('click', () => {
+      const displayName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'
       const content = `
-        <div style="max-width: 200px; padding: 8px;">
+        <div style="max-width: 240px; padding: 12px;">
           <div style="display: flex; align-items: center;">
-            <img src="${user.avatar || ''}"
-                 style="width: 40px; height: 40px; border-radius: 50%; margin-right: 8px;"
-                 onerror="this.src='https://via.placeholder.com/40'" />
+            <img src="${avatarUrl}"
+                 style="width: 52px; height: 52px; border-radius: 50%; margin-right: 12px; border: 3px solid #3B82F6; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/52'" />
             <div>
-              <div style="font-weight: 600; color: #333;">${user.name}</div>
+              <div style="font-weight: 600; color: #333; font-size: 15px;">${displayName}</div>
+              <div style="font-size: 12px; color: #666;">${user.email || ''}</div>
               ${
                 user.has_thought
-                  ? '<div style="font-size: 12px; color: #10B981;">✓ 有想法</div>'
-                  : '<div style="font-size: 12px; color: #666;">在线</div>'
+                  ? '<div style="font-size: 11px; color: #10B981; margin-top: 2px;">✓ Has shared thought</div>'
+                  : '<div style="font-size: 11px; color: #3B82F6; margin-top: 2px;">● Online</div>'
               }
             </div>
           </div>
+          <button onclick="window.dispatchEvent(new CustomEvent('chat-with-user', {detail: {userId: '${user.id}', userName: '${displayName}'}}));"
+                  style="margin-top: 12px; width: 100%; padding: 10px 16px; background: #3B82F6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+            💬 Start Chat
+          </button>
         </div>
       `
       infoWindow.setContent(content)
       infoWindow.open(map, marker)
+      emit('user-click', user)
     })
 
     userMarkers.push(marker)
+  })
+}
+
+// 渲染"我的位置"标记 - 特殊显示
+const renderMyLocationMarker = () => {
+  if (!map) return
+
+  // 清除旧的我的位置标记
+  if (myLocationMarker) {
+    myLocationMarker.setMap(null)
+    myLocationMarker = null
+  }
+
+  // Check if we have current user's location from users array or myLocation prop
+  let myLoc = props.myLocation
+  let currentUserAvatar = authStore.user?.avatar_url || 'https://via.placeholder.com/40'
+
+  if (!myLoc) {
+    const currentUser = props.users.find(u => u.id === authStore.userId)
+    if (currentUser && currentUser.location) {
+      myLoc = currentUser.location
+      currentUserAvatar = currentUser.avatar || currentUser.avatar_url || currentUserAvatar
+    }
+  }
+
+  if (!myLoc || !myLoc.lat || !myLoc.lng) {
+    return
+  }
+
+  // Create special marker for current user with avatar and pulsing effect
+  myLocationMarker = new google.maps.Marker({
+    position: {
+      lat: myLoc.lat,
+      lng: myLoc.lng
+    },
+    map: map,
+    title: 'My Location',
+    icon: createAvatarMarkerIcon(currentUserAvatar, true),
+    zIndex: 1000 // Ensure it's on top
+  })
+
+  // Add outer pulsing circle
+  const pulseCircle = new google.maps.Circle({
+    map: map,
+    center: { lat: myLoc.lat, lng: myLoc.lng },
+    radius: 30,
+    strokeColor: '#10B981',
+    strokeOpacity: 0.4,
+    strokeWeight: 2,
+    fillColor: '#10B981',
+    fillOpacity: 0.15
+  })
+
+  // Click event for my location
+  myLocationMarker.addListener('click', () => {
+    const content = `
+      <div style="padding: 12px; text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+          <div style="width: 12px; height: 12px; background: #10B981; border-radius: 50%; margin-right: 8px; animation: pulse 2s infinite;"></div>
+          <div style="font-weight: 600; color: #333; font-size: 15px;">My Location</div>
+        </div>
+        <div style="font-size: 12px; color: #666;">You are here</div>
+      </div>
+      <style>
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.7; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      </style>
+    `
+    infoWindow.setContent(content)
+    infoWindow.open(map, myLocationMarker)
   })
 }
 
@@ -338,14 +496,14 @@ const renderActivityMarkers = () => {
       const now = new Date()
 
       let statusColor = '#10b981' // green
-      let statusText = '即将开始'
+      let statusText = 'Upcoming'
 
       if (now > startTime && now < endTime) {
         statusColor = '#3b82f6' // blue
-        statusText = '进行中'
+        statusText = 'In Progress'
       } else if (now > endTime) {
         statusColor = '#6b7280' // gray
-        statusText = '已结束'
+        statusText = 'Ended'
       }
 
       const content = `
@@ -368,20 +526,20 @@ const renderActivityMarkers = () => {
 
           <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
             <div style="margin-bottom: 4px;">
-              🕒 ${startTime.toLocaleDateString('zh-CN')} ${startTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+              🕒 ${startTime.toLocaleDateString('en-US')} ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </div>
             <div style="margin-bottom: 4px;">
               📍 ${activity.location}
             </div>
             ${activity.current_participants !== undefined ?
-              `<div>👥 ${activity.current_participants || 0}${activity.max_participants ? `/${activity.max_participants}` : ''} 人参与</div>` :
+              `<div>👥 ${activity.current_participants || 0}${activity.max_participants ? `/${activity.max_participants}` : ''} participants</div>` :
               ''
             }
           </div>
 
           ${activity.reward_points > 0 ?
             `<div style="background-color: #fef3cd; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #92400e;">
-              🏆 奖励 ${activity.reward_points} 积分
+              🏆 Reward: ${activity.reward_points} points
             </div>` :
             ''
           }
@@ -404,7 +562,7 @@ const renderActivityMarkers = () => {
 
 // 调整地图视图以显示所有标记
 const fitMapToMarkers = () => {
-  if (!map || (thoughtMarkers.length === 0 && userMarkers.length === 0 && activityMarkers.length === 0)) {
+  if (!map || (thoughtMarkers.length === 0 && userMarkers.length === 0 && activityMarkers.length === 0 && !myLocationMarker)) {
     return
   }
 
@@ -422,12 +580,29 @@ const fitMapToMarkers = () => {
     bounds.extend(marker.getPosition())
   })
 
+  if (myLocationMarker) {
+    bounds.extend(myLocationMarker.getPosition())
+  }
+
   map.fitBounds(bounds)
 
   // 限制最大缩放级别
   const listener = google.maps.event.addListener(map, 'idle', () => {
     if (map.getZoom() > 16) map.setZoom(16)
     google.maps.event.removeListener(listener)
+  })
+}
+
+// Listen for chat events from InfoWindow
+if (typeof window !== 'undefined') {
+  window.addEventListener('chat-with-user', (event) => {
+    const { userId, userName } = event.detail
+    if (userId) {
+      router.push({
+        path: '/messages',
+        query: { userId }
+      })
+    }
   })
 }
 
@@ -448,6 +623,7 @@ watch(
   () => {
     if (map) {
       renderUserMarkers()
+      renderMyLocationMarker()
       fitMapToMarkers()
     }
   },
@@ -459,6 +635,17 @@ watch(
   () => {
     if (map) {
       renderActivityMarkers()
+      fitMapToMarkers()
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.myLocation,
+  () => {
+    if (map) {
+      renderMyLocationMarker()
       fitMapToMarkers()
     }
   },

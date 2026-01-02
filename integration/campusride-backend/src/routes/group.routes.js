@@ -14,16 +14,16 @@ const router = express.Router();
 // 所有小组路由都需要认证
 router.use(authenticateToken);
 
+// 获取我的小组 (需要注册用户) - 必须放在 /:groupId 之前
+router.get('/my',
+  requireRegisteredUser,
+  asyncHandler(groupController.getMyGroups.bind(groupController))
+);
+
 // 获取所有小组 (guest可以查看)
 router.get('/',
   getGroupsValidation,
   asyncHandler(groupController.getGroups.bind(groupController))
-);
-
-// 获取我的小组 (需要注册用户)
-router.get('/my',
-  requireRegisteredUser,
-  asyncHandler(groupController.getMyGroups.bind(groupController))
 );
 
 // 创建小组 (需要注册用户)
@@ -53,14 +53,7 @@ router.delete('/:groupId/leave',
   asyncHandler(groupController.leaveGroup.bind(groupController))
 );
 
-// 删除小组 (需要注册用户)
-router.delete('/:groupId',
-  requireRegisteredUser,
-  groupIdValidation,
-  asyncHandler(groupController.deleteGroup.bind(groupController))
-);
-
-// 获取小组消息 (需要注册用户)
+// 获取小组消息 (需要注册用户) - 必须放在 DELETE /:groupId 之前
 router.get('/:groupId/messages',
   requireRegisteredUser,
   getGroupMessagesValidation,
@@ -72,6 +65,13 @@ router.post('/:groupId/messages',
   requireRegisteredUser,
   sendGroupMessageValidation,
   asyncHandler(groupController.sendGroupMessage.bind(groupController))
+);
+
+// 删除小组 (需要注册用户) - 必须放在最后
+router.delete('/:groupId',
+  requireRegisteredUser,
+  groupIdValidation,
+  asyncHandler(groupController.deleteGroup.bind(groupController))
 );
 
 export default router;

@@ -1,240 +1,139 @@
 <template>
-  <div
-    class="clickable-avatar"
-    :class="{ small, medium, large }"
-    @click="handleAvatarClick"
-    :title="tooltipText"
-  >
-    <div class="avatar-circle">
-      {{ displayInitials }}
-    </div>
+  <div class="clickable-avatar">
+    <a-badge :dot="user?.is_online" :offset="[-5, 35]">
+      <a-avatar
+        :src="user?.avatar_url"
+        :size="size"
+        :class="{ 'cursor-pointer': !disabled, 'hover:shadow-md': !disabled }"
+        @click="showUserCard"
+      >
+        {{ getInitials(user) }}
+      </a-avatar>
+    </a-badge>
 
-    <!-- 头像点击触发的用户信息模态框 -->
-    <UserProfileModal
-      v-model="showUserModal"
-      :user-id="userId"
-      :user-info="userInfo"
-      :context-type="contextType"
-      :context-id="contextId"
-      @message-sent="handleMessageSent"
-    />
+    <!-- 用户卡片Popover -->
+    <a-popover
+      v-model:open="cardVisible"
+      trigger="click"
+      placement="bottom"
+      overlay-class-name="user-card-popover"
+      :get-popup-container="getPopupContainer"
+    >
+      <template #content>
+        <UserQuickCard
+          :user="user"
+          @message="handleMessage"
+          @close="cardVisible = false"
+        />
+      </template>
+      <!-- 隐藏的触发元素 -->
+      <div ref="popoverTrigger" style="display: none;"></div>
+    </a-popover>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { message } from 'ant-design-vue'
-import UserProfileModal from './UserProfileModal.vue'
+import { ref, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { message as antdMessage } from 'ant-design-vue'
+import UserQuickCard from './UserQuickCard.vue'
 
 const props = defineProps({
-  // 用户基础信息
-  userId: {
-    type: String,
-    required: true
-  },
-  userInfo: {
+  user: {
     type: Object,
     required: true
-    // 应包含: { first_name, last_name, nickname, email, role, ... }
   },
-
-  // 头像尺寸
   size: {
-    type: String,
-    default: 'medium', // 'small', 'medium', 'large'
-    validator: (value) => ['small', 'medium', 'large'].includes(value)
+    type: [String, Number],
+    default: 'default'
   },
-
-  // 上下文信息（用于消息发送）
-  contextType: {
-    type: String,
-    default: 'general' // 'activity', 'group', 'marketplace', 'leaderboard', etc.
-  },
-  contextId: {
-    type: String,
-    default: null
-  },
-
-  // 是否可点击
-  clickable: {
+  disabled: {
     type: Boolean,
-    default: true
-  },
-
-  // 是否显示工具提示
-  showTooltip: {
-    type: Boolean,
-    default: true
+    default: false
   }
 })
 
-const emit = defineEmits(['avatarClick', 'messageSent'])
+const emit = defineEmits(['click', 'message'])
 
-// 响应式状态
-const showUserModal = ref(false)
+const router = useRouter()
+const cardVisible = ref(false)
+const popoverTrigger = ref(null)
 
-// 计算属性
-const small = computed(() => props.size === 'small')
-const medium = computed(() => props.size === 'medium')
-const large = computed(() => props.size === 'large')
+const getInitials = (user) => {
+  if (!user) return '?'
+  const first = user.first_name?.[0] || ''
+  const last = user.last_name?.[0] || ''
+  return (first + last).toUpperCase() || '?'
+}
 
-const displayInitials = computed(() => {
-  return getUserInitials(props.userInfo?.first_name, props.userInfo?.last_name)
-})
+// 正确的方式访问document.body
+const getPopupContainer = () => {
+  return document.body
+}
 
-const tooltipText = computed(() => {
-  if (!props.showTooltip) return ''
-  const name = getUserDisplayName(props.userInfo)
-  return props.clickable ? `点击发消息给 ${name}` : name
-})
+const showUserCard = async () => {
+  if (props.disabled || !props.user) return
 
-// 方法
-function handleAvatarClick() {
-  if (!props.clickable) return
+  cardVisible.value = true
+  emit('click', props.user)
 
-  // 检查用户信息是否完整
-  if (!props.userInfo || !props.userId) {
-    message.warning('用户信息不完整，无法发送消息')
+  // 等待DOM更新后触发popover
+  await nextTick()
+  if (popoverTrigger.value) {
+    popoverTrigger.value.click()
+  }
+}
+
+const handleMessage = () => {
+  console.log('🚀 ClickableAvatar: handleMessage called for user:', props.user)
+  cardVisible.value = false
+
+  const query = {}
+
+  if (props.user?.id) {
+    query.userId = String(props.user.id)
+  }
+  if (props.user?.email) {
+    query.userEmail = props.user.email
+  }
+
+  if (!query.userId && !query.userEmail) {
+    console.warn('⚠️ ClickableAvatar: Missing user identifier for messaging', props.user)
+    antdMessage.warning('Unable to open chat because this user is missing contact information.')
     return
   }
 
-  // 不能给自己发消息
-  const currentUserId = getCurrentUserId()
-  if (currentUserId === props.userId) {
-    message.info('不能给自己发送消息')
-    return
+  const targetRoute = {
+    path: '/messages',
+    query
   }
+  console.log('🚀 ClickableAvatar: Navigating to:', targetRoute)
 
-  emit('avatarClick', {
-    userId: props.userId,
-    userInfo: props.userInfo,
-    contextType: props.contextType,
-    contextId: props.contextId
-  })
+  router.push(targetRoute).catch(() => {})
 
-  showUserModal.value = true
-}
-
-function handleMessageSent(messageData) {
-  emit('messageSent', messageData)
-  message.success('消息发送成功！')
-}
-
-// 工具函数
-function getUserInitials(firstName, lastName) {
-  const first = firstName?.charAt(0)?.toUpperCase() || ''
-  const last = lastName?.charAt(0)?.toUpperCase() || ''
-  return first + last || '?'
-}
-
-function getUserDisplayName(user) {
-  if (!user) return '未知用户'
-  if (user.nickname) return user.nickname
-  if (user.first_name || user.last_name) {
-    return `${user.first_name || ''} ${user.last_name || ''}`.trim()
-  }
-  return user.email || '未知用户'
-}
-
-function getCurrentUserId() {
-  // 从本地存储或状态管理中获取当前用户ID
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}')
-  return userData.id || null
+  emit('message', props.user)
 }
 </script>
 
 <style scoped>
 .clickable-avatar {
   display: inline-block;
-  position: relative;
 }
 
-.clickable-avatar[clickable] {
+.cursor-pointer {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.clickable-avatar[clickable]:hover .avatar-circle {
+.cursor-pointer:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.clickable-avatar[clickable]:active .avatar-circle {
-  transform: scale(0.95);
+:global(.user-card-popover .ant-popover-inner-content) {
+  padding: 0;
 }
 
-.avatar-circle {
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* 尺寸变体 */
-.clickable-avatar.small .avatar-circle {
-  width: 32px;
-  height: 32px;
-  font-size: 12px;
-}
-
-.clickable-avatar.medium .avatar-circle {
-  width: 40px;
-  height: 40px;
-  font-size: 14px;
-}
-
-.clickable-avatar.large .avatar-circle {
-  width: 60px;
-  height: 60px;
-  font-size: 18px;
-}
-
-/* 可点击状态指示 */
-.clickable-avatar[clickable]::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 12px;
-  height: 12px;
-  background: #52c41a;
-  border-radius: 50%;
-  border: 2px solid white;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.clickable-avatar[clickable]:hover::after {
-  opacity: 1;
-}
-
-/* 无障碍性 */
-.clickable-avatar[clickable] {
-  outline: none;
-}
-
-.clickable-avatar[clickable]:focus .avatar-circle {
-  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.2);
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .clickable-avatar.large .avatar-circle {
-    width: 48px;
-    height: 48px;
-    font-size: 16px;
-  }
-
-  .clickable-avatar.medium .avatar-circle {
-    width: 36px;
-    height: 36px;
-    font-size: 13px;
-  }
+:global(.user-card-popover .ant-popover-arrow) {
+  display: none;
 }
 </style>

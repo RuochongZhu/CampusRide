@@ -1,16 +1,31 @@
 <template>
   <header class="fixed top-0 left-0 right-0 bg-[#EDEEE8] shadow-sm z-50">
     <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-8">
+      <div class="flex items-center space-x-4 md:space-x-8">
+        <!-- Mobile hamburger menu button -->
+        <button
+          class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-200 transition-colors"
+          @click="openMobileMenu"
+        >
+          <MenuOutlined class="text-xl text-[#333333]" />
+        </button>
+
         <router-link
           to="/"
-          class="text-3xl font-bold text-[#C24D45] tracking-wider"
+          class="text-2xl md:text-3xl font-bold text-[#C24D45] tracking-wider"
           style="font-family: 'VT323', monospace"
         >
           CampusRide
         </router-link>
 
         <nav class="hidden md:flex items-center space-x-6">
+          <router-link
+            to="/activities"
+            class="nav-link"
+            :class="{ active: $route.path.includes('activities') }"
+          >
+            Activities
+          </router-link>
           <router-link
             to="/rideshare"
             class="nav-link"
@@ -26,79 +41,187 @@
             Marketplace
           </router-link>
           <router-link
-            to="/activities"
-            class="nav-link"
-            :class="{ active: $route.path.includes('activities') }"
+            v-if="isAdmin"
+            to="/admin"
+            class="nav-link admin-link"
+            :class="{ active: $route.path.includes('admin') }"
           >
-            Activities
-          </router-link>
-          <router-link
-            to="/leaderboard"
-            class="nav-link"
-            :class="{ active: $route.path.includes('leaderboard') }"
-          >
-            Leaderboard
+            <SettingOutlined /> Admin
           </router-link>
         </nav>
       </div>
 
-      <div class="flex items-center space-x-4">
-        <div class="relative">
-          <input
-            type="text"
-            placeholder="Search..."
-            class="pl-10 pr-4 py-2 rounded-full border border-[#63B5B7] focus:outline-none focus:border-[#63B5B7]"
+      <div class="flex items-center space-x-2 md:space-x-4">
+        <NotificationDropdown />
+        <!-- Avatar - directly opens profile sidebar -->
+        <div
+          class="flex items-center space-x-2 cursor-pointer hover:scale-105 transition-transform duration-300"
+          @click="openUserSidebar"
+        >
+          <img
+            :src="userAvatar"
+            class="w-8 h-8 rounded-full object-cover border-2 border-[#C24D45]"
+            :alt="userName"
           />
-          <SearchOutlined class="absolute left-3 top-2.5 text-[#666666]" />
-        </div>
-        <div class="relative hover:scale-110 transition-transform duration-300">
-          <BellOutlined
-            class="text-xl text-[#666666] cursor-pointer hover:text-[#C24D45]"
-            @click="handleBellClick"
-          />
-          <span
-            v-if="unreadCount > 0"
-            class="absolute -top-1 -right-1 w-4 h-4 bg-[#C24D45] rounded-full text-white text-xs flex items-center justify-center"
-            >{{ unreadCount > 99 ? '99+' : unreadCount }}</span
-          >
-        </div>
-        <div class="relative">
-          <div
-            class="flex items-center space-x-2 cursor-pointer hover:scale-105 transition-transform duration-300"
-            @click="toggleUserMenu"
-          >
-            <img :src="userAvatar" class="w-8 h-8 rounded-full" />
-            <span class="text-sm font-medium text-[#333333]">{{
-              userName
-            }}</span>
-          </div>
-          <div
-            v-if="isUserMenuOpen"
-            class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
-          >
-            <a
-              @click="logout"
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-              >Logout</a
-            >
-          </div>
+          <span class="hidden sm:inline text-sm font-medium text-[#333333]">{{
+            userName
+          }}</span>
         </div>
       </div>
     </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <a-drawer
+      v-model:open="isMobileMenuOpen"
+      placement="left"
+      :width="280"
+      :closable="true"
+      :headerStyle="{ background: '#EDEEE8', borderBottom: '1px solid #e5e5e5' }"
+      :bodyStyle="{ padding: 0, background: '#EDEEE8' }"
+    >
+      <template #title>
+        <span class="text-xl font-bold text-[#C24D45]" style="font-family: 'VT323', monospace">
+          CampusRide
+        </span>
+      </template>
+
+      <div class="flex flex-col h-full">
+        <!-- User Info Section -->
+        <div class="p-4 border-b border-gray-200 bg-white/50">
+          <div class="flex items-center space-x-3">
+            <img
+              :src="userAvatar"
+              class="w-12 h-12 rounded-full object-cover border-2 border-[#C24D45]"
+              :alt="userName"
+            />
+            <div>
+              <div class="font-medium text-[#333333]">{{ userName }}</div>
+              <div class="text-sm text-gray-500">{{ userEmail }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 py-2">
+          <router-link
+            to="/"
+            class="mobile-nav-link"
+            :class="{ active: $route.path === '/' }"
+            @click="closeMobileMenu"
+          >
+            <HomeOutlined class="text-lg" />
+            <span>Home</span>
+          </router-link>
+
+          <router-link
+            to="/activities"
+            class="mobile-nav-link"
+            :class="{ active: $route.path.includes('activities') }"
+            @click="closeMobileMenu"
+          >
+            <CalendarOutlined class="text-lg" />
+            <span>Activities</span>
+          </router-link>
+
+          <router-link
+            to="/rideshare"
+            class="mobile-nav-link"
+            :class="{ active: $route.path.includes('rideshare') }"
+            @click="closeMobileMenu"
+          >
+            <CarOutlined class="text-lg" />
+            <span>Carpooling</span>
+          </router-link>
+
+          <router-link
+            to="/marketplace"
+            class="mobile-nav-link"
+            :class="{ active: $route.path.includes('marketplace') }"
+            @click="closeMobileMenu"
+          >
+            <ShopOutlined class="text-lg" />
+            <span>Marketplace</span>
+          </router-link>
+
+          <router-link
+            to="/leaderboard"
+            class="mobile-nav-link"
+            :class="{ active: $route.path.includes('leaderboard') }"
+            @click="closeMobileMenu"
+          >
+            <TrophyOutlined class="text-lg" />
+            <span>Leaderboard</span>
+          </router-link>
+
+          <router-link
+            to="/messages"
+            class="mobile-nav-link"
+            :class="{ active: $route.path.includes('messages') }"
+            @click="closeMobileMenu"
+          >
+            <MessageOutlined class="text-lg" />
+            <span>Messages</span>
+          </router-link>
+
+          <router-link
+            v-if="isAdmin"
+            to="/admin"
+            class="mobile-nav-link admin"
+            :class="{ active: $route.path.includes('admin') }"
+            @click="closeMobileMenu"
+          >
+            <SettingOutlined class="text-lg" />
+            <span>Admin Panel</span>
+          </router-link>
+        </nav>
+
+        <!-- Bottom Actions -->
+        <div class="border-t border-gray-200 p-4">
+          <button
+            class="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-[#C24D45] text-white rounded-lg hover:bg-[#A93C35] transition-colors"
+            @click="handleMobileLogout"
+          >
+            <LogoutOutlined />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </a-drawer>
+
+    <!-- User Sidebar -->
+    <UserSidebar :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
   </header>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { SearchOutlined, BellOutlined } from "@ant-design/icons-vue";
-import { messagesAPI } from "@/utils/api";
-import { message } from 'ant-design-vue';
+import {
+  SettingOutlined,
+  MenuOutlined,
+  HomeOutlined,
+  CalendarOutlined,
+  CarOutlined,
+  ShopOutlined,
+  TrophyOutlined,
+  MessageOutlined,
+  LogoutOutlined
+} from "@ant-design/icons-vue";
+import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
+import UserSidebar from '@/components/user/UserSidebar.vue';
+
+// Admin emails allowed to access admin panel
+const ADMIN_EMAILS = ['rz469@cornell.edu'];
 
 const router = useRouter();
-const isUserMenuOpen = ref(false);
-const unreadCount = ref(0);
-let intervalId = null;
+const isUserSidebarOpen = ref(false);
+const isMobileMenuOpen = ref(false);
+const userEmail = ref('');
+
+// Check if current user is an admin
+const isAdmin = computed(() => {
+  return ADMIN_EMAILS.includes(userEmail.value);
+});
 
 const userAvatar =
   "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
@@ -112,31 +235,22 @@ const loadUserData = () => {
       const user = JSON.parse(userData);
       // Use first_name (which contains the nickname) or fallback to email
       userName.value = user.first_name || user.email?.split('@')[0] || 'User';
+      userEmail.value = user.email || '';
     }
   } catch (error) {
     console.error('Error loading user data:', error);
     userName.value = 'User';
+    userEmail.value = '';
   }
 };
 
-// Load unread message count
-const loadUnreadCount = async () => {
-  try {
-    const token = localStorage.getItem('userToken');
-    if (!token) {
-      unreadCount.value = 0;
-      return;
-    }
+// Mobile menu controls
+const openMobileMenu = () => {
+  isMobileMenuOpen.value = true;
+};
 
-    const response = await messagesAPI.getUnreadCount();
-    if (response.data?.success) {
-      unreadCount.value = response.data.data.count || 0;
-    }
-  } catch (error) {
-    // Silently fail if not authenticated or API unavailable
-    console.log('Could not load unread count:', error.message);
-    unreadCount.value = 0;
-  }
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false;
 };
 
 // Handle bell icon click
@@ -144,34 +258,28 @@ const handleBellClick = () => {
   router.push('/messages');
 };
 
+// Open user sidebar directly
+const openUserSidebar = () => {
+  isUserSidebarOpen.value = true;
+};
+
 // Load user data when component mounts
 onMounted(() => {
   loadUserData();
-  loadUnreadCount();
-
-  // Poll for new messages every 30 seconds
-  intervalId = setInterval(() => {
-    loadUnreadCount();
-  }, 30000);
+  // Polling is now handled by NotificationDropdown only to prevent duplicate requests
 });
-
-// Cleanup interval on unmount
-onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId);
-  }
-});
-
-const toggleUserMenu = () => {
-  isUserMenuOpen.value = !isUserMenuOpen.value;
-};
 
 const logout = () => {
   // Clear all user data from localStorage
   localStorage.removeItem("userToken");
   localStorage.removeItem("userData");
-  isUserMenuOpen.value = false;
+  isUserSidebarOpen.value = false;
   router.push("/login");
+};
+
+const handleMobileLogout = () => {
+  closeMobileMenu();
+  logout();
 };
 </script>
 
@@ -200,6 +308,38 @@ const logout = () => {
 .nav-link:hover::after,
 .nav-link.active::after {
   width: 100%;
+}
+
+.admin-link {
+  @apply text-[#722ed1] hover:text-[#9254de];
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-link.active {
+  @apply text-[#9254de];
+}
+
+.admin-link::after {
+  background-color: #722ed1;
+}
+
+/* Mobile navigation link styles */
+.mobile-nav-link {
+  @apply flex items-center space-x-3 px-4 py-3 text-[#666666] hover:bg-white/70 hover:text-[#C24D45] transition-colors;
+}
+
+.mobile-nav-link.active {
+  @apply bg-white/70 text-[#C24D45] border-l-4 border-[#C24D45];
+}
+
+.mobile-nav-link.admin {
+  @apply text-[#722ed1] hover:text-[#9254de];
+}
+
+.mobile-nav-link.admin.active {
+  @apply text-[#9254de] border-[#722ed1];
 }
 
 input[type="text"] {

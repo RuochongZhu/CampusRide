@@ -1,0 +1,26 @@
+0 verbose cli /opt/homebrew/Cellar/node@20/20.19.3/bin/node /opt/homebrew/opt/node@20/bin/npm
+1 info using npm@10.8.2
+2 info using node@v20.19.3
+3 silly config load:file:/opt/homebrew/Cellar/node@20/20.19.3/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/zhuricardo/Desktop/CampusRide/CampusRide/integration/.npmrc
+5 silly config load:file:/Users/zhuricardo/.npmrc
+6 verbose config error loading user config Error: EACCES: permission denied, open '/Users/zhuricardo/.npmrc'
+6 verbose config     at async open (node:internal/fs/promises:639:25)
+6 verbose config     at async readFile (node:internal/fs/promises:1246:14)
+6 verbose config     at async #loadFile (/opt/homebrew/Cellar/node@20/20.19.3/lib/node_modules/npm/node_modules/@npmcli/config/lib/index.js:589:5)
+6 verbose config     at async Config.load (/opt/homebrew/Cellar/node@20/20.19.3/lib/node_modules/npm/node_modules/@npmcli/config/lib/index.js:250:5)
+6 verbose config     at async #load (/opt/homebrew/Cellar/node@20/20.19.3/lib/node_modules/npm/lib/npm.js:98:5)
+6 verbose config     at async Npm.load (/opt/homebrew/Cellar/node@20/20.19.3/lib/node_modules/npm/lib/npm.js:80:14)
+6 verbose config     at async module.exports (/opt/homebrew/Cellar/node@20/20.19.3/lib/node_modules/npm/lib/cli/entry.js:42:37) {
+6 verbose config   errno: -13,
+6 verbose config   code: 'EACCES',
+6 verbose config   syscall: 'open',
+6 verbose config   path: '/Users/zhuricardo/.npmrc'
+6 verbose config }
+7 silly config load:file:/opt/homebrew/etc/npmrc
+8 verbose title npm run dev --host 127.0.0.1 --port 5173
+9 verbose argv "run" "dev" "--" "--host" "127.0.0.1" "--port" "5173"
+10 verbose logfile logs-max:10 dir:/Users/zhuricardo/Desktop/CampusRide/CampusRide/integration/.npm-cache/_logs/2025-10-20T23_40_15_835Z-
+11 verbose logfile /Users/zhuricardo/Desktop/CampusRide/CampusRide/integration/.npm-cache/_logs/2025-10-20T23_40_15_835Z-debug-0.log
+12 silly logfile done cleaning log files
+13 http fetch GET 200 https://registry.npmjs.org/npm 140ms

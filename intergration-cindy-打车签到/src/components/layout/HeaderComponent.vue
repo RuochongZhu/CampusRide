@@ -51,13 +51,17 @@
           />
           <SearchOutlined class="absolute left-3 top-2.5 text-[#666666]" />
         </div>
-        <div class="relative hover:scale-110 transition-transform duration-300">
+        <div
+          class="relative hover:scale-110 transition-transform duration-300 cursor-pointer"
+          @click="handleNotificationClick"
+        >
           <BellOutlined
-            class="text-xl text-[#666666] cursor-pointer hover:text-[#C24D45]"
+            class="text-xl text-[#666666] hover:text-[#C24D45] transition-colors"
           />
           <span
-            class="absolute -top-1 -right-1 w-4 h-4 bg-[#C24D45] rounded-full text-white text-xs flex items-center justify-center"
-            >3</span
+            v-if="unreadCount > 0"
+            class="absolute -top-1 -right-1 min-w-4 h-4 bg-[#C24D45] rounded-full text-white text-xs flex items-center justify-center px-1"
+            >{{ unreadCount > 99 ? '99+' : unreadCount }}</span
           >
         </div>
         <div class="relative">
@@ -83,16 +87,135 @@
         </div>
       </div>
     </div>
+
+    <!-- Notifications Modal -->
+    <div
+      v-if="showNotificationModal"
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-16"
+      @click="showNotificationModal = false"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-96 overflow-hidden mx-4 mt-4"
+        @click.stop
+      >
+        <!-- Header -->
+        <div class="bg-[#C24D45] text-white px-4 py-3 flex justify-between items-center">
+          <h3 class="font-semibold">Notifications</h3>
+          <button
+            @click="showNotificationModal = false"
+            class="text-white hover:text-gray-200 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div v-if="loadingNotifications" class="p-4 text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C24D45] mx-auto mb-2"></div>
+          <p class="text-gray-500 text-sm">Loading notifications...</p>
+        </div>
+
+        <!-- Notifications List -->
+        <div v-else-if="notifications.length > 0" class="max-h-80 overflow-y-auto">
+          <div
+            v-for="notification in notifications"
+            :key="notification.id"
+            class="border-b border-gray-100 p-4 hover:bg-gray-50"
+            :class="{ 'bg-blue-50': !notification.is_read }"
+          >
+            <!-- Notification Content -->
+            <div class="mb-2">
+              <p class="text-sm font-medium text-gray-900">{{ notification.message }}</p>
+              <p class="text-xs text-gray-500 mt-1">
+                {{ formatTime(notification.created_at) }}
+              </p>
+            </div>
+
+            <!-- Passenger Info (for booking requests) -->
+            <div v-if="notification.passenger" class="mb-3">
+              <p class="text-xs text-gray-600">
+                From: {{ notification.passenger.first_name }} {{ notification.passenger.last_name }}
+                ({{ notification.passenger.email }})
+              </p>
+              <p v-if="notification.trip" class="text-xs text-gray-600">
+                Trip: {{ notification.trip.title }}
+              </p>
+            </div>
+
+            <!-- Action Buttons for pending booking requests -->
+            <div
+              v-if="notification.type === 'booking_request' && notification.status === 'pending'"
+              class="flex space-x-2"
+            >
+              <button
+                @click="respondToBooking(notification.id, 'accept')"
+                class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+              >
+                Accept
+              </button>
+              <button
+                @click="respondToBooking(notification.id, 'reject')"
+                class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+
+            <!-- Status for processed notifications -->
+            <div v-else-if="notification.status !== 'pending'" class="text-xs">
+              <span
+                :class="{
+                  'text-green-600': notification.status === 'accepted',
+                  'text-red-600': notification.status === 'rejected'
+                }"
+              >
+                {{ notification.status === 'accepted' ? '✓ Accepted' : '✗ Rejected' }}
+              </span>
+            </div>
+
+            <!-- Mark as read button -->
+            <button
+              v-if="!notification.is_read"
+              @click="markAsRead(notification.id)"
+              class="text-xs text-blue-600 hover:text-blue-800 mt-2"
+            >
+              Mark as read
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="p-8 text-center">
+          <BellOutlined class="text-4xl text-gray-300 mb-2" />
+          <p class="text-gray-500">No notifications yet</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 px-4 py-3 text-center">
+          <button
+            @click="router.push('/notifications')"
+            class="text-[#C24D45] hover:text-[#a83e37] text-sm font-medium"
+          >
+            View All Notifications
+          </button>
+        </div>
+      </div>
+    </div>
   </header>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { SearchOutlined, BellOutlined } from "@ant-design/icons-vue";
+import { notificationsAPI } from "@/utils/api";
 
 const router = useRouter();
 const isUserMenuOpen = ref(false);
+const showNotificationModal = ref(false);
+const unreadCount = ref(0);
+const notifications = ref([]);
+const loadingNotifications = ref(false);
 
 const userAvatar =
   "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
@@ -113,9 +236,127 @@ const loadUserData = () => {
   }
 };
 
+// Load unread notification count
+const loadUnreadCount = async () => {
+  try {
+    const token = localStorage.getItem('userToken');
+    if (!token) return;
+
+    const response = await notificationsAPI.getUnreadCount();
+    if (response.data.success) {
+      unreadCount.value = response.data.data.unread_count || 0;
+    }
+  } catch (error) {
+    console.error('Error loading unread count:', error);
+  }
+};
+
+// Load notifications
+const loadNotifications = async () => {
+  try {
+    loadingNotifications.value = true;
+    const token = localStorage.getItem('userToken');
+    if (!token) return;
+
+    const response = await notificationsAPI.getNotifications({
+      page: 1,
+      limit: 10,
+      unreadOnly: false
+    });
+
+    if (response.data.success) {
+      notifications.value = response.data.data.notifications || [];
+    }
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+  } finally {
+    loadingNotifications.value = false;
+  }
+};
+
+// Handle notification click
+const handleNotificationClick = () => {
+  showNotificationModal.value = true;
+  if (notifications.value.length === 0) {
+    loadNotifications();
+  }
+};
+
+// Respond to booking (accept/reject)
+const respondToBooking = async (notificationId, action) => {
+  try {
+    await notificationsAPI.respondToBooking(notificationId, action);
+    // Reload notifications and unread count
+    await Promise.all([loadNotifications(), loadUnreadCount()]);
+  } catch (error) {
+    console.error('Error responding to booking:', error);
+  }
+};
+
+// Mark notification as read
+const markAsRead = async (notificationId) => {
+  try {
+    await notificationsAPI.markAsRead(notificationId);
+    await loadUnreadCount();
+    // Update the notification in the list
+    const notification = notifications.value.find(n => n.id === notificationId);
+    if (notification) {
+      notification.is_read = true;
+    }
+  } catch (error) {
+    console.error('Error marking as read:', error);
+  }
+};
+
+// Format time for display
+const formatTime = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+
+  // Less than 1 minute
+  if (diff < 60000) {
+    return 'Just now';
+  }
+
+  // Less than 1 hour
+  if (diff < 3600000) {
+    const minutes = Math.floor(diff / 60000);
+    return `${minutes}m ago`;
+  }
+
+  // Less than 1 day
+  if (diff < 86400000) {
+    const hours = Math.floor(diff / 3600000);
+    return `${hours}h ago`;
+  }
+
+  // More than 1 day
+  const days = Math.floor(diff / 86400000);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+
+  // Show actual date
+  return date.toLocaleDateString();
+};
+
+// Auto-refresh notifications every 30 seconds
+let refreshInterval;
+
 // Load user data when component mounts
 onMounted(() => {
   loadUserData();
+  loadUnreadCount();
+
+  // Set up auto-refresh for notifications
+  refreshInterval = setInterval(loadUnreadCount, 30000); // Every 30 seconds
+});
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 
 const toggleUserMenu = () => {

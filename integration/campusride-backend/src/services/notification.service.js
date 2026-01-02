@@ -61,7 +61,10 @@ class NotificationService {
         content,
         data = {},
         channels = ['socket', 'database'],
-        priority = 'medium'
+        priority = 'medium',
+        senderId = null,
+        tripId = null,
+        bookingId = null
       } = options;
 
       // Validate inputs
@@ -69,24 +72,16 @@ class NotificationService {
         throw new Error('userId is required');
       }
 
-      let notificationContent = content;
-      let notificationTitle = title;
-
-      // Use template if type is provided
-      if (type && this.templates.has(type)) {
-        const template = this.templates.get(type);
-        notificationTitle = title || template.title;
-        notificationContent = this.renderTemplate(template.template, data);
-      }
+      // Use title/content as message if provided
+      const message = content || title || 'Notification';
 
       const notification = {
         user_id: userId,
         type: type || 'custom',
-        title: notificationTitle,
-        content: notificationContent,
-        data,
-        priority,
-        channels,
+        title: title || type || 'Notification',
+        content: message,
+        data: JSON.stringify({ senderId, tripId, bookingId, ...data }),
+        priority: priority,
         is_read: false
       };
 
@@ -94,7 +89,12 @@ class NotificationService {
       const results = {};
 
       if (channels.includes('socket')) {
-        results.socket = await this.sendSocketNotification(userId, notification);
+        results.socket = await this.sendSocketNotification(userId, {
+          type,
+          title,
+          content: message,
+          data
+        });
       }
 
       if (channels.includes('database')) {
@@ -102,10 +102,14 @@ class NotificationService {
       }
 
       if (channels.includes('email')) {
-        results.email = await this.sendEmailNotification(userId, notification);
+        results.email = await this.sendEmailNotification(userId, {
+          type,
+          title,
+          content: message
+        });
       }
 
-      console.log(`📤 Notification sent to user ${userId}:`, notification.title);
+      console.log(`📤 Notification sent to user ${userId}:`, message);
       return {
         success: true,
         notificationId: results.database?.data?.id,
@@ -242,7 +246,7 @@ class NotificationService {
 
       const { data, error } = await supabase
         .from('notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
+        .update({ is_read: true, updated_at: new Date().toISOString() })
         .eq('id', notificationId)
         .eq('user_id', userId)
         .select();
@@ -276,7 +280,7 @@ class NotificationService {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
+        .update({ is_read: true, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
         .eq('is_read', false)
         .select('id');
@@ -443,6 +447,11 @@ class NotificationService {
   // Get available templates
   getTemplates() {
     return Array.from(this.templates.keys());
+  }
+
+  // Alias for getUserNotifications (used by controller)
+  async getNotifications(userId, options = {}) {
+    return this.getUserNotifications(userId, options);
   }
 }
 

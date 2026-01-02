@@ -4,61 +4,129 @@ class LeaderboardService {
   constructor() {
     this.categories = {
       drivers: 'Most Active Drivers',
-      socializers: 'Most Active Socializers', 
+      socializers: 'Most Active Socializers',
       sellers: 'Most Popular Sellers',
       citizens: 'Most Helpful Citizens',
       overall: 'Overall Ranking'
     };
   }
 
-  // 获取排行榜数据
+  // Get the start of the current week (Sunday at midnight ET)
+  getWeekStart() {
+    const now = new Date();
+    // Convert to Eastern Time
+    const etOffset = -5; // EST (adjust for DST if needed)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const et = new Date(utc + (3600000 * etOffset));
+
+    // Get the Sunday of this week
+    const dayOfWeek = et.getDay(); // 0 = Sunday
+    const sunday = new Date(et);
+    sunday.setDate(et.getDate() - dayOfWeek);
+    sunday.setHours(0, 0, 0, 0);
+
+    return sunday.toISOString();
+  }
+
+  // 获取排行榜数据 - Updated to use weekly points from transactions
   async getLeaderboard(category = 'overall', timePeriod = 'week', limit = 50, offset = 0) {
     try {
-
-      // 计算时间范围
       const { startDate, endDate } = this.calculateTimeRange(timePeriod);
-      
-      let query = supabaseAdmin
-        .from('users')
-        .select(`
-          id,
-          student_id,
-          first_name,
-          last_name,
-          email,
-          created_at,
-          points
-        `)
-        .eq('verification_status', 'verified') // 使用verification_status代替is_active
-        .order('points', { ascending: false })
-        .range(offset, offset + limit - 1);
 
-      // 根据分类和时间范围筛选
-      if (category !== 'overall') {
-        // 这里可以根据不同分类添加特定的筛选逻辑
-        // 例如：根据用户行为数据筛选
-        query = await this.applyCategoryFilter(query, category, startDate, endDate);
-      }
+      // For weekly leaderboard, calculate points from point_transactions
+      if (timePeriod === 'week') {
+        const weekStart = this.getWeekStart();
 
-      const { data: users, error } = await query;
+        // Query to get weekly points grouped by user
+        const { data: weeklyPoints, error: weeklyError } = await supabaseAdmin
+          .from('point_transactions')
+          .select('user_id, points')
+          .gte('created_at', weekStart);
 
-      if (error) {
-        throw error;
-      }
-
-      // 计算排名变化（需要与历史数据比较）
-      const usersWithRanking = await this.addRankingInfo(users, category, timePeriod);
-
-      return {
-        success: true,
-        data: {
-          category,
-          timePeriod,
-          users: usersWithRanking,
-          total: usersWithRanking.length,
-          hasMore: usersWithRanking.length === limit
+        if (weeklyError) {
+          console.warn('Could not fetch weekly transactions, falling back to total points:', weeklyError);
+          // Fallback to total points
+          return this.getLeaderboardByTotalPoints(limit, offset);
         }
-      };
+
+        // Aggregate points by user
+        const userPointsMap = new Map();
+        (weeklyPoints || []).forEach(tx => {
+          if (tx.user_id && tx.points > 0) {
+            const current = userPointsMap.get(tx.user_id) || 0;
+            userPointsMap.set(tx.user_id, current + tx.points);
+          }
+        });
+
+        // Get user IDs with points this week
+        const userIds = Array.from(userPointsMap.keys());
+
+        if (userIds.length === 0) {
+          return {
+            success: true,
+            data: {
+              category,
+              timePeriod,
+              users: [],
+              total: 0,
+              hasMore: false,
+              weekStart: weekStart
+            }
+          };
+        }
+
+        // Fetch user details
+        const { data: users, error: userError } = await supabaseAdmin
+          .from('users')
+          .select(`
+            id,
+            student_id,
+            first_name,
+            last_name,
+            email,
+            avatar_url,
+            avg_rating
+          `)
+          .in('id', userIds);
+
+        if (userError) {
+          throw userError;
+        }
+
+        // Combine user data with weekly points and sort
+        let usersWithPoints = (users || []).map(user => ({
+          user_id: user.id,
+          student_id: user.student_id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          avatar_url: user.avatar_url,
+          avg_rating: user.avg_rating,
+          hide_rank: false,
+          total_points: userPointsMap.get(user.id) || 0
+        }));
+
+        // Sort by weekly points descending
+        usersWithPoints.sort((a, b) => b.total_points - a.total_points);
+
+        // Apply pagination
+        const paginatedUsers = usersWithPoints.slice(offset, offset + limit);
+
+        return {
+          success: true,
+          data: {
+            category,
+            timePeriod,
+            users: paginatedUsers,
+            total: usersWithPoints.length,
+            hasMore: usersWithPoints.length > offset + limit,
+            weekStart: weekStart
+          }
+        };
+      }
+
+      // For non-weekly periods, use total points
+      return this.getLeaderboardByTotalPoints(limit, offset, category, timePeriod);
 
     } catch (error) {
       console.error('❌ Failed to get leaderboard:', error);
@@ -69,12 +137,55 @@ class LeaderboardService {
     }
   }
 
-  // 获取用户个人排名信息
+  // Fallback method using total points from users table
+  async getLeaderboardByTotalPoints(limit, offset, category = 'overall', timePeriod = 'all') {
+    const { data: users, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+        id,
+        student_id,
+        first_name,
+        last_name,
+        email,
+        avatar_url,
+        avg_rating,
+        points
+      `)
+      .order('points', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    const usersWithRanking = (users || []).map((user, index) => ({
+      user_id: user.id,
+      student_id: user.student_id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      avatar_url: user.avatar_url,
+      avg_rating: user.avg_rating,
+      hide_rank: false,
+      total_points: user.points || 0
+    }));
+
+    return {
+      success: true,
+      data: {
+        category,
+        timePeriod,
+        users: usersWithRanking,
+        total: usersWithRanking.length,
+        hasMore: usersWithRanking.length === limit
+      }
+    };
+  }
+
+  // 获取用户个人排名信息 - Updated for weekly
   async getUserRanking(userId, category = 'overall', timePeriod = 'week') {
     try {
-      const { startDate, endDate } = this.calculateTimeRange(timePeriod);
-      
-      // 获取用户信息
+      // Get user info
       const { data: user, error: userError } = await supabaseAdmin
         .from('users')
         .select(`
@@ -83,46 +194,77 @@ class LeaderboardService {
           first_name,
           last_name,
           email,
-          created_at
+          avatar_url,
+          points
         `)
         .eq('id', userId)
-        .eq('verification_status', 'verified') // 使用verification_status代替is_active
         .single();
 
       if (userError || !user) {
         throw new Error('User not found');
       }
 
-      // 计算用户排名 - 查询创建时间晚于当前用户的用户数量（作为临时排名方案）
-      let rankQuery = supabaseAdmin
-        .from('users')
-        .select('id', { count: 'exact' })
-        .eq('verification_status', 'verified') // 使用verification_status代替is_active
-        .lt('created_at', user.created_at);
+      // For weekly, calculate weekly points
+      let weeklyPoints = 0;
+      let rank = 0;
 
-      if (category !== 'overall') {
-        rankQuery = await this.applyCategoryFilter(rankQuery, category, startDate, endDate);
+      if (timePeriod === 'week') {
+        const weekStart = this.getWeekStart();
+
+        // Get user's weekly points
+        const { data: transactions, error: txError } = await supabaseAdmin
+          .from('point_transactions')
+          .select('points')
+          .eq('user_id', userId)
+          .gte('created_at', weekStart);
+
+        if (!txError && transactions) {
+          weeklyPoints = transactions.reduce((sum, tx) => sum + (tx.points > 0 ? tx.points : 0), 0);
+        }
+
+        // Get rank by counting users with more weekly points
+        const { data: allTransactions } = await supabaseAdmin
+          .from('point_transactions')
+          .select('user_id, points')
+          .gte('created_at', weekStart);
+
+        const userPointsMap = new Map();
+        (allTransactions || []).forEach(tx => {
+          if (tx.user_id && tx.points > 0) {
+            const current = userPointsMap.get(tx.user_id) || 0;
+            userPointsMap.set(tx.user_id, current + tx.points);
+          }
+        });
+
+        const sortedUsers = Array.from(userPointsMap.entries())
+          .sort((a, b) => b[1] - a[1]);
+
+        rank = sortedUsers.findIndex(([id]) => id === userId) + 1;
+        if (rank === 0 && weeklyPoints > 0) rank = sortedUsers.length + 1;
+      } else {
+        // Use total points for other periods
+        weeklyPoints = user.points || 0;
+
+        const { count } = await supabaseAdmin
+          .from('users')
+          .select('id', { count: 'exact' })
+          .gt('points', user.points || 0);
+
+        rank = (count || 0) + 1;
       }
-
-      const { count: rankCount, error: rankError } = await rankQuery;
-      
-      if (rankError) {
-        console.error('Error calculating rank:', rankError);
-        throw rankError;
-      }
-      
-      const rank = (rankCount || 0) + 1;
-
-      // 获取排名变化
-      const rankChange = await this.getRankChange(userId, category, timePeriod);
 
       return {
         success: true,
         data: {
+          rank: rank,
+          points: weeklyPoints,
           user: {
-            ...user,
-            rank,
-            rankChange
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            avatar_url: user.avatar_url,
+            hide_rank: false
           }
         }
       };
@@ -140,11 +282,11 @@ class LeaderboardService {
   async updateLeaderboard() {
     try {
       console.log('🔄 Updating leaderboard...');
-      
+
       // 更新所有分类的排行榜
       const categories = Object.keys(this.categories);
       const timePeriods = ['week', 'month', 'all'];
-      
+
       for (const category of categories) {
         for (const timePeriod of timePeriods) {
           await this.calculateAndStoreRanking(category, timePeriod);
@@ -167,7 +309,7 @@ class LeaderboardService {
   async calculateAndStoreRanking(category, timePeriod) {
     try {
       const { startDate, endDate } = this.calculateTimeRange(timePeriod);
-      
+
       // 获取用户数据
       const { data: users, error } = await supabaseAdmin
         .from('users')
@@ -337,6 +479,118 @@ class LeaderboardService {
       range: range.label,
       count: points.filter(p => p >= range.min && p <= range.max).length
     }));
+  }
+
+  // ================================================
+  // Weekly Reset and Coupon Distribution
+  // ================================================
+
+  // Distribute coupons to top weekly performers
+  async distributeWeeklyCoupons(topN = 10) {
+    try {
+      console.log('🎁 Distributing weekly coupons...');
+
+      const weekStart = this.getWeekStart();
+
+      // Get weekly points for all users
+      const { data: transactions, error } = await supabaseAdmin
+        .from('point_transactions')
+        .select('user_id, points')
+        .gte('created_at', weekStart);
+
+      if (error) {
+        throw error;
+      }
+
+      // Aggregate points by user
+      const userPointsMap = new Map();
+      (transactions || []).forEach(tx => {
+        if (tx.user_id && tx.points > 0) {
+          const current = userPointsMap.get(tx.user_id) || 0;
+          userPointsMap.set(tx.user_id, current + tx.points);
+        }
+      });
+
+      // Sort and get top N
+      const sortedUsers = Array.from(userPointsMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, topN);
+
+      if (sortedUsers.length === 0) {
+        console.log('No users with points this week');
+        return { success: true, couponsDistributed: 0 };
+      }
+
+      // Get active merchants
+      const { data: merchants } = await supabaseAdmin
+        .from('merchants')
+        .select('id, name, coupon_code, discount_description')
+        .eq('is_active', true);
+
+      if (!merchants || merchants.length === 0) {
+        console.log('No active merchants for coupon distribution');
+        return { success: true, couponsDistributed: 0 };
+      }
+
+      // Distribute coupons
+      const coupons = [];
+      const validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + 30); // Valid for 30 days
+
+      for (let i = 0; i < sortedUsers.length; i++) {
+        const [userId, points] = sortedUsers[i];
+        const rank = i + 1;
+
+        // Select merchant(s) based on rank
+        // Top 3 get coupons from all merchants
+        // Top 4-10 get coupons from 1-2 merchants
+        const merchantsToUse = rank <= 3
+          ? merchants
+          : merchants.slice(0, Math.min(2, merchants.length));
+
+        for (const merchant of merchantsToUse) {
+          coupons.push({
+            user_id: userId,
+            merchant_id: merchant.id,
+            merchant_name: merchant.name,
+            code: `${merchant.coupon_code}-${Date.now().toString(36).toUpperCase()}`,
+            description: merchant.discount_description || '10% off',
+            valid_until: validUntil.toISOString(),
+            is_used: false,
+            week_rank: rank,
+            week_points: points,
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+
+      // Insert coupons
+      if (coupons.length > 0) {
+        const { error: insertError } = await supabaseAdmin
+          .from('user_coupons')
+          .insert(coupons);
+
+        if (insertError) {
+          console.error('Failed to insert coupons:', insertError);
+          // Continue anyway
+        }
+      }
+
+      console.log(`✅ Distributed ${coupons.length} coupons to top ${sortedUsers.length} users`);
+
+      return {
+        success: true,
+        couponsDistributed: coupons.length,
+        topUsers: sortedUsers.map(([id, points], i) => ({ userId: id, points, rank: i + 1 }))
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to distribute weekly coupons:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 }
 

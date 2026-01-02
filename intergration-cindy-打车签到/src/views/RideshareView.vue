@@ -1150,14 +1150,14 @@ const getStatusClass = (trip) => {
 const getStatusText = (trip) => {
   const status = trip.role === 'driver' ? trip.status : trip.booking_status;
   const statusMap = {
-    'pending': '待确认',
-    'confirmed': '已确认',
-    'active': '进行中',
-    'full': '已满员',
-    'cancelled': '已取消',
-    'rejected': '已拒绝',
-    'completed': '已完成',
-    'expired': '已过期'
+    'pending': 'Pending',
+    'confirmed': 'Confirmed',
+    'active': 'Active',
+    'full': 'Full',
+    'cancelled': 'Cancelled',
+    'rejected': 'Rejected',
+    'completed': 'Completed',
+    'expired': 'Expired'
   };
   return statusMap[status] || status;
 };

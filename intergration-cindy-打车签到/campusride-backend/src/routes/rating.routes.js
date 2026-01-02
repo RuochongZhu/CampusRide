@@ -1,28 +1,56 @@
 import express from 'express';
 import {
   createRating,
-  getMyRatingStatus,
-  getUserAverageRating,
-  getTripRatings
+  getUserRating,
+  getTripRatings,
+  getUserReceivedRatings,
+  canRateUser
 } from '../controllers/rating.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// 创建评分（需要认证）
-router.post('/', authenticateToken, createRating);
+// 所有评分路由都需要认证
+router.use(authenticateToken);
 
-// 获取我的评分状态（针对某个行程）
-router.get('/my', authenticateToken, getMyRatingStatus);
+/**
+ * @route   POST /api/v1/ratings
+ * @desc    Create or update a rating for a user after a completed trip
+ * @access  Private
+ * @body    { tripId, rateeId, score, comment?, roleOfRater }
+ */
+router.post('/', createRating);
 
-// 获取用户的平均评分（公开）
-router.get('/average/:userId', getUserAverageRating);
+/**
+ * @route   GET /api/v1/ratings/user/:userId
+ * @desc    Get average rating for a user
+ * @access  Private
+ * @returns { avgRating, totalRatings, isNew }
+ */
+router.get('/user/:userId', getUserRating);
 
-// 获取行程的所有评分（公开）
+/**
+ * @route   GET /api/v1/ratings/trip/:tripId
+ * @desc    Get all ratings for a specific trip
+ * @access  Private
+ * @returns Array of ratings with rater and ratee info
+ */
 router.get('/trip/:tripId', getTripRatings);
 
+/**
+ * @route   GET /api/v1/ratings/received/:userId
+ * @desc    Get all ratings received by a user (paginated)
+ * @access  Private
+ * @query   ?page=1&limit=10
+ */
+router.get('/received/:userId', getUserReceivedRatings);
+
+/**
+ * @route   GET /api/v1/ratings/can-rate
+ * @desc    Check if current user can rate another user for a specific trip
+ * @access  Private
+ * @query   ?tripId=xxx&rateeId=xxx
+ */
+router.get('/can-rate', canRateUser);
+
 export default router;
-
-
-
-

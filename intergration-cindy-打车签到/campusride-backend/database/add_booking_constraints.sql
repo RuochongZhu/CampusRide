@@ -25,3 +25,6 @@ COMMENT ON CONSTRAINT check_seats_positive ON ride_bookings IS 'Ensures seats_bo
 
 
 
+
+
+

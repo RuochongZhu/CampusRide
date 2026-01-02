@@ -175,7 +175,7 @@ class NotificationController {
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const {
         limit = 20,
         offset = 0,
@@ -229,7 +229,7 @@ class NotificationController {
   // Get unread count
   async getUnreadCount(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const result = await notificationService.getUnreadCount(userId);
 
@@ -277,7 +277,7 @@ class NotificationController {
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { notificationId } = req.params;
 
       const result = await notificationService.markAsRead(userId, notificationId);
@@ -314,7 +314,7 @@ class NotificationController {
   // Mark all notifications as read
   async markAllAsRead(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const result = await notificationService.markAllAsRead(userId);
 
@@ -362,7 +362,7 @@ class NotificationController {
         });
       }
 
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { notificationId } = req.params;
 
       const result = await notificationService.deleteNotification(userId, notificationId);

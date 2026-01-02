@@ -122,7 +122,37 @@
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <a-form-item label="Priority" name="urgentNeed" class="mb-6">
+                <a-form-item label="Publish to Group" name="groupId" class="mb-6">
+                  <a-select
+                    v-model:value="formData.groupId"
+                    placeholder="Select a group"
+                    size="large"
+                    class="!rounded-lg"
+                    :loading="loadingGroups"
+                    :disabled="myGroups.length === 0"
+                  >
+                    <a-select-option
+                      v-for="group in myGroups"
+                      :key="group.id"
+                      :value="group.id"
+                    >
+                      <div class="flex items-center">
+                        <TeamOutlined class="mr-2 text-blue-500" />
+                        {{ group.name }}
+                      </div>
+                    </a-select-option>
+                  </a-select>
+                  <div v-if="myGroups.length === 0 && !loadingGroups" class="text-sm text-orange-500 mt-2">
+                    You need to join a group before creating an activity.
+                    <router-link to="/groups" class="text-blue-500 underline">Browse Groups</router-link>
+                  </div>
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <a-row :gutter="24">
+              <a-col :span="24">
+                <a-form-item name="urgentNeed" class="mb-6">
                   <a-checkbox
                     v-model:checked="formData.urgentNeed"
                     class="text-lg"
@@ -162,6 +192,20 @@
                 <a-select-option value="Workshop">Workshop</a-select-option>
                 <a-select-option value="Social">Social</a-select-option>
               </a-select>
+            </a-form-item>
+
+            <!-- Activity Images -->
+            <a-form-item label="Activity Images" name="images">
+              <div class="mb-2 text-sm text-gray-500">
+                <PictureOutlined class="mr-1" />
+                Upload images to showcase your activity (max 5 images)
+              </div>
+              <MediaUploader
+                v-model="formData.images"
+                :max-files="5"
+                accept="image/*"
+                upload-text="Upload Images"
+              />
             </a-form-item>
           </div>
 
@@ -369,10 +413,11 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { activitiesAPI } from '@/utils/api'
+import { activitiesAPI, groupAPI } from '@/utils/api'
+import MediaUploader from '@/components/MediaUploader.vue'
 import dayjs from 'dayjs'
 import {
   PlusOutlined,
@@ -384,18 +429,22 @@ import {
   ShoppingOutlined,
   GlobalOutlined,
   CodeOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  PictureOutlined
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const formRef = ref()
 const isSubmitting = ref(false)
+const myGroups = ref([])
+const loadingGroups = ref(false)
 
 // Form data
 const formData = reactive({
   title: '',
   description: '',
   category: '',
+  groupId: null, // Required: activity must belong to a group
   urgentNeed: false,
   location: '',
   startTime: null,
@@ -407,6 +456,7 @@ const formData = reactive({
   rewardPoints: 0,
   requirements: '',
   tags: [],
+  images: [], // New: array of uploaded image URLs
   contactInfo: {
     email: '',
     phone: ''
@@ -414,6 +464,26 @@ const formData = reactive({
   locationVerification: false,
   autoComplete: false
 })
+
+// Fetch user's groups on mount
+onMounted(async () => {
+  await fetchMyGroups()
+})
+
+const fetchMyGroups = async () => {
+  try {
+    loadingGroups.value = true
+    const response = await groupAPI.getMyGroups()
+    if (response.data?.success) {
+      myGroups.value = response.data.data || []
+    }
+  } catch (error) {
+    console.error('Failed to load groups:', error)
+    message.warning('Failed to load your groups. Please join a group first.')
+  } finally {
+    loadingGroups.value = false
+  }
+}
 
 // Form validation rules
 const formRules = {
@@ -427,6 +497,9 @@ const formRules = {
   ],
   category: [
     { required: true, message: 'Please select category', trigger: 'change' }
+  ],
+  groupId: [
+    { required: true, message: 'Please select a group to publish in', trigger: 'change' }
   ],
   location: [
     { required: true, message: 'Please enter location', trigger: 'blur' }
@@ -443,15 +516,16 @@ const formRules = {
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true
-    
+
     // Validate form
     await formRef.value.validate()
-    
+
     // Prepare data for API
     const activityData = {
       title: formData.title,
       description: formData.description,
       category: formData.category,
+      groupId: formData.groupId, // Required group association
       type: 'general', // Default type since we removed the selection
       urgentNeed: formData.urgentNeed,
       location: formData.location,
@@ -464,6 +538,7 @@ const handleSubmit = async () => {
       rewardPoints: formData.rewardPoints || 0,
       requirements: formData.requirements || '',
       tags: formData.tags || [],
+      images: formData.images || [], // Include uploaded images
       contactInfo: formData.contactInfo || {},
       locationVerification: formData.locationVerification || false,
       autoComplete: formData.autoComplete || false

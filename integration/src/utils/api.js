@@ -9,7 +9,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s to handle longer operations
 });
 
 // 请求拦截器 - 添加token
@@ -32,24 +32,31 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // 网络错误或超时
+    if (!error.response) {
+      console.error('🌐 Network error or timeout:', error.message);
+      // 不自动重定向，让组件处理
+      return Promise.reject(error);
+    }
+
     // 只在真正的认证错误时才处理
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      
+
       // 如果已经在登录页面，不需要重定向
       if (currentPath === '/login' || currentPath === '/register') {
         return Promise.reject(error);
       }
-      
+
       // 检查错误代码，只在token真的过期或无效时才清除
       const errorCode = error.response?.data?.error?.code;
-      
+
       // 只有明确的token过期/无效才清除并跳转
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID' || errorCode === 'INVALID_CREDENTIALS') {
         console.warn('🔐 Token expired or invalid, redirecting to login');
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
-        
+
         // 保存当前路径以便登录后返回
         const returnPath = currentPath !== '/' ? currentPath : '/home';
         window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
@@ -239,6 +246,30 @@ export const marketplaceAPI = {
 
   // 获取我的收藏
   getMyFavorites: (params = {}) => api.get('/marketplace/favorites', { params }),
+
+  // 上传图片
+  uploadImage: (data) => api.post('/upload/image', data),
+
+  // 删除图片
+  deleteImage: (filename) => api.delete(`/upload/image/${filename}`),
+
+  // 获取商品评论
+  getItemComments: (itemId, params = {}) => api.get(`/marketplace/items/${itemId}/comments`, { params }),
+
+  // 创建评论或回复
+  createComment: (itemId, data) => api.post(`/marketplace/items/${itemId}/comments`, data),
+
+  // 更新评论
+  updateComment: (commentId, data) => api.put(`/marketplace/comments/${commentId}`, data),
+
+  // 删除评论
+  deleteComment: (commentId) => api.delete(`/marketplace/comments/${commentId}`),
+
+  // 点赞评论
+  likeComment: (commentId) => api.post(`/marketplace/comments/${commentId}/like`),
+
+  // 取消点赞评论
+  unlikeComment: (commentId) => api.delete(`/marketplace/comments/${commentId}/like`),
 };
 
 // 活动相关 API
@@ -323,6 +354,15 @@ export const notificationsAPI = {
   // 获取通知列表
   getNotifications: (params = {}) => api.get('/notifications', { params }),
 
+  // 获取未读通知数量
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+
+  // 获取乘客通知 (Cindy's carpool system)
+  getPassengerNotifications: (params = {}) => api.get('/notifications/passenger', { params }),
+
+  // 响应预订请求 (接受/拒绝)
+  respondToBooking: (notificationId, action) => api.post(`/notifications/${notificationId}/respond`, { action }),
+
   // 标记为已读
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
 
@@ -330,10 +370,7 @@ export const notificationsAPI = {
   markAllAsRead: () => api.put('/notifications/mark-all-read'),
 
   // 删除通知
-  deleteNotification: (id) => api.delete(`/notifications/${id}`),
-
-  // 获取未读消息数量
-  getUnreadCount: () => api.get('/notifications/unread-count'),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`)
 };
 
 // 健康检查 API
@@ -441,6 +478,201 @@ export const messagesAPI = {
 
   // 归档消息
   archiveMessage: (messageId) => api.put(`/messages/${messageId}/archive`),
+
+  // User blocking functions
+  getBlockedUsers: () => api.get('/messages/blocked'),
+  blockUser: (userId, data = {}) => api.post(`/messages/block/${userId}`, data),
+  unblockUser: (userId) => api.delete(`/messages/block/${userId}`),
+  checkBlockStatus: (userId) => api.get(`/messages/block/${userId}/status`),
+
+  // System messages (admin announcements & user feedback)
+  getSystemMessages: (params = {}) => api.get('/messages/system', { params }),
+  sendSystemMessage: (data) => api.post('/messages/system', data),
+  markSystemMessagesAsRead: (messageIds = null) => api.put('/messages/system/read', { message_ids: messageIds }),
+  getSystemMessagesUnreadCount: () => api.get('/messages/system/unread-count'),
+  deleteSystemMessage: (id) => api.delete(`/messages/system/${id}`),
+
+  // Message reactions
+  addReaction: (messageId, emoji) => api.post(`/messages/${messageId}/reactions`, { emoji }),
+  removeReaction: (messageId, emoji) => api.delete(`/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`),
+};
+
+// ================================================
+// 评分系统相关 API
+// ================================================
+export const ratingAPI = {
+  // 创建或更新行程评分
+  createRating: (data) => api.post('/ratings', data),
+
+  // 获取用户评分信息
+  getUserRating: (userId) => api.get(`/ratings/user/${userId}`),
+
+  // 获取行程的所有评分
+  getTripRatings: (tripId) => api.get(`/ratings/trip/${tripId}`),
+
+  // 获取用户收到的评分
+  getUserReceivedRatings: (userId, params = {}) => api.get(`/ratings/received/${userId}`, { params }),
+
+  // 检查是否可以评价行程
+  canRate: (params = {}) => api.get('/ratings/can-rate', { params }),
+
+  // ========== 活动评分 ==========
+
+  // 创建或更新活动评分
+  createActivityRating: (data) => api.post('/ratings/activity', data),
+
+  // 获取活动的所有评分
+  getActivityRatings: (activityId) => api.get(`/ratings/activity/${activityId}`),
+
+  // 检查是否可以评价活动
+  canRateActivity: (params = {}) => api.get('/ratings/activity/can-rate', { params }),
+};
+
+// ================================================
+// 好友系统 API
+// ================================================
+export const friendsAPI = {
+  // 获取好友列表
+  getFriends: (params = {}) => api.get('/friends', { params }),
+
+  // 添加好友 (with optional intro message)
+  addFriend: (userId, data = {}) => api.post(`/friends/${userId}`, data),
+
+  // 删除好友
+  removeFriend: (userId) => api.delete(`/friends/${userId}`),
+
+  // 检查好友状态
+  checkFriendStatus: (userId) => api.get(`/friends/${userId}/status`),
+
+  // 获取好友请求
+  getFriendRequests: () => api.get('/friends/requests'),
+
+  // 接受好友请求
+  acceptFriendRequest: (requestId) => api.post(`/friends/requests/${requestId}/accept`),
+
+  // 拒绝好友请求
+  rejectFriendRequest: (requestId) => api.post(`/friends/requests/${requestId}/reject`),
+};
+
+// ================================================
+// Activity 群聊 API
+// ================================================
+export const activityChatAPI = {
+  // 获取 Activity 群聊消息
+  getMessages: (activityId, params = {}) => api.get(`/activities/${activityId}/chat`, { params }),
+
+  // 发送群聊消息
+  sendMessage: (activityId, data) => api.post(`/activities/${activityId}/chat`, data),
+
+  // 删除群聊消息
+  deleteMessage: (activityId, messageId) => api.delete(`/activities/${activityId}/chat/${messageId}`),
+
+  // 获取群聊成员
+  getMembers: (activityId) => api.get(`/activities/${activityId}/chat/members`),
+
+  // 标记消息已读
+  markAsRead: (activityId) => api.put(`/activities/${activityId}/chat/read`),
+};
+
+// ================================================
+// 上传相关 API
+// ================================================
+export const uploadAPI = {
+  // 上传图片
+  uploadImage: (formData) => api.post('/upload/image', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
+
+  // 删除图片
+  deleteImage: (filename) => api.delete(`/upload/image/${filename}`),
+};
+
+// ================================================
+// 管理员 API
+// ================================================
+export const adminAPI = {
+  // 检查是否是管理员
+  checkAdmin: () => api.get('/admin/dashboard'),
+
+  // 获取仪表盘统计
+  getDashboardStats: (params = {}) => api.get('/admin/dashboard', { params }),
+
+  // 获取拼车统计
+  getRideStats: (params = {}) => api.get('/admin/stats/rides', { params }),
+
+  // 获取二手市场统计
+  getMarketplaceStats: (params = {}) => api.get('/admin/stats/marketplace', { params }),
+
+  // 获取活动统计
+  getActivityStats: (params = {}) => api.get('/admin/stats/activities', { params }),
+
+  // 获取积分排行
+  getPointsLeaderboard: (params = {}) => api.get('/admin/stats/points', { params }),
+
+  // 获取用户列表
+  getUserList: (params = {}) => api.get('/admin/users', { params }),
+
+  // 封禁用户
+  banUser: (userId, reason) => api.post(`/admin/users/${userId}/ban`, { reason }),
+
+  // 解封用户
+  unbanUser: (userId) => api.post(`/admin/users/${userId}/unban`),
+};
+
+// ================================================
+// 用户资料相关 API
+// ================================================
+export const userProfileAPI = {
+  // 获取用户完整资料
+  getUserProfile: (userId) => api.get(`/users/${userId}/profile`),
+
+  // 获取用户历史记录
+  getUserHistory: (userId, params = {}) => api.get(`/users/${userId}/history`, { params }),
+
+  // 更新用户资料
+  updateUserProfile: (data) => api.put('/users/profile', data),
+
+  // 上传用户头像
+  uploadAvatar: (data) => api.post('/users/avatar', data),
+
+  // 获取用户积分历史
+  getUserPointsHistory: (userId, params = {}) => api.get(`/users/${userId}/points/history`, { params }),
+
+  // 获取用户优惠券
+  getUserCoupons: (userId, params = {}) => api.get(`/users/${userId}/coupons`, { params }),
+
+  // 使用优惠券
+  useCoupon: (couponId) => api.post(`/users/coupons/${couponId}/use`),
+
+  // ========== 隐私设置 ==========
+
+  // 获取隐藏排名状态
+  getHideRankStatus: () => api.get('/users/privacy/hide-rank'),
+
+  // 切换隐藏排名
+  toggleHideRank: (hide_rank) => api.put('/users/privacy/hide-rank', { hide_rank }),
+};
+
+// ================================================
+// 系统公告相关 API
+// ================================================
+export const announcementsAPI = {
+  // 获取活跃公告列表
+  getAnnouncements: (params = {}) => api.get('/announcements', { params }),
+
+  // 创建公告 (管理员)
+  createAnnouncement: (data) => api.post('/announcements', data),
+
+  // 更新公告 (管理员)
+  updateAnnouncement: (id, data) => api.put(`/announcements/${id}`, data),
+
+  // 删除公告 (管理员)
+  deleteAnnouncement: (id) => api.delete(`/announcements/${id}`),
+
+  // 置顶/取消置顶公告 (管理员)
+  togglePin: (id, data) => api.post(`/announcements/${id}/pin`, data)
 };
 
 // 导出默认API实例

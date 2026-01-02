@@ -14,10 +14,21 @@ import CreateActivityView from '@/views/CreateActivityView.vue'
 import ActivityDetailView from '@/views/ActivityDetailView.vue'
 import ParticipationHistoryView from '@/views/ParticipationHistoryView.vue'
 import MarketplaceView from '@/views/MarketplaceView.vue'
+import MyMarketplaceItems from '@/views/MyMarketplaceItems.vue'
+import MyFavoritesView from '@/views/MyFavoritesView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import GroupMapView from '@/views/GroupMapView.vue'
 import GroupDetailView from '@/views/GroupDetailView.vue'
 import MessagesView from '@/views/MessagesView.vue'
+import AvatarTestView from '@/views/AvatarTestView.vue'
+import UserProfileView from '@/views/UserProfileView.vue'
+import AdminView from '@/views/AdminView.vue'
+
+// Legal Pages
+import TermsOfServiceView from '@/views/TermsOfServiceView.vue'
+import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
+import CookiePolicyView from '@/views/CookiePolicyView.vue'
+import CarpoolDisclaimerView from '@/views/CarpoolDisclaimerView.vue'
 
 const routes = [
   {
@@ -142,9 +153,27 @@ const routes = [
     path: '/marketplace',
     name: 'Marketplace',
     component: MarketplaceView,
-    meta: { 
+    meta: {
       requiresAuth: true,
       title: 'Campus Marketplace - CampusRide'
+    }
+  },
+  {
+    path: '/marketplace/my-items',
+    name: 'MyMarketplaceItems',
+    component: MyMarketplaceItems,
+    meta: {
+      requiresAuth: true,
+      title: 'My Items - CampusRide'
+    }
+  },
+  {
+    path: '/marketplace/favorites',
+    name: 'MyFavorites',
+    component: MyFavoritesView,
+    meta: {
+      requiresAuth: true,
+      title: 'My Favorites - CampusRide'
     }
   },
   {
@@ -181,6 +210,70 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: 'Messages - CampusRide'
+    }
+  },
+  {
+    path: '/test-avatar',
+    name: 'AvatarTest',
+    component: AvatarTestView,
+    meta: {
+      requiresAuth: false,
+      title: 'ClickableAvatar Test - CampusRide'
+    }
+  },
+  {
+    path: '/profile/:userId',
+    name: 'UserProfile',
+    component: UserProfileView,
+    meta: {
+      requiresAuth: true,
+      title: 'User Profile - CampusRide'
+    }
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: AdminView,
+    meta: {
+      requiresAuth: true,
+      title: 'Admin Panel - CampusRide'
+    }
+  },
+  // Legal Pages - Public Access
+  {
+    path: '/terms',
+    name: 'TermsOfService',
+    component: TermsOfServiceView,
+    meta: {
+      requiresAuth: false,
+      title: 'Terms of Service - CampusRide'
+    }
+  },
+  {
+    path: '/privacy',
+    name: 'PrivacyPolicy',
+    component: PrivacyPolicyView,
+    meta: {
+      requiresAuth: false,
+      title: 'Privacy Policy - CampusRide'
+    }
+  },
+  {
+    path: '/cookies',
+    name: 'CookiePolicy',
+    component: CookiePolicyView,
+    meta: {
+      requiresAuth: false,
+      title: 'Cookie Policy - CampusRide'
+    }
+  },
+  {
+    path: '/carpool-disclaimer',
+    name: 'CarpoolDisclaimer',
+    component: CarpoolDisclaimerView,
+    meta: {
+      requiresAuth: false,
+      title: 'Carpool Disclaimer - CampusRide'
     }
   },
   {
