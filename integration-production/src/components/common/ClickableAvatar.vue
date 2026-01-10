@@ -2,7 +2,7 @@
   <div class="clickable-avatar">
     <a-badge :dot="user?.is_online" :offset="[-5, 35]">
       <a-avatar
-        :src="user?.avatar_url"
+        :src="user?.avatar_url || defaultAvatar"
         :size="size"
         :class="{ 'cursor-pointer': !disabled, 'hover:shadow-md': !disabled }"
         @click="showUserCard"
@@ -58,6 +58,7 @@ const emit = defineEmits(['click', 'message'])
 const router = useRouter()
 const cardVisible = ref(false)
 const popoverTrigger = ref(null)
+const defaultAvatar = '/Profile_Photo.jpg'
 
 const getInitials = (user) => {
   if (!user) return '?'

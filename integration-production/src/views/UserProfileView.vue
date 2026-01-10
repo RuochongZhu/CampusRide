@@ -465,7 +465,7 @@ const editForm = ref({
   university: ''
 })
 
-const defaultAvatar = import.meta.env.VITE_API_BASE_URL || ''
+const defaultAvatar = '/Profile_Photo.jpg'
 
 // Computed
 const userId = computed(() => route.params.userId || authStore.userId)

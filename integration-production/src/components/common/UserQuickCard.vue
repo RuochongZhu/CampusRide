@@ -1,7 +1,7 @@
 <template>
   <div class="user-quick-card">
     <div class="card-header">
-      <a-avatar :src="user?.avatar_url" :size="64">
+      <a-avatar :src="user?.avatar_url || defaultAvatar" :size="64">
         {{ getInitials(user) }}
       </a-avatar>
       <div class="user-info">
@@ -67,6 +67,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['message', 'close'])
+
+const defaultAvatar = '/Profile_Photo.jpg'
 
 // Stats data
 const stats = ref({

@@ -530,7 +530,7 @@ const blockedUsersLoading = ref(false)
 const hideRankEnabled = ref(false)
 const hideRankLoading = ref(false)
 
-const defaultAvatar = import.meta.env.VITE_API_BASE_URL || ''
+const defaultAvatar = '/Profile_Photo.jpg'
 
 // Computed
 const filteredCoupons = computed(() => {
