@@ -592,17 +592,18 @@ const fetchAllData = async () => {
     const profileRes = await userProfileAPI.getUserProfile(authStore.userId)
     if (profileRes.data.success) {
       const data = profileRes.data.data
+      // 后端直接返回用户数据，不是包装在 user 对象中
       userData.value = {
-        first_name: data.user.first_name || '',
-        last_name: data.user.last_name || '',
-        nickname: data.user.nickname || data.user.first_name || '',
-        email: data.user.email || '',
-        avatar_url: data.user.avatar_url || '',
-        rating: data.ratings?.summary?.average || 0,
-        rating_count: data.ratings?.summary?.total || 0
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        nickname: data.first_name || '',  // 使用 first_name 作为昵称
+        email: data.email || '',
+        avatar_url: data.avatar_url || '',
+        rating: data.ratings?.summary?.average || data.avg_rating || 0,
+        rating_count: data.ratings?.summary?.total || data.total_ratings || 0
       }
       couponsData.value = data.coupons || { summary: {}, active: [], used: [], expired: [] }
-      pointsData.value.total = data.statistics?.points || 0
+      pointsData.value.total = data.statistics?.points || data.points || 0
     }
 
     // Fetch points history
