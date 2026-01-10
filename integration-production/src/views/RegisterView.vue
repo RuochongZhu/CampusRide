@@ -92,7 +92,7 @@
             </div>
 
             <!-- Confirm Password -->
-            <div class="mb-6">
+            <div class="mb-4">
               <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
               <input
                 type="password"
@@ -103,7 +103,48 @@
                 required
               />
             </div>
-            
+
+            <!-- Terms and Privacy Agreement -->
+            <div class="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div class="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  id="termsAgreement"
+                  v-model="form.termsAgreed"
+                  class="mt-1 h-4 w-4 text-[#B31B1B] border-gray-300 rounded focus:ring-[#B31B1B]"
+                  required
+                />
+                <label for="termsAgreement" class="text-sm text-gray-700">
+                  I have read and agree to the
+                  <router-link to="/terms" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Terms of Service</router-link>,
+                  <router-link to="/privacy" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Privacy Policy</router-link>, and
+                  <router-link to="/carpool-disclaimer" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Carpool Disclaimer</router-link>.
+                  <span class="text-red-500">*</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Research Consent (Optional) -->
+            <div class="mb-6 p-3 bg-purple-50 rounded-md border border-purple-200">
+              <div class="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  id="researchConsent"
+                  v-model="form.researchConsent"
+                  class="mt-1 h-4 w-4 text-[#B31B1B] border-gray-300 rounded focus:ring-[#B31B1B]"
+                />
+                <label for="researchConsent" class="text-sm text-gray-700">
+                  <span class="font-medium">Research Participation (Optional)</span><br/>
+                  <span class="text-xs text-gray-600">
+                    I agree to allow my anonymized data to be used for academic research
+                    conducted under Cornell University IRB oversight. My identity will never
+                    be revealed, and I can withdraw consent at any time.
+                    <router-link to="/privacy#academic-research" target="_blank" class="text-[#B31B1B] underline">Learn more</router-link>
+                  </span>
+                </label>
+              </div>
+            </div>
+
             <button
               type="submit"
               :disabled="isLoading"
@@ -158,7 +199,9 @@ const router = useRouter()
 const form = ref({
   nickname: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  termsAgreed: false,
+  researchConsent: false
 })
 
 // Email username (NetID) - separate from full email
@@ -299,6 +342,12 @@ const validateForm = () => {
     return false
   }
 
+  // Validate terms agreement
+  if (!form.value.termsAgreed) {
+    errorMessage.value = 'You must agree to the Terms of Service and Privacy Policy'
+    return false
+  }
+
   return true
 }
 
@@ -313,7 +362,11 @@ const handleRegister = async () => {
     const { data } = await authAPI.register({
       nickname: form.value.nickname.trim(),
       email: fullEmail.value,  // Use the computed full email
-      password: form.value.password
+      password: form.value.password,
+      terms_agreed: form.value.termsAgreed,
+      terms_agreed_at: new Date().toISOString(),
+      research_consent: form.value.researchConsent,
+      research_consent_at: form.value.researchConsent ? new Date().toISOString() : null
     })
     if (data?.success) {
       successMessage.value = 'Registration successful! Please check your email and click the verification link.'

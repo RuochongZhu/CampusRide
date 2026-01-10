@@ -144,6 +144,12 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/1Dj025lEVj.txt', (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.send('c82801c84003105ee7094936dbfd7f16');
+});
+
+
 // 404 handler
 app.use(notFound);
 

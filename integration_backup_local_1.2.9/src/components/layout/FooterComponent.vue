@@ -25,6 +25,7 @@
             <li><router-link to="/privacy" class="hover:text-white">Privacy Policy</router-link></li>
             <li><router-link to="/cookies" class="hover:text-white">Cookie Policy</router-link></li>
             <li><router-link to="/carpool-disclaimer" class="hover:text-white">Carpool Disclaimer</router-link></li>
+            <li><router-link to="/disclosures" class="hover:text-white">Disclosures</router-link></li>
           </ul>
         </div>
         <div>

@@ -29,6 +29,7 @@ import TermsOfServiceView from '@/views/TermsOfServiceView.vue'
 import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
 import CookiePolicyView from '@/views/CookiePolicyView.vue'
 import CarpoolDisclaimerView from '@/views/CarpoolDisclaimerView.vue'
+import DisclosuresView from '@/views/DisclosuresView.vue'
 
 const routes = [
   {
@@ -274,6 +275,15 @@ const routes = [
     meta: {
       requiresAuth: false,
       title: 'Carpool Disclaimer - CampusRide'
+    }
+  },
+  {
+    path: '/disclosures',
+    name: 'Disclosures',
+    component: DisclosuresView,
+    meta: {
+      requiresAuth: false,
+      title: 'Disclosures & Transparency - CampusRide'
     }
   },
   {

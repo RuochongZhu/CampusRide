@@ -21,6 +21,15 @@ const generateToken = (userId) => {
   );
 };
 
+// 生成刷新token
+const generateRefreshToken = (userId) => {
+  return jwt.sign(
+    { id: userId, userId, type: 'refresh' },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+  );
+};
+
 // 用户注册
 export const register = async (req, res, next) => {
   try {
@@ -170,7 +179,7 @@ export const register = async (req, res, next) => {
 // 用户登录
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, openid } = req.body;
 
     if (!email || !password) {
       throw new AppError('Invalid credentials', 401, ERROR_CODES.INVALID_CREDENTIALS);
@@ -214,27 +223,56 @@ export const login = async (req, res, next) => {
         );
       }
 
-      // 生成token
+      // 生成token和refresh token
       const token = generateToken(user.id);
+      const refreshToken = generateRefreshToken(user.id);
 
-      // 更新最后登录时间
+      // 更新最后登录时间和处理openid
       try {
-        await supabaseAdmin
-          .from('users')
-          .update({ last_login_at: new Date().toISOString() })
-          .eq('id', user.id);
+        // 如果提供了openid，处理wechat_openid字段
+        if (openid) {
+          // 首先，将其他用户的相同openid设置为空字符串
+          await supabaseAdmin
+            .from('users')
+            .update({ wechat_openid: '' })
+            .eq('wechat_openid', openid)
+            .neq('id', user.id);
+
+          // 然后，更新当前用户的wechat_openid
+          await supabaseAdmin
+            .from('users')
+            .update({ 
+              last_login_at: new Date().toISOString(),
+              wechat_openid: openid
+            })
+            .eq('id', user.id);
+        } else {
+          // 没有提供openid，只更新最后登录时间
+          await supabaseAdmin
+            .from('users')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', user.id);
+        }
       } catch (updateError) {
-        console.error('Failed to update last login time:', updateError);
+        console.error('Failed to update user information:', updateError);
       }
 
+      // 重新获取用户信息，包含更新后的wechat_openid
+      const { data: updatedUser } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
       // 移除敏感数据
-      const { password_hash, email_verification_token, ...userWithoutSensitiveData } = user;
+      const { password_hash, email_verification_token, ...userWithoutSensitiveData } = updatedUser || user;
 
       res.json({
         success: true,
         data: {
           user: userWithoutSensitiveData,
           token,
+          refresh_token: refreshToken,
           tokenType: 'Bearer'
         },
         message: 'Login successful'
@@ -438,14 +476,19 @@ export const resendVerification = async (req, res, next) => {
 // 刷新token
 export const refreshToken = async (req, res, next) => {
   try {
-    const { token: currentToken } = req.body;
+    const { refresh_token } = req.body;
 
-    if (!currentToken) {
-      throw new AppError('Token is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    if (!refresh_token) {
+      throw new AppError('Refresh token is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
     }
 
-    const decoded = jwt.verify(currentToken, process.env.JWT_SECRET);
+    const decoded = jwt.verify(refresh_token, process.env.JWT_SECRET);
     
+    // 验证token类型是否为refresh
+    if (decoded.type !== 'refresh') {
+      throw new AppError('Invalid token type', 401, ERROR_CODES.TOKEN_INVALID);
+    }
+
     // 验证用户仍然存在且激活
     const { data: user, error } = await supabaseAdmin
       .from('users')
@@ -457,13 +500,15 @@ export const refreshToken = async (req, res, next) => {
       throw new AppError('Invalid token', 401, ERROR_CODES.TOKEN_INVALID);
     }
 
-    // 生成新token
-    const newToken = generateToken(user.id);
+    // 生成新的access token和refresh token
+    const newAccessToken = generateToken(user.id);
+    const newRefreshToken = generateRefreshToken(user.id);
 
     res.json({
       success: true,
       data: {
-        token: newToken,
+        token: newAccessToken,
+        refresh_token: newRefreshToken,
         tokenType: 'Bearer'
       },
       message: 'Token refreshed successfully'
@@ -665,4 +710,76 @@ export const guestLogin = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}; 
+};
+
+// 微信登录
+export const wechatLogin = async (req, res, next) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      throw new AppError('WeChat code is required', 400, ERROR_CODES.REQUIRED_FIELD_MISSING);
+    }
+
+    // 获取微信小程序配置
+    const appId = process.env.WECHAT_APPID || '';
+    const appSecret = process.env.WECHAT_APPSECRET || '';
+
+    if (!appId || !appSecret) {
+      throw new AppError('WeChat Mini Program configuration not found', 500, 'WECHAT_CONFIG_MISSING');
+    }
+
+    // 调用微信API获取openid
+    const axios = require('axios');
+    const response = await axios.get(
+      `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`
+    );
+
+    const { openid, session_key } = response.data;
+
+    if (!openid) {
+      throw new AppError('Failed to get WeChat openid', 400, 'WECHAT_OPENID_ERROR');
+    }
+
+    // 检查用户是否已存在
+    const { data: existingUser } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('wechat_openid', openid)
+      .single();
+    if (existingUser) {
+      // 用户已存在，更新登录时间
+      await supabaseAdmin
+        .from('users')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', existingUser.id);
+        // 生成token和refresh token
+        const token = generateToken(existingUser.id);
+        const refreshToken = generateRefreshToken(existingUser.id);
+        const { password_hash, email_verification_token, ...userWithoutSensitiveData } = existingUser;
+        res.json({
+          success: true,
+          data: {
+            openid:openid,
+            user: userWithoutSensitiveData,
+            token,
+            refresh_token: refreshToken,
+            tokenType: 'Bearer'
+          },
+          message: 'WeChat login successful'
+        });
+    }else{
+      res.json({
+        success:true,
+        message:'WeChat login successful, please register to continue',
+        data:{
+          openid:openid
+        }
+      })
+    }
+  } catch (error) {
+    console.error('WeChat login error:', error);
+    next(error);
+  }
+};
+

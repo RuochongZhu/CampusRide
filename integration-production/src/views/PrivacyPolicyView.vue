@@ -28,8 +28,10 @@
           <a href="#breach-notification" class="block text-[#C24D45] hover:underline">8. Data Breach Notification</a>
           <a href="#children" class="block text-[#C24D45] hover:underline">9. Children's Privacy</a>
           <a href="#third-party" class="block text-[#C24D45] hover:underline">10. Third-Party Services</a>
-          <a href="#changes" class="block text-[#C24D45] hover:underline">11. Changes to This Policy</a>
-          <a href="#contact" class="block text-[#C24D45] hover:underline">12. Contact Information</a>
+          <a href="#academic-research" class="block text-[#C24D45] hover:underline">11. Academic Research Use</a>
+          <a href="#sponsor-disclosure" class="block text-[#C24D45] hover:underline">12. Sponsor Partnerships & Disclosures</a>
+          <a href="#changes" class="block text-[#C24D45] hover:underline">13. Changes to This Policy</a>
+          <a href="#contact" class="block text-[#C24D45] hover:underline">14. Contact Information</a>
         </nav>
       </div>
 
@@ -455,9 +457,165 @@
           </p>
         </section>
 
-        <!-- Section 11 -->
+        <!-- Section 11 - Academic Research -->
+        <section id="academic-research">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">11. Academic Research Use</h2>
+
+          <div class="bg-purple-50 border-l-4 border-purple-400 p-4 mb-6">
+            <p class="text-purple-800">
+              <strong>Cornell University Affiliation:</strong> CampusRide is affiliated with Cornell University.
+              With your explicit consent, anonymized data may be used for academic research purposes.
+            </p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.1 Research Purpose</h3>
+          <p class="text-gray-700 mb-4">
+            Academic research using CampusRide data aims to:
+          </p>
+          <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
+            <li>Improve campus transportation systems and sustainability</li>
+            <li>Study community-building and peer-to-peer sharing behaviors</li>
+            <li>Advance understanding of student mobility patterns</li>
+            <li>Develop better tools for campus communities</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.2 IRB Oversight</h3>
+          <p class="text-gray-700 mb-4">
+            All academic research using CampusRide data is conducted under the oversight of the
+            <strong>Cornell University Institutional Review Board (IRB)</strong>, which ensures
+            ethical standards and participant protections are maintained.
+          </p>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.3 Data Used for Research</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="min-w-full border border-gray-200 rounded-lg">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Data Type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Used in Research</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">How It's Protected</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Usage Statistics</td>
+                  <td class="px-4 py-3 text-sm text-green-600">✓ Yes (aggregated)</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated, no individual identification</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Route Patterns</td>
+                  <td class="px-4 py-3 text-sm text-green-600">✓ Yes (anonymized)</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Locations generalized to regions</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Feature Usage</td>
+                  <td class="px-4 py-3 text-sm text-green-600">✓ Yes (aggregated)</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Statistical summaries only</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Email Address</td>
+                  <td class="px-4 py-3 text-sm text-red-600">✗ Never</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Never included in research data</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Real Name</td>
+                  <td class="px-4 py-3 text-sm text-red-600">✗ Never</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Never included in research data</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Message Content</td>
+                  <td class="px-4 py-3 text-sm text-red-600">✗ Never</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Never included in research data</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.4 Your Consent & Rights</h3>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <p class="text-gray-700 mb-3">
+              <strong>Research participation is completely voluntary.</strong> You can:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2">
+              <li>Choose to opt-in or opt-out during registration</li>
+              <li>Change your preference at any time in Account Settings</li>
+              <li>Request that your data be excluded from future research</li>
+              <li>Use CampusRide fully regardless of your research participation choice</li>
+            </ul>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.5 Research Publications</h3>
+          <p class="text-gray-700">
+            Research findings may be published in academic journals, conferences, or reports.
+            All publications will only contain aggregated, anonymized data that cannot be
+            traced back to any individual user.
+          </p>
+        </section>
+
+        <!-- Section 12 - Sponsor Disclosure -->
+        <section id="sponsor-disclosure">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">12. Sponsor Partnerships & Disclosures</h2>
+
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <p class="text-yellow-800">
+              <strong>Transparency Notice:</strong> CampusRide partners with local businesses who
+              sponsor rewards for our community. We believe in full transparency about these relationships.
+            </p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">12.1 Sponsor Relationships</h3>
+          <p class="text-gray-700 mb-4">
+            CampusRide may partner with local businesses (restaurants, cafes, retailers) who provide
+            coupons and rewards for active community members. These partnerships help us:
+          </p>
+          <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
+            <li>Reward users who contribute positively to the community</li>
+            <li>Support local businesses near campus</li>
+            <li>Maintain the platform without charging users</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">12.2 Affiliate Disclosure</h3>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <p class="text-gray-700 mb-3">
+              <strong>Important Disclosure:</strong> Members of the CampusRide team may have
+              employment or business relationships with sponsor companies. Specifically:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2">
+              <li>Team members may be employed by sponsor businesses</li>
+              <li>Team members may receive compensation from sponsors</li>
+              <li>These relationships are disclosed on our <router-link to="/disclosures" class="text-[#C24D45] underline">Disclosures Page</router-link></li>
+            </ul>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">12.3 Data Sharing with Sponsors</h3>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p class="text-gray-700 font-medium mb-2">We do NOT share with sponsors:</p>
+            <ul class="list-disc list-inside text-gray-700 space-y-1">
+              <li>Your personal information (name, email, etc.)</li>
+              <li>Your individual usage data</li>
+              <li>Your location history</li>
+              <li>Your messages or communications</li>
+            </ul>
+          </div>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p class="text-gray-700 font-medium mb-2">We may share with sponsors (anonymized only):</p>
+            <ul class="list-disc list-inside text-gray-700 space-y-1">
+              <li>Total number of coupons redeemed (e.g., "150 coupons used this month")</li>
+              <li>General engagement statistics (e.g., "500 active users")</li>
+              <li>Aggregated feedback (e.g., "85% satisfaction rate")</li>
+            </ul>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3 mt-4">12.4 Your Choice</h3>
+          <p class="text-gray-700">
+            Participation in sponsor reward programs is voluntary. You can use all CampusRide
+            features without participating in any sponsor programs.
+          </p>
+        </section>
+
+        <!-- Section 13 -->
         <section id="changes">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">11. Changes to This Policy</h2>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">13. Changes to This Policy</h2>
           <p class="text-gray-700 mb-4">
             We may update this Privacy Policy from time to time. When we make material changes:
           </p>
@@ -472,9 +630,9 @@
           </p>
         </section>
 
-        <!-- Section 12 -->
+        <!-- Section 14 -->
         <section id="contact">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">12. Contact Information</h2>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">14. Contact Information</h2>
           <p class="text-gray-700 mb-4">
             For questions about this Privacy Policy or our data practices, please contact:
           </p>

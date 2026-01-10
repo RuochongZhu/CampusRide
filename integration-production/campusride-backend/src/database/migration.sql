@@ -3,6 +3,7 @@
 ALTER TABLE users 
 ADD COLUMN IF NOT EXISTS major VARCHAR(255),
 ADD COLUMN IF NOT EXISTS university VARCHAR(255),
+ADD COLUMN IF NOT EXISTS wechat_openid VARCHAR(355),
 ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0;
 
 -- Update existing records with default values

@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, logout, refreshToken, verifyEmail, resendVerification, forgotPassword, resetPassword, guestLogin } from '../controllers/auth.controller.js';
+import { register, login, logout, refreshToken, verifyEmail, resendVerification, forgotPassword, resetPassword, guestLogin, wechatLogin } from '../controllers/auth.controller.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 
 const router = express.Router();
@@ -30,5 +30,8 @@ router.post('/reset-password/:token', asyncHandler(resetPassword));
 
 // POST /api/v1/auth/guest-login
 router.post('/guest-login', asyncHandler(guestLogin));
+
+// POST /api/v1/auth/wechat-login
+router.post('/wechat-login', asyncHandler(wechatLogin));
 
 export default router; 

@@ -12,12 +12,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import HeaderComponent from '@/components/layout/HeaderComponent.vue'
 import FooterComponent from '@/components/layout/FooterComponent.vue'
 
 const route = useRoute()
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const tk = urlParams.get('tk')
+  if (tk) {
+    localStorage.setItem('tk', tk)
+  }
+})
 
 // 计算是否隐藏导航栏（比如登录页面）
 const hideNavigation = computed(() => {
@@ -50,3 +58,4 @@ body {
   flex: 1;
 }
 </style>
+

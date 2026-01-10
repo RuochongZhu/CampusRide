@@ -28,8 +28,10 @@
           <a href="#breach-notification" class="block text-[#C24D45] hover:underline">8. Data Breach Notification</a>
           <a href="#children" class="block text-[#C24D45] hover:underline">9. Children's Privacy</a>
           <a href="#third-party" class="block text-[#C24D45] hover:underline">10. Third-Party Services</a>
-          <a href="#changes" class="block text-[#C24D45] hover:underline">11. Changes to This Policy</a>
-          <a href="#contact" class="block text-[#C24D45] hover:underline">12. Contact Information</a>
+          <a href="#academic-research" class="block text-[#C24D45] hover:underline">11. Academic Research Use</a>
+          <a href="#sponsor-disclosure" class="block text-[#C24D45] hover:underline">12. Sponsor Partnerships & Disclosures</a>
+          <a href="#changes" class="block text-[#C24D45] hover:underline">13. Changes to This Policy</a>
+          <a href="#contact" class="block text-[#C24D45] hover:underline">14. Contact Information</a>
         </nav>
       </div>
 
@@ -455,9 +457,211 @@
           </p>
         </section>
 
-        <!-- Section 11 -->
+        <!-- Section 11 - Academic Research -->
+        <section id="academic-research">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">11. Academic Research Use</h2>
+
+          <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <p class="text-blue-800">
+              <strong>Important Context:</strong> CampusRide is a public platform. Content you post
+              (rides, listings, activities) is already visible to all logged-in users. Our research
+              only uses aggregated statistics from this publicly shared content - never individual
+              identities or private communications.
+            </p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.1 Public vs Private Data</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="min-w-full border border-gray-200 rounded-lg">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Data Type</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nature</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Who Can See</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Research Use</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr class="bg-green-50">
+                  <td class="px-4 py-3 text-sm text-gray-700">Ride Posts</td>
+                  <td class="px-4 py-3 text-sm text-green-600">You made it public</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                </tr>
+                <tr class="bg-green-50">
+                  <td class="px-4 py-3 text-sm text-gray-700">Marketplace Listings</td>
+                  <td class="px-4 py-3 text-sm text-green-600">You made it public</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                </tr>
+                <tr class="bg-green-50">
+                  <td class="px-4 py-3 text-sm text-gray-700">Activity Posts</td>
+                  <td class="px-4 py-3 text-sm text-green-600">You made it public</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                </tr>
+                <tr class="bg-green-50">
+                  <td class="px-4 py-3 text-sm text-gray-700">Profile Info</td>
+                  <td class="px-4 py-3 text-sm text-green-600">You chose to share</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                </tr>
+                <tr class="bg-red-50">
+                  <td class="px-4 py-3 text-sm text-gray-700">Private Messages</td>
+                  <td class="px-4 py-3 text-sm text-red-600">Private</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Only you & recipient</td>
+                  <td class="px-4 py-3 text-sm text-red-600 font-medium">❌ Never used</td>
+                </tr>
+                <tr class="bg-red-50">
+                  <td class="px-4 py-3 text-sm text-gray-700">Email / Password</td>
+                  <td class="px-4 py-3 text-sm text-red-600">Private</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">System only</td>
+                  <td class="px-4 py-3 text-sm text-red-600 font-medium">❌ Never used</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.2 What Staff Can Access</h3>
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 class="font-semibold text-green-800 mb-2">✓ Staff Can See</h4>
+              <ul class="text-sm text-gray-700 space-y-1">
+                <li>• Public posts (same as any user)</li>
+                <li>• Reported content (for moderation)</li>
+                <li>• Aggregated platform statistics</li>
+                <li>• Account status (active/suspended)</li>
+              </ul>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 class="font-semibold text-red-800 mb-2">✗ Staff Cannot See</h4>
+              <ul class="text-sm text-gray-700 space-y-1">
+                <li>• Private messages (unless reported)</li>
+                <li>• Your password (encrypted)</li>
+                <li>• Browsing history on platform</li>
+                <li>• Draft posts you didn't publish</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.3 What Appears in Research Papers</h3>
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 class="font-semibold text-green-800 mb-2">✓ May Appear</h4>
+              <ul class="text-sm text-gray-700 space-y-1">
+                <li>• "67% of rides occur on Fridays"</li>
+                <li>• "Ithaca-NYC is the most popular route"</li>
+                <li>• "Average 50 new listings per week"</li>
+                <li>• "Peak usage hours: 2-6 PM"</li>
+              </ul>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 class="font-semibold text-red-800 mb-2">✗ Never Appears</h4>
+              <ul class="text-sm text-gray-700 space-y-1">
+                <li>• Any user's name or email</li>
+                <li>• Specific user's behavior pattern</li>
+                <li>• Individual post content</li>
+                <li>• Any identifiable information</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.4 Research Example</h3>
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <p class="text-gray-700 mb-3">Here's an example of how research findings are reported:</p>
+            <div class="bg-white border border-gray-200 rounded p-4 italic text-gray-600">
+              "Analysis of platform data from Fall 2025 showed that shared-expense carpools
+              reduced individual transportation costs by an estimated 40%. The Ithaca-NYC
+              corridor accounted for 45% of all rides, with Friday afternoons being the
+              peak booking time. These findings suggest significant potential for campus
+              carpooling programs to reduce costs and environmental impact."
+            </div>
+            <p class="text-sm text-gray-500 mt-3">
+              Note: No individual user, specific post, or personal behavior is mentioned.
+            </p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.5 IRB Oversight</h3>
+          <p class="text-gray-700 mb-4">
+            All research is conducted under <strong>Cornell University IRB</strong> oversight,
+            ensuring ethical standards are maintained. Research focuses on platform-level
+            trends, not individual user behavior.
+          </p>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.6 Your Rights</h3>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <ul class="list-disc list-inside text-gray-700 space-y-2">
+              <li>Request information about research using platform data</li>
+              <li>Contact privacy@campusride.com with any concerns</li>
+              <li>Contact Cornell IRB for research ethics questions</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Section 12 - Sponsor Disclosure -->
+        <section id="sponsor-disclosure">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">12. Sponsor Partnerships & Disclosures</h2>
+
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <p class="text-yellow-800">
+              <strong>Transparency Notice:</strong> CampusRide partners with local businesses who
+              sponsor rewards for our community. We believe in full transparency about these relationships.
+            </p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">12.1 Sponsor Relationships</h3>
+          <p class="text-gray-700 mb-4">
+            CampusRide may partner with local businesses (restaurants, cafes, retailers) who provide
+            coupons and rewards for active community members. These partnerships help us:
+          </p>
+          <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
+            <li>Reward users who contribute positively to the community</li>
+            <li>Support local businesses near campus</li>
+            <li>Maintain the platform without charging users</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">12.2 Affiliate Disclosure</h3>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <p class="text-gray-700 mb-3">
+              <strong>Important Disclosure:</strong> Members of the CampusRide team may have
+              employment or business relationships with sponsor companies. Specifically:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2">
+              <li>Team members may be employed by sponsor businesses</li>
+              <li>Team members may receive compensation from sponsors</li>
+              <li>These relationships are disclosed on our <router-link to="/disclosures" class="text-[#C24D45] underline">Disclosures Page</router-link></li>
+            </ul>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">12.3 Data Sharing with Sponsors</h3>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p class="text-gray-700 font-medium mb-2">We do NOT share with sponsors:</p>
+            <ul class="list-disc list-inside text-gray-700 space-y-1">
+              <li>Your personal information (name, email, etc.)</li>
+              <li>Your individual usage data</li>
+              <li>Your location history</li>
+              <li>Your messages or communications</li>
+            </ul>
+          </div>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p class="text-gray-700 font-medium mb-2">We may share with sponsors (anonymized only):</p>
+            <ul class="list-disc list-inside text-gray-700 space-y-1">
+              <li>Total number of coupons redeemed (e.g., "150 coupons used this month")</li>
+              <li>General engagement statistics (e.g., "500 active users")</li>
+              <li>Aggregated feedback (e.g., "85% satisfaction rate")</li>
+            </ul>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3 mt-4">12.4 Your Choice</h3>
+          <p class="text-gray-700">
+            Participation in sponsor reward programs is voluntary. You can use all CampusRide
+            features without participating in any sponsor programs.
+          </p>
+        </section>
+
+        <!-- Section 13 -->
         <section id="changes">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">11. Changes to This Policy</h2>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">13. Changes to This Policy</h2>
           <p class="text-gray-700 mb-4">
             We may update this Privacy Policy from time to time. When we make material changes:
           </p>
@@ -472,9 +676,9 @@
           </p>
         </section>
 
-        <!-- Section 12 -->
+        <!-- Section 14 -->
         <section id="contact">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">12. Contact Information</h2>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">14. Contact Information</h2>
           <p class="text-gray-700 mb-4">
             For questions about this Privacy Policy or our data practices, please contact:
           </p>

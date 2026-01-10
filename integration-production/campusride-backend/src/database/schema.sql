@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_name VARCHAR(100) NOT NULL,
     university VARCHAR(255) NOT NULL DEFAULT 'Cornell University',
     major VARCHAR(255),
+        wechat_openid VARCHAR(355),
     bio TEXT,
     phone VARCHAR(20),
     avatar_url TEXT,

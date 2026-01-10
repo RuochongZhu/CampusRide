@@ -27,11 +27,26 @@ api.interceptors.request.use(
 );
 
 // 响应拦截器 - 错误处理
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+// 处理token刷新后的请求重试
+const onRefreshed = (newToken) => {
+  refreshSubscribers.map(callback => callback(newToken));
+  refreshSubscribers = [];
+};
+
+// 订阅token刷新
+const subscribeTokenRefresh = (callback) => {
+  refreshSubscribers.push(callback);
+};
+
+// 响应拦截器 - 错误处理
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     // 网络错误或超时
     if (!error.response) {
       console.error('🌐 Network error or timeout:', error.message);
@@ -48,13 +63,82 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // 检查错误代码，只在token真的过期或无效时才清除
+      // 检查错误代码，只在token真的过期或无效时才处理
       const errorCode = error.response?.data?.error?.code;
 
-      // 只有明确的token过期/无效才清除并跳转
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID' || errorCode === 'INVALID_CREDENTIALS') {
-        console.warn('🔐 Token expired or invalid, redirecting to login');
+      // 只有明确的token过期/无效才尝试刷新
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
+        const originalRequest = error.config;
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (refreshToken && !isRefreshing) {
+          isRefreshing = true;
+
+          try {
+            // 调用刷新token的API
+            const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
+
+            if (response.data.success) {
+              const newAccessToken = response.data.data.token;
+              const newRefreshToken = response.data.data.refresh_token;
+
+              // 更新本地存储的token
+              localStorage.setItem('userToken', newAccessToken);
+              localStorage.setItem('refreshToken', newRefreshToken);
+
+              // 更新API请求头
+              api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+
+              // 通知所有订阅的请求使用新token重试
+              isRefreshing = false;
+              onRefreshed(newAccessToken);
+
+              // 重试原请求
+              originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+              return api(originalRequest);
+            } else {
+              // 刷新token失败，清除登录状态
+              throw new Error('Failed to refresh token');
+            }
+          } catch (refreshError) {
+            console.error('🔄 Token refresh failed:', refreshError);
+            isRefreshing = false;
+            
+            // 清除登录状态并跳转到登录页
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userData');
+
+            // 保存当前路径以便登录后返回
+            const returnPath = currentPath !== '/' ? currentPath : '/home';
+            window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+
+            return Promise.reject(refreshError);
+          }
+        } else if (refreshToken) {
+          // 正在刷新token，将请求加入队列
+          return new Promise((resolve) => {
+            subscribeTokenRefresh((newToken) => {
+              originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+              resolve(api(originalRequest));
+            });
+          });
+        } else {
+          // 没有refresh token，清除登录状态
+          console.warn('🔐 No refresh token available, redirecting to login');
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+
+          // 保存当前路径以便登录后返回
+          const returnPath = currentPath !== '/' ? currentPath : '/home';
+          window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+        }
+      } else if (errorCode === 'INVALID_CREDENTIALS') {
+        // 无效的凭证，直接清除登录状态
+        console.warn('🔐 Invalid credentials, redirecting to login');
         localStorage.removeItem('userToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('userData');
 
         // 保存当前路径以便登录后返回
@@ -677,3 +761,4 @@ export const announcementsAPI = {
 
 // 导出默认API实例
 export default api;
+

@@ -92,7 +92,7 @@
             </div>
 
             <!-- Confirm Password -->
-            <div class="mb-6">
+            <div class="mb-4">
               <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
               <input
                 type="password"
@@ -103,7 +103,33 @@
                 required
               />
             </div>
-            
+
+            <!-- Combined Agreement -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
+              <div class="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="userAgreement"
+                  v-model="form.userAgreement"
+                  class="mt-1 h-4 w-4 text-[#B31B1B] border-gray-300 rounded focus:ring-[#B31B1B]"
+                  required
+                />
+                <label for="userAgreement" class="text-sm text-gray-700">
+                  <span class="font-medium">I agree to the following <span class="text-red-500">*</span></span>
+                  <ul class="mt-2 space-y-1 text-xs text-gray-600">
+                    <li>• <router-link to="/terms" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Terms of Service</router-link> - Platform usage rules</li>
+                    <li>• <router-link to="/privacy" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Privacy Policy</router-link> - How we handle your data</li>
+                    <li>• <router-link to="/carpool-disclaimer" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Carpool Disclaimer</router-link> - Shared-expense carpool terms</li>
+                    <li>• <router-link to="/cookies" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Cookie Policy</router-link> - Browser data usage</li>
+                    <li>• Anonymized data may be used for academic research under Cornell IRB oversight</li>
+                  </ul>
+                  <p class="mt-2 text-xs text-gray-500">
+                    By checking this box, you confirm you have read and agree to all policies above.
+                  </p>
+                </label>
+              </div>
+            </div>
+
             <button
               type="submit"
               :disabled="isLoading"
@@ -158,7 +184,8 @@ const router = useRouter()
 const form = ref({
   nickname: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  userAgreement: false
 })
 
 // Email username (NetID) - separate from full email
@@ -299,6 +326,12 @@ const validateForm = () => {
     return false
   }
 
+  // Validate terms agreement
+  if (!form.value.userAgreement) {
+    errorMessage.value = 'You must agree to the Terms, Privacy Policy, and other policies to use CampusRide'
+    return false
+  }
+
   return true
 }
 
@@ -312,8 +345,12 @@ const handleRegister = async () => {
   try {
     const { data } = await authAPI.register({
       nickname: form.value.nickname.trim(),
-      email: fullEmail.value,  // Use the computed full email
-      password: form.value.password
+      email: fullEmail.value,
+      password: form.value.password,
+      user_agreement: form.value.userAgreement,
+      user_agreement_at: new Date().toISOString(),
+      research_consent: true,  // Included in combined agreement
+      research_consent_at: new Date().toISOString()
     })
     if (data?.success) {
       successMessage.value = 'Registration successful! Please check your email and click the verification link.'
