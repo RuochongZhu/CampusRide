@@ -139,11 +139,13 @@ export const useAuthStore = defineStore('auth', () => {
     const storedRefreshToken = localStorage.getItem('refreshToken')
     const storedUser = localStorage.getItem('userData')
 
-    if (storedToken && storedUser) {
+    if ((storedToken && storedUser) || storedRefreshToken) {
       try {
-        token.value = storedToken
-        refreshToken.value = storedRefreshToken
-        user.value = JSON.parse(storedUser)
+        if (storedToken && storedUser) {
+          token.value = storedToken
+          user.value = JSON.parse(storedUser)
+        }
+        refreshToken.value = storedRefreshToken 
 
         // Verify token is still valid by fetching user
         await fetchUser()
