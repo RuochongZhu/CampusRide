@@ -48,8 +48,7 @@ api.interceptors.response.use(
     const refreshToken = localStorage.getItem('refreshToken');
     if (response.status == 401 && response.data?.success === false && needRefresh.includes(response.data?.error?.code) && refreshToken) {
         const currentPath = window.location.pathname;
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
-        const originalRequest = response.config;
+      const originalRequest = response.config;
         if (!isRefreshing) {
           isRefreshing = true;
 
@@ -95,10 +94,6 @@ api.interceptors.response.use(
             return Promise.reject(refreshError);
           }
         }  
-      } else {
-        // 其他401错误（如ACCESS_DENIED等）不清除token，只是拒绝请求
-        console.log('⚠️ 401 error but not token issue:', errorCode);
-      }
     }
     return response;
   },
