@@ -379,7 +379,7 @@ export const updateUserProfile = async (req, res) => {
       .from('users')
       .update(updateData)
       .eq('id', userId)
-      .select('id, first_name, last_name, email, avatar_url, university, is_online')
+      .select('id, first_name, last_name, email, avatar_url, university')
       .single();
 
     if (error) {
@@ -388,7 +388,8 @@ export const updateUserProfile = async (req, res) => {
         success: false,
         error: {
           code: 'UPDATE_ERROR',
-          message: 'Failed to update profile'
+          message: 'Failed to update profile',
+          details: error.message
         }
       });
     }
