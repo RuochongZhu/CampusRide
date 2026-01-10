@@ -67,7 +67,7 @@ api.interceptors.response.use(
       const errorCode = error.response?.data?.error?.code;
 
       // 只有明确的token过期/无效才尝试刷新
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID'  || errorCode === 'TOKEN_INVALID') {
         const originalRequest = error.config;
         const refreshToken = localStorage.getItem('refreshToken');
 

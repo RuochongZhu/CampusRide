@@ -530,7 +530,7 @@ const blockedUsersLoading = ref(false)
 const hideRankEnabled = ref(false)
 const hideRankLoading = ref(false)
 
-const defaultAvatar = 'https://via.placeholder.com/100?text=User'
+const defaultAvatar = import.meta.env.VITE_API_BASE_URL || ''
 
 // Computed
 const filteredCoupons = computed(() => {
