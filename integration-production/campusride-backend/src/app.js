@@ -44,7 +44,10 @@ dotenv.config();
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+}));
 
 // CORS configuration - support multiple frontend URLs
 const frontendUrlsFromEnv = process.env.FRONTEND_URL
