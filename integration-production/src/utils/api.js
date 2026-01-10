@@ -58,8 +58,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
 
-      // 如果已经在登录页面，不需要重定向
-      if ( isRefreshing && (currentPath === '/login' || currentPath === '/register')) {
+      // 如果已经在登录页面或注册页面，不需要重定向（防止无限循环）
+      if (currentPath === '/login' || currentPath === '/register' || currentPath.startsWith('/verify-email') || currentPath.startsWith('/reset-password')) {
         return Promise.reject(error);
       }
 
@@ -69,10 +69,23 @@ api.interceptors.response.use(
       // 只有明确的token过期/无效才尝试刷新
       if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
         const originalRequest = error.config;
+
+        // 防止重复刷新：检查这个请求是否已经是重试请求
+        if (originalRequest._retry) {
+          // 已经重试过了，清除登录状态
+          console.warn('🔐 Token refresh retry failed, redirecting to login');
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath !== '/' ? currentPath : '/home')}`;
+          return Promise.reject(error);
+        }
+
         const refreshToken = localStorage.getItem('refreshToken');
 
         if (refreshToken && !isRefreshing) {
           isRefreshing = true;
+          originalRequest._retry = true;
 
           try {
             // 调用刷新token的API
@@ -103,7 +116,7 @@ api.interceptors.response.use(
           } catch (refreshError) {
             console.error('🔄 Token refresh failed:', refreshError);
             isRefreshing = false;
-            
+
             // 清除登录状态并跳转到登录页
             localStorage.removeItem('userToken');
             localStorage.removeItem('refreshToken');
@@ -115,7 +128,7 @@ api.interceptors.response.use(
 
             return Promise.reject(refreshError);
           }
-        } else if (refreshToken) {
+        } else if (refreshToken && isRefreshing) {
           // 正在刷新token，将请求加入队列
           return new Promise((resolve) => {
             subscribeTokenRefresh((newToken) => {
@@ -146,7 +159,17 @@ api.interceptors.response.use(
         window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
       } else {
         // 其他401错误（如ACCESS_DENIED等）不清除token，只是拒绝请求
-        console.log('⚠️ 401 error but not token issue:', errorCode);
+        // 但如果没有任何token，也应该重定向到登录页
+        const hasToken = localStorage.getItem('userToken');
+        const hasRefreshToken = localStorage.getItem('refreshToken');
+
+        if (!hasToken && !hasRefreshToken) {
+          console.warn('🔐 No tokens available, redirecting to login');
+          const returnPath = currentPath !== '/' ? currentPath : '/home';
+          window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+        } else {
+          console.log('⚠️ 401 error but not token issue:', errorCode);
+        }
       }
     }
     return Promise.reject(error);
