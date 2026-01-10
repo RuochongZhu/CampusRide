@@ -43,7 +43,63 @@ const subscribeTokenRefresh = (callback) => {
 
 // 响应拦截器 - 错误处理
 api.interceptors.response.use(
-  (response) => {
+  async (response) => {
+    const needRefresh = ["TOKEN_INVALID","TOKEN_EXPIRED"];
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (response.status == 401 && response.data?.success === false && needRefresh.includes(response.data?.error?.code) && refreshToken) {
+        const currentPath = window.location.pathname;
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
+        const originalRequest = response.config;
+        if (!isRefreshing) {
+          isRefreshing = true;
+
+          try {
+            // 调用刷新token的API
+            const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
+
+            if (response.data.success) {
+              const newAccessToken = response.data.data.token;
+              const newRefreshToken = response.data.data.refresh_token;
+
+              // 更新本地存储的token
+              localStorage.setItem('userToken', newAccessToken);
+              localStorage.setItem('refreshToken', newRefreshToken);
+
+              // 更新API请求头
+              api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+
+              // 通知所有订阅的请求使用新token重试
+              isRefreshing = false;
+              onRefreshed(newAccessToken);
+
+              // 重试原请求
+              originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+              return api(originalRequest);
+            } else {
+              // 刷新token失败，清除登录状态
+              throw new Error('Failed to refresh token');
+            }
+          } catch (refreshError) {
+            console.error('🔄 Token refresh failed:', refreshError);
+            isRefreshing = false;
+            
+            // 清除登录状态并跳转到登录页
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userData');
+
+            // 保存当前路径以便登录后返回
+            const returnPath = currentPath !== '/' ? currentPath : '/home';
+            window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+
+            return Promise.reject(refreshError);
+          }
+        }  
+      } else {
+        // 其他401错误（如ACCESS_DENIED等）不清除token，只是拒绝请求
+        console.log('⚠️ 401 error but not token issue:', errorCode);
+      }
+    }
     return response;
   },
   async (error) => {
@@ -67,7 +123,7 @@ api.interceptors.response.use(
       const errorCode = error.response?.data?.error?.code;
 
       // 只有明确的token过期/无效才尝试刷新
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID'  || errorCode === 'TOKEN_INVALID') {
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
         const originalRequest = error.config;
         const refreshToken = localStorage.getItem('refreshToken');
 
