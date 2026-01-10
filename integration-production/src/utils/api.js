@@ -59,9 +59,9 @@ api.interceptors.response.use(
       const currentPath = window.location.pathname;
 
       // 如果已经在登录页面，不需要重定向
-      // if (currentPath === '/login' || currentPath === '/register') {
-      //   return Promise.reject(error);
-      // }
+      if ( isRefreshing && (currentPath === '/login' || currentPath === '/register')) {
+        return Promise.reject(error);
+      }
 
       // 检查错误代码，只在token真的过期或无效时才处理
       const errorCode = error.response?.data?.error?.code;
