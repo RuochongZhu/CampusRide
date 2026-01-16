@@ -58,6 +58,18 @@ export const createItem = async (req, res, next) => {
       throw new AppError('Failed to create item', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    // 构建商品访问链接
+    const itemLink = `${req.protocol}://${req.get('host')}/marketplace/items/${item.id}`;
+    
+    // 创建微信通知记录
+    const noticeContent = `上新商品\n${itemLink}`;
+    
+    await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .insert({
+        content: noticeContent,
+      });
+
     res.status(201).json({
       success: true,
       data: { item },

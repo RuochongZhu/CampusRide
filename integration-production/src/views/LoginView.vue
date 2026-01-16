@@ -177,7 +177,7 @@ const checkWeChatMiniProgram = async () => {
       if (tk) {
         try {
           // 调用后端 wechatlogin 接口，用 tk 换取 openid
-          const response = await authAPI.wechatLogin({ token: tk })
+          const response = await authAPI.wechatLogin({ code: tk })
           if (response.data.success) {
             const { token, user, openid } = response.data.data;
             currentOpenid.value = openid;

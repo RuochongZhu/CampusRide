@@ -37,6 +37,7 @@ import socketManager from './config/socket.js';
 
 // Import Swagger documentation
 import { swaggerUi, specs } from './config/swagger.js';
+import { supabaseAdmin } from './config/database.js';
 
 // Load environment variables
 dotenv.config();
@@ -44,10 +45,7 @@ dotenv.config();
 const app = express();
 
 // Security middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
-}));
+app.use(helmet());
 
 // CORS configuration - support multiple frontend URLs
 const frontendUrlsFromEnv = process.env.FRONTEND_URL
@@ -147,11 +145,54 @@ app.get('/', (req, res) => {
   });
 });
 
+// New GET endpoint for 1Dj025lEVj.txt
 app.get('/1Dj025lEVj.txt', (req, res) => {
   res.set('Content-Type', 'text/plain');
   res.send('c82801c84003105ee7094936dbfd7f16');
 });
 
+app.get("/wxgroup_notice_wait", async (req, res) => {
+  try {
+    // 查询 wxgroup_notice_record 表，获取 sendtime 为空的记录
+    const { data: notices, error } = await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .select('id, content')
+      .is('sendtime', null)
+      .order('created_at', { ascending: true }); // 按创建时间升序，先处理旧记录
+
+    if (error) {
+      console.error('Error fetching wxgroup notices:', error);
+      res.set('Content-Type', 'text/plain');
+      res.send('');
+      return;
+    }
+
+    if (!notices || notices.length === 0) {
+      // 如果没有找到记录，返回空文本
+      res.set('Content-Type', 'text/plain');
+      res.send('');
+      return;
+    }
+
+    // 选择第一条记录（最早创建的）
+    const selectedNotice = notices[0];
+    const currentTime = new Date().toISOString();
+
+    // 更新该记录的 sendtime 为当前时间
+    await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .update({ sendtime: currentTime })
+      .eq('id', selectedNotice.id);
+
+    // 直接响应文本内容
+    res.set('Content-Type', 'text/plain');
+    res.send(selectedNotice.content);
+  } catch (error) {
+    console.error('Error in wxgroup_notice_wait endpoint:', error);
+    res.set('Content-Type', 'text/plain');
+    res.send('');
+  }
+})
 
 // 404 handler
 app.use(notFound);
@@ -161,3 +202,4 @@ app.use(errorHandler);
 
 export default app;
 export { socketManager }; 
+

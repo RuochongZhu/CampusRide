@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { supabaseAdmin } from '../config/database.js';
@@ -492,12 +493,11 @@ export const refreshToken = async (req, res, next) => {
     // 验证用户仍然存在且激活
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('id, is_active')
-      .eq('id', decoded.userId)
+      .select('id')
+      .eq('id', decoded.id)
       .single();
-
-    if (error || !user || !user.is_active) {
-      throw new AppError('Invalid token', 401, ERROR_CODES.TOKEN_INVALID);
+    if (error || !user ) {
+      throw new AppError('Invalid token ???', 401, ERROR_CODES.TOKEN_INVALID);
     }
 
     // 生成新的access token和refresh token
@@ -722,21 +722,18 @@ export const wechatLogin = async (req, res, next) => {
     }
 
     // 获取微信小程序配置
-    const appId = process.env.WECHAT_APPID || '';
-    const appSecret = process.env.WECHAT_APPSECRET || '';
+    const appId = process.env.WECHAT_APPID;
+    const appSecret = process.env.WECHAT_APPSECRET;
 
     if (!appId || !appSecret) {
       throw new AppError('WeChat Mini Program configuration not found', 500, 'WECHAT_CONFIG_MISSING');
     }
-
     // 调用微信API获取openid
-    const axios = require('axios');
     const response = await axios.get(
       `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`
     );
 
     const { openid, session_key } = response.data;
-
     if (!openid) {
       throw new AppError('Failed to get WeChat openid', 400, 'WECHAT_OPENID_ERROR');
     }

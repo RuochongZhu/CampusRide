@@ -1,1 +1,1 @@
-<view><web-view src="{{a}}"></web-view></view>
+<view><wall wx:if="{{a}}" u-i="8ebe6bfe-0" bind:__l="__l"></wall><block wx:if="{{b}}"><web-view wx:if="{{c}}" src="{{d}}"></web-view></block></view>

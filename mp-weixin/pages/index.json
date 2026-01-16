@@ -1,4 +1,6 @@
 {
-  "navigationBarTitleText": "web2wxapp",
-  "usingComponents": {}
+  "navigationBarTitleText": "",
+  "usingComponents": {
+    "wall": "./wall"
+  }
 }
