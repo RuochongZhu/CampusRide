@@ -59,10 +59,10 @@ export const createItem = async (req, res, next) => {
     }
 
     // 构建商品访问链接
-    const itemLink = `${req.protocol}://${req.get('host')}/marketplace/items/${item.id}`;
+    const itemLink = `https://www.campusgo.college/marketplace`;
     
     // 创建微信通知记录
-    const noticeContent = `上新商品\n${itemLink}`;
+    const noticeContent = `上新商品  ${item.title}  \n${itemLink}`;
     
     await supabaseAdmin
       .from('wxgroup_notice_record')
