@@ -232,6 +232,13 @@
             <HeartOutlined v-else />
           </template>
         </a-button>
+        <a-button
+          v-if="currentUser && selectedItem.seller_id === currentUser.id"
+          danger
+          @click="confirmDeleteItem(selectedItem)"
+        >
+          <template #icon><DeleteOutlined /></template>
+        </a-button>
       </div>
 
       <!-- Comment Section -->
@@ -245,10 +252,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined,
-  HeartOutlined, HeartFilled, MessageOutlined, PlusOutlined, EyeOutlined
+  HeartOutlined, HeartFilled, MessageOutlined, PlusOutlined, EyeOutlined, DeleteOutlined
 } from '@ant-design/icons-vue';
 import { marketplaceAPI } from '@/utils/api'
 import CommentSection from '@/components/marketplace/CommentSection.vue'
@@ -529,6 +536,28 @@ const handlePostItem = async () => {
 const viewItemDetails = (item) => {
   selectedItem.value = item
   showDetailsModal.value = true
+}
+
+// Delete item
+const confirmDeleteItem = (item) => {
+  Modal.confirm({
+    title: 'Delete Item',
+    content: `Are you sure you want to delete "${item.title}"? This action cannot be undone.`,
+    okText: 'Delete',
+    okType: 'danger',
+    cancelText: 'Cancel',
+    onOk: async () => {
+      try {
+        await marketplaceAPI.deleteItem(item.id)
+        message.success('Item deleted successfully')
+        showDetailsModal.value = false
+        await fetchItems()
+      } catch (error) {
+        console.error('Delete item error:', error)
+        message.error(error.response?.data?.error?.message || 'Failed to delete item')
+      }
+    }
+  })
 }
 
 // Helper functions

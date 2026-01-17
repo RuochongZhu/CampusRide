@@ -104,43 +104,28 @@
               />
             </div>
 
-            <!-- Terms and Privacy Agreement -->
-            <div class="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-              <div class="flex items-start space-x-2">
+            <!-- Combined Agreement -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
+              <div class="flex items-start space-x-3">
                 <input
                   type="checkbox"
-                  id="termsAgreement"
-                  v-model="form.termsAgreed"
+                  id="userAgreement"
+                  v-model="form.userAgreement"
                   class="mt-1 h-4 w-4 text-[#B31B1B] border-gray-300 rounded focus:ring-[#B31B1B]"
                   required
                 />
-                <label for="termsAgreement" class="text-sm text-gray-700">
-                  I have read and agree to the
-                  <router-link to="/terms" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Terms of Service</router-link>,
-                  <router-link to="/privacy" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Privacy Policy</router-link>, and
-                  <router-link to="/carpool-disclaimer" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Carpool Disclaimer</router-link>.
-                  <span class="text-red-500">*</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Research Consent (Optional) -->
-            <div class="mb-6 p-3 bg-purple-50 rounded-md border border-purple-200">
-              <div class="flex items-start space-x-2">
-                <input
-                  type="checkbox"
-                  id="researchConsent"
-                  v-model="form.researchConsent"
-                  class="mt-1 h-4 w-4 text-[#B31B1B] border-gray-300 rounded focus:ring-[#B31B1B]"
-                />
-                <label for="researchConsent" class="text-sm text-gray-700">
-                  <span class="font-medium">Research Participation (Optional)</span><br/>
-                  <span class="text-xs text-gray-600">
-                    I agree to allow my anonymized data to be used for academic research
-                    conducted under Cornell University IRB oversight. My identity will never
-                    be revealed, and I can withdraw consent at any time.
-                    <router-link to="/privacy#academic-research" target="_blank" class="text-[#B31B1B] underline">Learn more</router-link>
-                  </span>
+                <label for="userAgreement" class="text-sm text-gray-700">
+                  <span class="font-medium">I agree to the following <span class="text-red-500">*</span></span>
+                  <ul class="mt-2 space-y-1 text-xs text-gray-600">
+                    <li>• <router-link to="/terms" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Terms of Service</router-link> - Platform usage rules</li>
+                    <li>• <router-link to="/privacy" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Privacy Policy</router-link> - How we handle your data</li>
+                    <li>• <router-link to="/carpool-disclaimer" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Carpool Disclaimer</router-link> - Shared-expense carpool terms</li>
+                    <li>• <router-link to="/cookies" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Cookie Policy</router-link> - Browser data usage</li>
+                    <li>• Anonymized data may be used for academic research under Cornell IRB oversight</li>
+                  </ul>
+                  <p class="mt-2 text-xs text-gray-500">
+                    By checking this box, you confirm you have read and agree to all policies above.
+                  </p>
                 </label>
               </div>
             </div>
@@ -153,26 +138,7 @@
               {{ isLoading ? 'Creating Account...' : 'Create Account' }}
             </button>
           </form>
-          
-          <div class="relative flex items-center justify-center my-6">
-            <div class="border-t border-gray-300 absolute w-full"></div>
-            <span class="bg-white px-2 text-sm text-gray-500 relative">or</span>
-          </div>
-          
-          <button
-            @click="signUpWithGoogle"
-            :disabled="isLoading"
-            class="w-full flex items-center justify-center bg-white border border-gray-300 rounded-md py-2 px-4 text-gray-700 hover:bg-gray-50 mb-3 transition-colors duration-300 disabled:opacity-50"
-          >
-            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Sign up with Google
-          </button>
-          
+
           <p class="mt-6 text-center text-sm text-gray-600">
             Already have an account?
           </p>
@@ -200,8 +166,7 @@ const form = ref({
   nickname: '',
   password: '',
   confirmPassword: '',
-  termsAgreed: false,
-  researchConsent: false
+  userAgreement: false
 })
 
 // Email username (NetID) - separate from full email
@@ -343,8 +308,8 @@ const validateForm = () => {
   }
 
   // Validate terms agreement
-  if (!form.value.termsAgreed) {
-    errorMessage.value = 'You must agree to the Terms of Service and Privacy Policy'
+  if (!form.value.userAgreement) {
+    errorMessage.value = 'You must agree to the Terms, Privacy Policy, and other policies to use CampusRide'
     return false
   }
 
@@ -363,10 +328,10 @@ const handleRegister = async () => {
       nickname: form.value.nickname.trim(),
       email: fullEmail.value,  // Use the computed full email
       password: form.value.password,
-      terms_agreed: form.value.termsAgreed,
-      terms_agreed_at: new Date().toISOString(),
-      research_consent: form.value.researchConsent,
-      research_consent_at: form.value.researchConsent ? new Date().toISOString() : null
+      user_agreement: form.value.userAgreement,
+      user_agreement_at: new Date().toISOString(),
+      research_consent: true,  // Included in combined agreement
+      research_consent_at: new Date().toISOString()
     })
     if (data?.success) {
       successMessage.value = 'Registration successful! Please check your email and click the verification link.'
@@ -383,13 +348,6 @@ const handleRegister = async () => {
   } finally {
     isLoading.value = false
   }
-}
-
-// Google sign-up
-const signUpWithGoogle = () => {
-  clearMessages()
-  // TODO: Implement Google OAuth registration
-  errorMessage.value = 'Google OAuth feature is under development, coming soon'
 }
 
 // Go to login page

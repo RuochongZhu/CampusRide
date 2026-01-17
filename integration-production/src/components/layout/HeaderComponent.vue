@@ -10,13 +10,12 @@
           <MenuOutlined class="text-xl text-[#333333]" />
         </button>
 
-        <router-link
-          to="/"
+        <div
           class="text-2xl md:text-3xl font-bold text-[#C24D45] tracking-wider"
           style="font-family: 'VT323', monospace"
         >
           CampusRide
-        </router-link>
+        </div>
 
         <nav class="hidden md:flex items-center space-x-6">
           <router-link
