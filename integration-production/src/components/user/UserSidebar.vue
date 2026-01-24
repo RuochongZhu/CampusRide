@@ -569,6 +569,9 @@ const saveNickname = async () => {
       storedData.first_name = editNicknameValue.value.trim()
       storedData.nickname = editNicknameValue.value.trim()
       localStorage.setItem('userData', JSON.stringify(storedData))
+
+      // Dispatch event to notify HeaderComponent
+      window.dispatchEvent(new Event('user-updated'))
     }
   } catch (err) {
     console.error('Failed to update nickname:', err)
@@ -671,8 +674,25 @@ const uploadAvatar = async () => {
 
     if (uploadRes.data.success) {
       message.success('Avatar updated successfully!')
-      userData.value.avatar_url = uploadRes.data.data.user.avatar_url
-      authStore.updateUserAvatar(uploadRes.data.data.user.avatar_url)
+      const newAvatarUrl = uploadRes.data.data.user.avatar_url
+      userData.value.avatar_url = newAvatarUrl
+      authStore.updateUserAvatar(newAvatarUrl)
+
+      // Update localStorage to sync with HeaderComponent
+      try {
+        const storedUserData = localStorage.getItem('userData')
+        if (storedUserData) {
+          const parsedData = JSON.parse(storedUserData)
+          parsedData.avatar_url = newAvatarUrl
+          localStorage.setItem('userData', JSON.stringify(parsedData))
+        }
+      } catch (e) {
+        console.error('Failed to update localStorage:', e)
+      }
+
+      // Dispatch event to notify HeaderComponent
+      window.dispatchEvent(new Event('user-updated'))
+
       showUploadModal.value = false
       uploadPreview.value = null
     } else {

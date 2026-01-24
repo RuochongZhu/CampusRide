@@ -223,8 +223,8 @@
         </div>
       </div>
       <div class="flex space-x-2 pt-4">
-        <a-button type="primary" block>
-          <template #icon><MessageOutlined /></template> Contact Seller
+        <a-button type="primary" block @click="scrollToComments">
+          <template #icon><MessageOutlined /></template> Add Comment
         </a-button>
         <a-button @click="toggleFavorite(selectedItem)">
           <template #icon>
@@ -558,6 +558,27 @@ const confirmDeleteItem = (item) => {
       }
     }
   })
+}
+
+// Scroll to comments section
+const scrollToComments = () => {
+  // Find the comment section within the modal
+  const modal = document.querySelector('.ant-modal-content')
+  if (modal) {
+    const commentSection = modal.querySelector('.comment-section')
+    if (commentSection) {
+      // Scroll the modal content to show the comment section
+      const textarea = commentSection.querySelector('textarea')
+      if (textarea) {
+        // Focus on the textarea
+        setTimeout(() => {
+          textarea.focus()
+          // Scroll into view
+          commentSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 100)
+      }
+    }
+  }
 }
 
 // Helper functions

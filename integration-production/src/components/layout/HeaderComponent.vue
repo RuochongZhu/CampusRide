@@ -193,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   SettingOutlined,
@@ -222,8 +222,8 @@ const isAdmin = computed(() => {
   return ADMIN_EMAILS.includes(userEmail.value);
 });
 
-const userAvatar =
-  "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
+const defaultAvatar = "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
+const userAvatar = ref(defaultAvatar);
 const userName = ref("Guest");
 
 // Load user data from localStorage
@@ -235,12 +235,20 @@ const loadUserData = () => {
       // Use first_name (which contains the nickname) or fallback to email
       userName.value = user.first_name || user.email?.split('@')[0] || 'User';
       userEmail.value = user.email || '';
+      // Load avatar_url
+      userAvatar.value = user.avatar_url || defaultAvatar;
     }
   } catch (error) {
     console.error('Error loading user data:', error);
     userName.value = 'User';
     userEmail.value = '';
+    userAvatar.value = defaultAvatar;
   }
+};
+
+// Listen for user data updates (e.g., after avatar upload)
+const handleUserUpdate = () => {
+  loadUserData();
 };
 
 // Mobile menu controls
@@ -265,7 +273,15 @@ const openUserSidebar = () => {
 // Load user data when component mounts
 onMounted(() => {
   loadUserData();
-  // Polling is now handled by NotificationDropdown only to prevent duplicate requests
+  // Listen for user data updates (e.g., after avatar upload)
+  window.addEventListener('user-updated', handleUserUpdate);
+  window.addEventListener('storage', handleUserUpdate);
+});
+
+// Cleanup event listeners
+onUnmounted(() => {
+  window.removeEventListener('user-updated', handleUserUpdate);
+  window.removeEventListener('storage', handleUserUpdate);
 });
 
 const logout = () => {

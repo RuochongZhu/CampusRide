@@ -61,7 +61,7 @@ export const createItem = async (req, res, next) => {
     // 构建商品访问链接
     const itemLink = `https://www.campusgo.college/marketplace`;
     
-    // 创建微信通知记录
+    // 创建微信通知记录 start
     const noticeContent = `上新商品  ${item.title}  \n${itemLink}`;
     
     await supabaseAdmin
@@ -69,6 +69,8 @@ export const createItem = async (req, res, next) => {
       .insert({
         content: noticeContent,
       });
+    // 创建微信通知记录 end
+      
 
     res.status(201).json({
       success: true,

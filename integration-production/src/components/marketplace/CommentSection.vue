@@ -9,30 +9,15 @@
 
     <!-- Comment Input (logged in users only) -->
     <div v-if="currentUser" class="comment-input-wrapper">
-      <a-avatar :src="currentUser.avatar_url" :size="40">
-        {{ getUserInitials(currentUser) }}
-      </a-avatar>
-      <div class="input-container">
-        <a-textarea
-          v-model:value="newComment"
-          :rows="2"
-          placeholder="Write a comment..."
-          :maxlength="1000"
-          @keydown.meta.enter="submitComment"
-          @keydown.ctrl.enter="submitComment"
-        />
-        <div class="input-footer">
-          <span class="char-count">{{ newComment.length }}/1000</span>
-          <a-button
-            type="primary"
-            :loading="submitting"
-            :disabled="!newComment.trim()"
-            @click="submitComment"
-          >
-            Post Comment
-          </a-button>
-        </div>
-      </div>
+      <input
+        v-model="newComment"
+        type="text"
+        placeholder="Type your reply..."
+        class="comment-input"
+        @keydown.enter="submitComment"
+        @keydown.meta.enter="submitComment"
+        @keydown.ctrl.enter="submitComment"
+      />
     </div>
 
     <!-- Login prompt for guests -->
@@ -315,13 +300,31 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
 }
 
-.input-container {
-  flex: 1;
+.comment-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  font-size: 14px;
+  color: #333;
+  background: #f5f5f5;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.comment-input::placeholder {
+  color: #999;
+}
+
+.comment-input:focus {
+  background: #fff;
+  border-color: #C24D45;
+  box-shadow: 0 0 0 2px rgba(194, 77, 69, 0.1);
 }
 
 .input-footer {
