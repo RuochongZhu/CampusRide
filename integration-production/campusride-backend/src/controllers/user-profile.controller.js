@@ -380,7 +380,7 @@ export const updateUserProfile = async (req, res) => {
       .update(updateData)
       .eq('id', userId)
       .select('id, first_name, last_name, email, avatar_url, university')
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.error('Update user profile error:', error);
@@ -390,6 +390,16 @@ export const updateUserProfile = async (req, res) => {
           code: 'UPDATE_ERROR',
           message: 'Failed to update profile',
           details: error.message
+        }
+      });
+    }
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found'
         }
       });
     }

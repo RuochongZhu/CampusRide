@@ -1506,7 +1506,7 @@ const initGoogleMaps = async () => {
     const smallMapElement = document.getElementById('small-map')
     if (smallMapElement && window.google) {
       smallMap = new window.google.maps.Map(smallMapElement, {
-        center: { lat: 42.4534, lng: -76.4735 }, // Cornell University
+        center: { lat: 42.4534, lng: -76.4735 }, // Your University
         zoom: 15,
         mapTypeControl: false,
         streetViewControl: false
@@ -1993,7 +1993,7 @@ const legacyGenerateMockParticipants = () => {
     {
       id: 1,
       name: 'John Smith',
-      email: 'john.smith@cornell.edu',
+      email: 'john.smith@university.edu',
       avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20friendly%20smile&width=40&height=40&seq=1&orientation=squarish',
       joined_at: '2025-10-20T10:30:00Z',
       status: 'registered'
@@ -2001,7 +2001,7 @@ const legacyGenerateMockParticipants = () => {
     {
       id: 2,
       name: 'Emily Davis',
-      email: 'emily.davis@cornell.edu',
+      email: 'emily.davis@university.edu',
       avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20glasses&width=40&height=40&seq=2&orientation=squarish',
       joined_at: '2025-10-20T11:15:00Z',
       status: 'checked_in'
@@ -2009,7 +2009,7 @@ const legacyGenerateMockParticipants = () => {
     {
       id: 3,
       name: 'Michael Johnson',
-      email: 'michael.j@cornell.edu',
+      email: 'michael.j@university.edu',
       avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20beard&width=40&height=40&seq=3&orientation=squarish',
       joined_at: '2025-10-20T12:00:00Z',
       status: 'registered'
@@ -2017,7 +2017,7 @@ const legacyGenerateMockParticipants = () => {
     {
       id: 4,
       name: 'Sarah Wilson',
-      email: 'sarah.wilson@cornell.edu',
+      email: 'sarah.wilson@university.edu',
       avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20curly%20hair&width=40&height=40&seq=4&orientation=squarish',
       joined_at: '2025-10-20T13:30:00Z',
       status: 'checked_in'
@@ -2025,7 +2025,7 @@ const legacyGenerateMockParticipants = () => {
     {
       id: 5,
       name: 'David Chen',
-      email: 'david.chen@cornell.edu',
+      email: 'david.chen@university.edu',
       avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20asian%20male%20student&width=40&height=40&seq=5&orientation=squarish',
       joined_at: '2025-10-20T14:00:00Z',
       status: 'registered'
@@ -2033,7 +2033,7 @@ const legacyGenerateMockParticipants = () => {
     {
       id: 6,
       name: 'Lisa Rodriguez',
-      email: 'lisa.rodriguez@cornell.edu',
+      email: 'lisa.rodriguez@university.edu',
       avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20latina%20female%20student&width=40&height=40&seq=6&orientation=squarish',
       joined_at: '2025-10-20T14:30:00Z',
       status: 'registered'

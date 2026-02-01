@@ -93,11 +93,8 @@ const getInitials = (user) => {
 
 const maskEmail = (email) => {
   if (!email) return ''
-  const parts = email.split('@')
-  if (parts.length !== 2) return email
-  const name = parts[0]
-  const domain = parts[1]
-  return name.substring(0, 3) + '***@' + domain
+  // Show full email instead of masking
+  return email
 }
 
 // Load user stats

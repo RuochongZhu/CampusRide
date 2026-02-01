@@ -30,19 +30,19 @@
           </div>
 
           <p class="text-gray-600 mb-6">
-            Enter your Cornell email address and we'll send you a new verification link.
+            Enter your university email address and we'll send you a new verification link.
           </p>
 
           <form @submit.prevent="handleResendVerification">
             <!-- 邮箱 -->
             <div class="mb-6">
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Cornell Email Address</label>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">University Email Address</label>
               <input
                 type="email"
                 id="email"
                 v-model="email"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B31B1B] focus:border-transparent"
-                placeholder="your-netid@cornell.edu"
+                placeholder="your-netid@university.edu"
                 required
               />
             </div>
@@ -100,9 +100,9 @@ const validateForm = () => {
     return false
   }
   
-  // Cornell email validation
-  if (!email.value.endsWith('@cornell.edu')) {
-    errorMessage.value = 'Email must end with @cornell.edu'
+  // university email validation
+  if (!email.value.endsWith('@university.edu')) {
+    errorMessage.value = 'Email must end with @university.edu'
     return false
   }
   

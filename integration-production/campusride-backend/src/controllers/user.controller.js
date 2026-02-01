@@ -38,21 +38,20 @@ export const getProfile = async (req, res, next) => {
 export const updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { firstName, lastName, major, bio, phone, avatar_url } = req.body;
+    const { firstName, lastName, major, bio, avatar_url } = req.body;
 
     // 构建更新数据
     const updateData = {};
     if (firstName) updateData.first_name = firstName;
     if (lastName) updateData.last_name = lastName;
     if (major) updateData.major = major;
-    if (phone !== undefined) updateData.phone = phone;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
-    
+
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', userId)
-      .select('id, student_id, email, first_name, last_name, university, major, phone, role, points, created_at, avatar_url')
+      .select('id, student_id, email, first_name, last_name, university, major, role, points, created_at, avatar_url')
       .single();
 
     if (error) {
@@ -119,10 +118,71 @@ export const batchGetUsers = async (req, res, next) => {
 
     res.json({
       success: true,
-      data: { 
+      data: {
         users,
         count: users.length
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 删除当前用户账户
+export const deleteMyAccount = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Guest users cannot delete account
+    if (req.user?.isGuest) {
+      throw new AppError('Guest users cannot delete account', 403, ERROR_CODES.ACCESS_DENIED);
+    }
+
+    // Delete user's related data in order (to avoid foreign key constraints)
+    // 1. Delete ride bookings
+    await supabaseAdmin.from('ride_bookings').delete().eq('passenger_id', userId);
+
+    // 2. Delete rides
+    await supabaseAdmin.from('rides').delete().eq('driver_id', userId);
+
+    // 3. Delete marketplace favorites
+    await supabaseAdmin.from('item_favorites').delete().eq('user_id', userId);
+
+    // 4. Delete marketplace items
+    await supabaseAdmin.from('marketplace_items').delete().eq('seller_id', userId);
+
+    // 5. Delete activity participants
+    await supabaseAdmin.from('activity_participants').delete().eq('user_id', userId);
+
+    // 6. Delete activities
+    await supabaseAdmin.from('activities').delete().eq('organizer_id', userId);
+
+    // 7. Delete point transactions
+    await supabaseAdmin.from('point_transactions').delete().eq('user_id', userId);
+
+    // 8. Delete notifications
+    await supabaseAdmin.from('notifications').delete().eq('user_id', userId);
+
+    // 9. Delete messages
+    await supabaseAdmin.from('messages').delete().eq('sender_id', userId);
+    await supabaseAdmin.from('messages').delete().eq('receiver_id', userId);
+
+    // 10. Delete user coupons
+    await supabaseAdmin.from('user_coupons').delete().eq('user_id', userId);
+
+    // 11. Finally delete the user
+    const { error: deleteError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteError) {
+      throw new AppError('Failed to delete account', 500, ERROR_CODES.DATABASE_ERROR, deleteError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Your account has been permanently deleted'
     });
   } catch (error) {
     next(error);

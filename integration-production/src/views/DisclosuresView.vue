@@ -7,7 +7,7 @@
         <p class="text-gray-600">Last Updated: January 2, 2026</p>
         <div class="mt-4 bg-blue-50 border-l-4 border-blue-400 p-4">
           <p class="text-sm text-blue-800">
-            CampusRide is committed to transparency. This page discloses all material relationships,
+            CampusGo is committed to transparency. This page discloses all material relationships,
             affiliations, and potential conflicts of interest.
           </p>
         </div>
@@ -17,7 +17,7 @@
       <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
         <h2 class="text-lg font-semibold text-yellow-800 mb-3">Summary of Disclosures</h2>
         <ul class="list-disc list-inside text-gray-700 space-y-2">
-          <li><strong>Platform Nature:</strong> Non-profit community platform affiliated with Cornell University</li>
+          <li><strong>Platform Nature:</strong> Non-profit community platform affiliated with Your University</li>
           <li><strong>Sponsor Relationships:</strong> We partner with local businesses for user rewards</li>
           <li><strong>Team Affiliations:</strong> Some team members may be employed by sponsor businesses</li>
           <li><strong>Research Use:</strong> Anonymized data may be used for academic research (with consent)</li>
@@ -33,9 +33,9 @@
           <h2 class="text-xl font-bold text-gray-900 mb-4">1. Platform Nature & Purpose</h2>
 
           <div class="bg-gray-50 rounded-lg p-4 mb-4">
-            <h3 class="font-semibold text-gray-800 mb-2">What CampusRide Is</h3>
+            <h3 class="font-semibold text-gray-800 mb-2">What CampusGo Is</h3>
             <ul class="list-disc list-inside text-gray-700 space-y-1">
-              <li>A community platform for Cornell University students</li>
+              <li>A community platform for Your University students</li>
               <li>A shared-expense carpool coordination tool (NOT a commercial rideshare)</li>
               <li>A peer-to-peer marketplace for personal items</li>
               <li>An activity and event coordination platform</li>
@@ -43,7 +43,7 @@
           </div>
 
           <div class="bg-gray-50 rounded-lg p-4">
-            <h3 class="font-semibold text-gray-800 mb-2">What CampusRide Is NOT</h3>
+            <h3 class="font-semibold text-gray-800 mb-2">What CampusGo Is NOT</h3>
             <ul class="list-disc list-inside text-gray-700 space-y-1">
               <li>NOT a Transportation Network Company (TNC) like Uber or Lyft</li>
               <li>NOT a commercial retailer or seller</li>
@@ -58,7 +58,7 @@
           <h2 class="text-xl font-bold text-gray-900 mb-4">2. Sponsor Relationships</h2>
 
           <p class="text-gray-700 mb-4">
-            CampusRide partners with local businesses who sponsor rewards (coupons, discounts) for
+            CampusGo partners with local businesses who sponsor rewards (coupons, discounts) for
             our community members. These partnerships are disclosed below:
           </p>
 
@@ -105,7 +105,7 @@
 
           <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
             <p class="text-orange-800">
-              <strong>Important:</strong> Some CampusRide team members may have employment or
+              <strong>Important:</strong> Some CampusGo team members may have employment or
               business relationships with sponsor companies. These relationships are disclosed
               below in the interest of transparency.
             </p>
@@ -116,7 +116,7 @@
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Team Member</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role at CampusRide</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role at CampusGo</th>
                   <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">External Affiliation</th>
                   <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nature of Relationship</th>
                 </tr>
@@ -146,7 +146,7 @@
               <li>Team members with sponsor affiliations disclose them publicly</li>
               <li>Sponsor decisions are made considering user value, not personal benefit</li>
               <li>We maintain multiple sponsor relationships to avoid over-reliance on any single partner</li>
-              <li>Users can report concerns about conflicts of interest to ethics@campusride.com</li>
+              <li>Users can report concerns about conflicts of interest to ethics@campusgo.college</li>
             </ul>
           </div>
         </section>
@@ -156,10 +156,10 @@
           <h2 class="text-xl font-bold text-gray-900 mb-4">4. Academic Research Disclosure</h2>
 
           <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-            <h3 class="font-semibold text-purple-800 mb-2">Cornell University Affiliation</h3>
+            <h3 class="font-semibold text-purple-800 mb-2">Your University Affiliation</h3>
             <p class="text-gray-700">
-              CampusRide is developed by Cornell University students and may be used as part of
-              academic research projects. All research is conducted under Cornell IRB oversight.
+              CampusGo is developed by Your University students and may be used as part of
+              academic research projects. All research is conducted under IRB oversight.
             </p>
           </div>
 
@@ -196,7 +196,7 @@
               <li>Research participation is opt-in only</li>
               <li>You can withdraw consent at any time</li>
               <li>Your identity is never revealed in research</li>
-              <li>Non-participation does not affect your use of CampusRide</li>
+              <li>Non-participation does not affect your use of CampusGo</li>
             </ul>
           </div>
         </section>
@@ -270,11 +270,11 @@
 
           <div class="bg-gray-50 rounded-lg p-4">
             <p class="text-gray-700"><strong>Ethics & Transparency Concerns:</strong></p>
-            <p class="text-gray-700">ethics@campusride.com</p>
+            <p class="text-gray-700">ethics@campusgo.college</p>
             <p class="text-gray-700 mt-3"><strong>Privacy Concerns:</strong></p>
-            <p class="text-gray-700">privacy@campusride.com</p>
+            <p class="text-gray-700">privacy@campusgo.college</p>
             <p class="text-gray-700 mt-3"><strong>General Inquiries:</strong></p>
-            <p class="text-gray-700">support@campusride.com</p>
+            <p class="text-gray-700">support@campusgo.college</p>
           </div>
         </section>
 

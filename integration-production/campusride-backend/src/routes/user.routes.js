@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, updateProfile, getUserById, batchGetUsers } from '../controllers/user.controller.js';
+import { getProfile, updateProfile, getUserById, batchGetUsers, deleteMyAccount } from '../controllers/user.controller.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 import { authenticateToken, requireRegisteredUser } from '../middleware/auth.middleware.js';
 
@@ -13,6 +13,9 @@ router.get('/me', asyncHandler(getProfile));
 
 // PUT /api/v1/users/me - update current user (registered users only)
 router.put('/me', requireRegisteredUser, asyncHandler(updateProfile));
+
+// DELETE /api/v1/users/me - delete current user account (registered users only)
+router.delete('/me', requireRegisteredUser, asyncHandler(deleteMyAccount));
 
 // GET /api/v1/users/profile (guests can view their own profile)
 router.get('/profile', asyncHandler(getProfile));

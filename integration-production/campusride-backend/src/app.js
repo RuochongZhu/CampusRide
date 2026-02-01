@@ -27,6 +27,7 @@ import ratingRoutes from './routes/rating.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
+import webhookRoutes from './routes/webhook.routes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware.js';
@@ -59,6 +60,10 @@ const devOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
   'http://localhost:3002',
   'http://127.0.0.1:3002',
   'http://localhost:3003',
@@ -131,6 +136,7 @@ app.use('/api/v1/ratings', ratingRoutes);
 app.use('/api/v1/friends', friendsRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/announcements', announcementRoutes);
+app.use('/api/v1/webhook', webhookRoutes);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));

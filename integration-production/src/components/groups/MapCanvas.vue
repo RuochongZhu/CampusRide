@@ -199,7 +199,7 @@ const initMap = async () => {
 
     // 创建地图
     map = new google.maps.Map(mapContainer.value, {
-      center: { lat: 42.4534, lng: -76.4735 }, // Cornell University
+      center: { lat: 42.4534, lng: -76.4735 }, // Your University
       zoom: 15,
       mapTypeId: google.maps.MapTypeId.SATELLITE, // Use satellite view
       mapTypeControl: true,

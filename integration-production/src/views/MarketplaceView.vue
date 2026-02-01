@@ -222,22 +222,21 @@
           <p class="text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
         </div>
       </div>
-      <div class="flex space-x-2 pt-4">
-        <a-button type="primary" block @click="scrollToComments">
-          <template #icon><MessageOutlined /></template> Add Comment
-        </a-button>
+      <div class="flex items-center justify-between pt-4">
         <a-button @click="toggleFavorite(selectedItem)">
           <template #icon>
             <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
             <HeartOutlined v-else />
           </template>
+          {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
         </a-button>
         <a-button
-          v-if="currentUser && selectedItem.seller_id === currentUser.id"
+          v-if="currentUser && (selectedItem.seller_id === currentUser.id || selectedItem.seller?.id === currentUser.id)"
           danger
           @click="confirmDeleteItem(selectedItem)"
         >
           <template #icon><DeleteOutlined /></template>
+          Delete
         </a-button>
       </div>
 
@@ -255,7 +254,7 @@ import { ref, computed, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import {
   SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined,
-  HeartOutlined, HeartFilled, MessageOutlined, PlusOutlined, EyeOutlined, DeleteOutlined
+  HeartOutlined, HeartFilled, PlusOutlined, EyeOutlined, DeleteOutlined
 } from '@ant-design/icons-vue';
 import { marketplaceAPI } from '@/utils/api'
 import CommentSection from '@/components/marketplace/CommentSection.vue'
@@ -280,7 +279,7 @@ const fileInput = ref(null)
 // Current user (get from localStorage)
 const currentUser = ref(null)
 try {
-  const userStr = localStorage.getItem('user')
+  const userStr = localStorage.getItem('userData')
   if (userStr) {
     currentUser.value = JSON.parse(userStr)
   }
@@ -303,9 +302,9 @@ const items = ref([
       id: 'seller-1',
       first_name: 'Alice',
       last_name: 'Johnson',
-      email: 'alice.johnson@cornell.edu',
+      email: 'alice.johnson@university.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/2?v=4',
-      university: 'Cornell University',
+      university: 'Your University',
       is_online: true,
       avg_rating: 4.8,
       total_sales: 12,
@@ -326,9 +325,9 @@ const items = ref([
       id: 'seller-2',
       first_name: 'Bob',
       last_name: 'Smith',
-      email: 'bob.smith@cornell.edu',
+      email: 'bob.smith@university.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/3?v=4',
-      university: 'Cornell University',
+      university: 'Your University',
       is_online: false,
       avg_rating: 4.6,
       total_sales: 8,
@@ -349,9 +348,9 @@ const items = ref([
       id: 'seller-3',
       first_name: 'Carol',
       last_name: 'Williams',
-      email: 'carol.williams@cornell.edu',
+      email: 'carol.williams@university.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/4?v=4',
-      university: 'Cornell University',
+      university: 'Your University',
       is_online: true,
       avg_rating: 5.0,
       total_sales: 25,
@@ -372,9 +371,9 @@ const items = ref([
       id: 'seller-4',
       first_name: 'David',
       last_name: 'Brown',
-      email: 'david.brown@cornell.edu',
+      email: 'david.brown@university.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/5?v=4',
-      university: 'Cornell University',
+      university: 'Your University',
       is_online: true,
       avg_rating: 4.7,
       total_sales: 15,

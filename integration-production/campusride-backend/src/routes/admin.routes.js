@@ -10,6 +10,7 @@ import {
   getUserList,
   banUser,
   unbanUser,
+  deleteUser,
   deleteRide,
   deleteMarketplaceItem,
   deleteActivity,
@@ -21,12 +22,20 @@ import {
   getMerchantList,
   sendSystemAnnouncement,
   getSystemAnnouncements,
-  distributeWeeklyCoupons
+  distributeWeeklyCoupons,
+  getPointsConfig,
+  updatePointsConfig,
+  getFeatureSettings,
+  updateFeatureSettings,
+  checkPointsRankingEnabled
 } from '../controllers/admin.controller.js';
 
 const router = express.Router();
 
-// All routes require authentication and admin access
+// Public endpoint - check if points & ranking is enabled (no auth required)
+router.get('/features/points-ranking', checkPointsRankingEnabled);
+
+// All other routes require authentication and admin access
 router.use(authenticateToken);
 router.use(isAdmin);
 
@@ -49,6 +58,15 @@ router.get('/stats/points', getPointsLeaderboard);
 router.get('/users', getUserList);
 router.post('/users/:userId/ban', banUser);
 router.post('/users/:userId/unban', unbanUser);
+router.delete('/users/:userId', deleteUser);
+
+// Points configuration
+router.get('/points/config', getPointsConfig);
+router.put('/points/config', updatePointsConfig);
+
+// Feature settings (points & ranking toggle)
+router.get('/features/settings', getFeatureSettings);
+router.put('/features/settings', updateFeatureSettings);
 
 // Role management
 router.post('/users/:userId/grant-admin', grantAdminRole);

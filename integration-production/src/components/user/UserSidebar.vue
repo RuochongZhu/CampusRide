@@ -96,228 +96,142 @@
 
       <!-- Tab Content -->
       <div class="p-4 flex-1 overflow-y-auto">
-        <!-- History Tab (Points History) -->
-        <div v-if="activeTab === 'history'" class="space-y-4">
-          <!-- Current Points Display -->
-          <div class="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-4 border border-orange-200">
-            <div class="flex justify-between items-center">
-              <div>
-                <p class="text-sm text-gray-600">Current Weekly Points</p>
-                <p class="text-3xl font-bold text-orange-600">{{ pointsData.total || 0 }}</p>
-                <p class="text-xs text-gray-500 mt-1">Resets every Sunday</p>
-              </div>
-              <TrophyOutlined class="text-4xl text-orange-400" />
-            </div>
+        <!-- Points & Ranking Tab (Combined) -->
+        <div v-if="activeTab === 'points-ranking'" class="space-y-4">
+          <!-- Feature Disabled Notice -->
+          <div v-if="!pointsRankingEnabled" class="text-center py-8">
+            <LockOutlined class="text-4xl text-gray-300 mb-4" />
+            <h3 class="text-lg font-medium text-gray-600">Points & Ranking Unavailable</h3>
+            <p class="text-sm text-gray-400 mt-2">This feature is currently disabled by the administrator.</p>
           </div>
 
-          <!-- Points History -->
-          <div>
-            <h4 class="font-semibold mb-2 text-gray-700">Points History</h4>
-            <div v-if="pointsHistory.length === 0" class="text-center py-8 text-gray-400">
-              <TrophyOutlined class="text-3xl mb-2" />
-              <p class="text-sm">No points history yet</p>
-            </div>
-            <div v-else class="space-y-2 max-h-64 overflow-y-auto">
-              <div
-                v-for="item in pointsHistory"
-                :key="item.id"
-                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-              >
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-800">{{ item.reason }}</p>
-                  <p class="text-xs text-gray-500">{{ formatDate(item.created_at) }}</p>
-                </div>
-                <span
-                  :class="[
-                    'font-bold text-sm',
-                    item.points > 0 ? 'text-green-600' : 'text-red-600'
-                  ]"
-                >
-                  {{ item.points > 0 ? '+' : '' }}{{ item.points }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Coupons Tab -->
-        <div v-else-if="activeTab === 'coupons'" class="space-y-4">
-          <!-- Coupon Filter -->
-          <a-segmented
-            v-model:value="couponFilter"
-            :options="[
-              { label: 'Active', value: 'active' },
-              { label: 'Used', value: 'used' },
-              { label: 'Expired', value: 'expired' }
-            ]"
-            block
-          />
-
-          <!-- Coupon Summary -->
-          <div class="grid grid-cols-3 gap-2">
-            <div class="bg-green-50 rounded-lg p-3 text-center">
-              <p class="text-lg font-bold text-green-600">{{ couponsData.summary?.active || 0 }}</p>
-              <p class="text-xs text-gray-600">Active</p>
-            </div>
-            <div class="bg-gray-50 rounded-lg p-3 text-center">
-              <p class="text-lg font-bold text-gray-600">{{ couponsData.summary?.used || 0 }}</p>
-              <p class="text-xs text-gray-600">Used</p>
-            </div>
-            <div class="bg-red-50 rounded-lg p-3 text-center">
-              <p class="text-lg font-bold text-red-600">{{ couponsData.summary?.expired || 0 }}</p>
-              <p class="text-xs text-gray-600">Expired</p>
-            </div>
-          </div>
-
-          <!-- Coupon List -->
-          <div v-if="filteredCoupons.length === 0" class="text-center py-8 text-gray-400">
-            <GiftOutlined class="text-3xl mb-2" />
-            <p class="text-sm">No {{ couponFilter }} coupons</p>
-          </div>
-          <div v-else class="space-y-3 max-h-64 overflow-y-auto">
-            <div
-              v-for="coupon in filteredCoupons"
-              :key="coupon.id"
-              class="border rounded-lg p-3 relative"
-              :class="{
-                'border-green-500 bg-green-50': coupon.status === 'active',
-                'border-gray-300 bg-gray-50': coupon.status === 'used',
-                'border-red-300 bg-red-50': coupon.status === 'expired'
-              }"
-            >
-              <div class="flex items-start justify-between mb-2">
-                <h5 class="font-bold text-sm">{{ coupon.merchant_name }}</h5>
-                <GiftOutlined class="text-xl opacity-20" />
-              </div>
-              <p class="text-xs text-gray-600 mb-2">{{ coupon.description }}</p>
-              <div class="bg-white rounded px-2 py-1 inline-block font-mono font-bold text-sm">
-                {{ coupon.code }}
-              </div>
-              <p class="text-xs text-gray-500 mt-2">
-                Valid until: {{ formatDate(coupon.valid_until) }}
-              </p>
-              <p v-if="coupon.is_used && coupon.used_at" class="text-xs text-gray-500">
-                Used on: {{ formatDate(coupon.used_at) }}
-              </p>
-              <a-button
-                v-if="coupon.status === 'active'"
-                size="small"
-                type="primary"
-                class="mt-2 !bg-green-600 border-none hover:!bg-green-700"
-                @click="useCoupon(coupon.id)"
-                :loading="coupon.using"
-              >
-                Use Coupon
-              </a-button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Leaderboard Tab -->
-        <div v-else-if="activeTab === 'leaderboard'" class="space-y-4">
-          <!-- Privacy Toggle -->
-          <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <EyeInvisibleOutlined v-if="hideRankEnabled" class="text-gray-500" />
-                <EyeOutlined v-else class="text-gray-500" />
+          <template v-else>
+            <!-- Current Points Display -->
+            <div class="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-4 border border-orange-200">
+              <div class="flex justify-between items-center">
                 <div>
-                  <p class="text-sm font-medium text-gray-700">Hide my rank</p>
-                  <p class="text-xs text-gray-500">Others will see a blurred rank</p>
+                  <p class="text-sm text-gray-600">Current Weekly Points</p>
+                  <p class="text-3xl font-bold text-orange-600">{{ pointsData.total || 0 }}</p>
+                  <p class="text-xs text-gray-500 mt-1">Resets every Sunday</p>
                 </div>
-              </div>
-              <a-switch
-                :checked="hideRankEnabled"
-                :loading="hideRankLoading"
-                @change="toggleHideRank"
-              />
-            </div>
-          </div>
-
-          <!-- My Rank Card -->
-          <div v-if="myRank" class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-sm p-4 border border-purple-200">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                  #{{ myRank.rank }}
-                </div>
-                <div>
-                  <p class="text-sm text-gray-600">Your Current Rank</p>
-                  <p class="text-xl font-bold text-purple-600">{{ myRank.points }} points</p>
-                </div>
-              </div>
-              <div class="text-right">
-                <p class="text-sm text-gray-600">Keep going!</p>
-                <p class="text-xs text-gray-500">{{ getRankMessage(myRank.rank) }}</p>
+                <TrophyOutlined class="text-4xl text-orange-400" />
               </div>
             </div>
-          </div>
 
-          <!-- Loading State -->
-          <div v-if="leaderboardLoading" class="flex justify-center items-center py-8">
-            <a-spin size="large" />
-          </div>
-
-          <!-- Error State -->
-          <div v-else-if="leaderboardError" class="text-center py-8">
-            <ExclamationCircleOutlined class="text-3xl text-red-500 mb-4" />
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Failed to Load Leaderboard</h3>
-            <p class="text-gray-600 mb-4">{{ leaderboardError }}</p>
-            <a-button type="primary" @click="fetchLeaderboard">Retry</a-button>
-          </div>
-
-          <!-- Leaderboard List -->
-          <div v-else>
-            <div v-if="leaderboardData.length === 0" class="text-center py-8 text-gray-500">
-              <TrophyOutlined class="text-4xl mb-4 opacity-20" />
-              <p class="text-lg">No leaderboard data yet</p>
-              <p class="text-sm mt-2">Start earning points to appear on the leaderboard!</p>
-            </div>
-            <div v-else class="space-y-2 max-h-64 overflow-y-auto">
-              <div
-                v-for="(user, index) in leaderboardData"
-                :key="user.user_id"
-                class="p-3 bg-gray-50 rounded-lg transition-colors"
-                :class="{
-                  'bg-yellow-50 border border-yellow-200': index === 0,
-                  'bg-gray-100': index === 1,
-                  'bg-orange-50 border border-orange-200': index === 2
-                }"
-              >
+            <!-- My Rank Card -->
+            <div v-if="myRank" class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-sm p-4 border border-purple-200">
+              <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                  <!-- Rank Badge -->
-                  <div
-                    class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
-                    :class="{
-                      'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white': index === 0,
-                      'bg-gradient-to-br from-gray-300 to-gray-400 text-white': index === 1,
-                      'bg-gradient-to-br from-orange-400 to-orange-500 text-white': index === 2,
-                      'bg-gray-200 text-gray-700': index > 2
-                    }"
-                  >
-                    {{ index + 1 }}
+                  <div class="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                    #{{ myRank.rank }}
                   </div>
+                  <div>
+                    <p class="text-sm text-gray-600">Your Current Rank</p>
+                    <p class="text-xl font-bold text-purple-600">{{ myRank.points }} points</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm text-gray-600">Keep going!</p>
+                  <p class="text-xs text-gray-500">{{ getRankMessage(myRank.rank) }}</p>
+                </div>
+              </div>
+            </div>
 
-                  <!-- User Info -->
-                  <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-sm text-gray-900 truncate">
-                      {{ user.first_name }} {{ user.last_name }}
-                    </p>
-                    <div v-if="user.avg_rating && user.avg_rating > 0" class="flex items-center mt-1 space-x-2">
-                      <StarFilled class="text-yellow-500 text-xs" />
-                      <span class="text-xs text-gray-600">{{ (user.avg_rating || 5).toFixed(1) }}</span>
+            <!-- Privacy Toggle -->
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <EyeInvisibleOutlined v-if="hideRankEnabled" class="text-gray-500" />
+                  <EyeOutlined v-else class="text-gray-500" />
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Hide my rank</p>
+                    <p class="text-xs text-gray-500">Others will see a blurred rank</p>
+                  </div>
+                </div>
+                <a-switch
+                  :checked="hideRankEnabled"
+                  :loading="hideRankLoading"
+                  @change="toggleHideRank"
+                />
+              </div>
+            </div>
+
+            <!-- Points History -->
+            <div>
+              <h4 class="font-semibold mb-2 text-gray-700">Points History</h4>
+              <div v-if="pointsHistory.length === 0" class="text-center py-4 text-gray-400">
+                <TrophyOutlined class="text-2xl mb-2" />
+                <p class="text-sm">No points history yet</p>
+              </div>
+              <div v-else class="space-y-2 max-h-40 overflow-y-auto">
+                <div
+                  v-for="item in pointsHistory"
+                  :key="item.id"
+                  class="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                >
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-800">{{ item.reason }}</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(item.created_at) }}</p>
+                  </div>
+                  <span
+                    :class="[
+                      'font-bold text-sm',
+                      item.points > 0 ? 'text-green-600' : 'text-red-600'
+                    ]"
+                  >
+                    {{ item.points > 0 ? '+' : '' }}{{ item.points }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div>
+              <h4 class="font-semibold mb-2 text-gray-700">Weekly Leaderboard</h4>
+              <div v-if="leaderboardLoading" class="flex justify-center items-center py-4">
+                <a-spin />
+              </div>
+              <div v-else-if="leaderboardData.length === 0" class="text-center py-4 text-gray-400">
+                <TrophyOutlined class="text-2xl mb-2" />
+                <p class="text-sm">No leaderboard data yet</p>
+              </div>
+              <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+                <div
+                  v-for="(user, index) in leaderboardData"
+                  :key="user.user_id"
+                  class="p-3 bg-gray-50 rounded-lg transition-colors"
+                  :class="{
+                    'bg-yellow-50 border border-yellow-200': index === 0,
+                    'bg-gray-100': index === 1,
+                    'bg-orange-50 border border-orange-200': index === 2
+                  }"
+                >
+                  <div class="flex items-center space-x-3">
+                    <div
+                      class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                      :class="{
+                        'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white': index === 0,
+                        'bg-gradient-to-br from-gray-300 to-gray-400 text-white': index === 1,
+                        'bg-gradient-to-br from-orange-400 to-orange-500 text-white': index === 2,
+                        'bg-gray-200 text-gray-700': index > 2
+                      }"
+                    >
+                      {{ index + 1 }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-sm text-gray-900 truncate">
+                        {{ user.first_name }} {{ user.last_name }}
+                      </p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                      <p class="font-bold text-lg text-[#C24D45]">{{ user.total_points }}</p>
+                      <p class="text-xs text-gray-500">points</p>
                     </div>
                   </div>
-
-                  <!-- Points -->
-                  <div class="text-right flex-shrink-0">
-                    <p class="font-bold text-lg text-[#C24D45]">{{ user.total_points }}</p>
-                    <p class="text-xs text-gray-500">points</p>
-                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <!-- Blocked Users Tab -->
@@ -379,7 +293,7 @@
     </div>
 
     <!-- Logout Button at Bottom -->
-    <div class="p-4 border-t border-gray-200 flex-shrink-0">
+    <div class="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
       <a-button
         type="primary"
         danger
@@ -390,6 +304,21 @@
       >
         <LogoutOutlined /> Logout
       </a-button>
+      <a-popconfirm
+        title="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed."
+        ok-text="Yes, Delete My Account"
+        cancel-text="Cancel"
+        ok-type="danger"
+        @confirm="handleDeleteAccount"
+      >
+        <a-button
+          block
+          size="small"
+          class="!text-gray-500 hover:!text-red-500"
+        >
+          <DeleteOutlined /> Delete My Account
+        </a-button>
+      </a-popconfirm>
     </div>
 
     <!-- Avatar Upload Modal -->
@@ -400,14 +329,67 @@
       width="400px"
     >
       <div class="space-y-4">
-        <!-- Current Avatar -->
-        <div v-if="uploadPreview || userData.avatar_url" class="text-center">
-          <img
-            :src="uploadPreview || userData.avatar_url"
-            alt="Preview"
-            class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-gray-200"
-            @error="handleImageError"
-          />
+        <!-- Image Cropper Area -->
+        <div class="relative">
+          <!-- Preview with drag -->
+          <div v-if="uploadPreview" class="avatar-crop-container">
+            <div
+              class="crop-wrapper"
+              @mousedown="startDrag"
+              @mousemove="onDrag"
+              @mouseup="endDrag"
+              @mouseleave="endDrag"
+              @touchstart="startDrag"
+              @touchmove="onDrag"
+              @touchend="endDrag"
+              @wheel="onWheel"
+            >
+              <img
+                ref="cropImage"
+                :src="uploadPreview"
+                alt="Preview"
+                class="crop-image"
+                :style="cropImageStyle"
+                @load="onImageLoad"
+                draggable="false"
+              />
+              <div class="crop-overlay">
+                <div class="crop-circle"></div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 text-center mt-3">Drag to move • Scroll to zoom</p>
+            <!-- Zoom slider -->
+            <div class="flex items-center justify-center mt-2 px-4">
+              <span class="text-xs text-gray-500 mr-2">-</span>
+              <a-slider
+                v-model:value="cropScale"
+                :min="50"
+                :max="300"
+                :step="5"
+                style="width: 150px"
+              />
+              <span class="text-xs text-gray-500 ml-2">+</span>
+            </div>
+          </div>
+
+          <!-- Current Avatar (when no new image selected) -->
+          <div v-else-if="userData.avatar_url" class="text-center">
+            <img
+              :src="userData.avatar_url"
+              alt="Current Avatar"
+              class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-gray-200"
+              @error="handleImageError"
+            />
+            <p class="text-sm text-gray-500 mt-2">Current avatar</p>
+          </div>
+
+          <!-- No avatar placeholder -->
+          <div v-else class="text-center py-8">
+            <div class="w-32 h-32 rounded-full mx-auto bg-gray-200 flex items-center justify-center">
+              <CameraOutlined class="text-4xl text-gray-400" />
+            </div>
+            <p class="text-sm text-gray-500 mt-2">No avatar set</p>
+          </div>
         </div>
 
         <!-- Upload Button -->
@@ -420,14 +402,14 @@
             @change="handleFileSelect"
           />
           <a-button @click="$refs.fileInput.click()" :loading="uploading" block>
-            <UploadOutlined /> Choose Image
+            <UploadOutlined /> {{ uploadPreview ? 'Choose Different Image' : 'Choose Image' }}
           </a-button>
           <p class="text-xs text-gray-500 mt-2">Max 5MB (JPEG, PNG, WebP)</p>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex space-x-2">
-          <a-button @click="showUploadModal = false" block>Cancel</a-button>
+          <a-button @click="cancelUpload" block>Cancel</a-button>
           <a-button
             type="primary"
             @click="uploadAvatar"
@@ -461,10 +443,12 @@ import {
   CheckOutlined,
   LogoutOutlined,
   EyeOutlined,
-  EyeInvisibleOutlined
+  EyeInvisibleOutlined,
+  DeleteOutlined,
+  LockOutlined
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
-import { userProfileAPI, leaderboardAPI, marketplaceAPI, messagesAPI } from '@/utils/api'
+import { userProfileAPI, leaderboardAPI, marketplaceAPI, messagesAPI, userAPI, adminAPI } from '@/utils/api'
 
 const props = defineProps({
   isOpen: {
@@ -479,18 +463,25 @@ const authStore = useAuthStore()
 
 // Tabs configuration
 const tabs = [
-  { key: 'history', label: 'Points' },
-  { key: 'coupons', label: 'Coupons' },
-  { key: 'leaderboard', label: 'Ranking' },
+  { key: 'points-ranking', label: 'Points & Ranking' },
   { key: 'blocked', label: 'Blocked' }
 ]
 
-const activeTab = ref('history')
+const activeTab = ref('points-ranking')
 const couponFilter = ref('active')
 const showUploadModal = ref(false)
 const uploading = ref(false)
 const uploadPreview = ref(null)
 const fileInput = ref(null)
+const cropImage = ref(null)
+
+// Crop controls - drag based
+const cropScale = ref(100)
+const cropX = ref(0)
+const cropY = ref(0)
+const isDragging = ref(false)
+const dragStart = ref({ x: 0, y: 0 })
+const originalImageSize = ref({ width: 0, height: 0 })
 
 // Nickname editing state
 const isEditingNickname = ref(false)
@@ -530,9 +521,19 @@ const blockedUsersLoading = ref(false)
 const hideRankEnabled = ref(false)
 const hideRankLoading = ref(false)
 
+// Points & Ranking feature enabled status
+const pointsRankingEnabled = ref(true)
+
 const defaultAvatar = '/Profile_Photo.jpg'
 
 // Computed
+const cropImageStyle = computed(() => {
+  const scale = cropScale.value / 100
+  return {
+    transform: `translate(-50%, -50%) translate(${cropX.value}px, ${cropY.value}px) scale(${scale})`
+  }
+})
+
 const filteredCoupons = computed(() => {
   return couponsData.value[couponFilter.value] || []
 })
@@ -556,7 +557,7 @@ const saveNickname = async () => {
 
   try {
     const response = await userProfileAPI.updateUserProfile({
-      nickname: editNicknameValue.value.trim()
+      firstName: editNicknameValue.value.trim()
     })
 
     if (response.data.success) {
@@ -575,7 +576,7 @@ const saveNickname = async () => {
     }
   } catch (err) {
     console.error('Failed to update nickname:', err)
-    message.error(err.response?.data?.error?.message || 'Failed to update nickname')
+    message.error('Failed to update nickname')
   } finally {
     isEditingNickname.value = false
   }
@@ -586,33 +587,76 @@ const handleLogout = () => {
   emit('logout')
 }
 
+// Delete account handler
+const handleDeleteAccount = async () => {
+  try {
+    const response = await userAPI.deleteMe()
+    if (response.data?.success) {
+      message.success('Your account has been deleted')
+      // Clear local storage and redirect to login
+      localStorage.removeItem('userToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userData')
+      window.location.href = '/login'
+    }
+  } catch (err) {
+    console.error('Failed to delete account:', err)
+    message.error(err.response?.data?.error?.message || 'Failed to delete account')
+  }
+}
+
 // Methods
 const fetchAllData = async () => {
   if (!authStore.userId) return
 
   try {
-    // Fetch user profile
-    const profileRes = await userProfileAPI.getUserProfile(authStore.userId)
-    if (profileRes.data.success) {
-      const data = profileRes.data.data
-      // 后端直接返回用户数据，不是包装在 user 对象中
-      userData.value = {
-        first_name: data.first_name || '',
-        last_name: data.last_name || '',
-        nickname: data.first_name || '',  // 使用 first_name 作为昵称
-        email: data.email || '',
-        avatar_url: data.avatar_url || '',
-        rating: data.ratings?.summary?.average || data.avg_rating || 0,
-        rating_count: data.ratings?.summary?.total || data.total_ratings || 0
+    // First check localStorage for locally saved nickname
+    const storedData = JSON.parse(localStorage.getItem('userData') || '{}')
+    const localNickname = storedData.nickname || storedData.first_name
+
+    // If we have local data, use it immediately (don't wait for API)
+    if (localNickname) {
+      userData.value.nickname = localNickname
+      userData.value.first_name = localNickname
+    }
+    if (storedData.avatar_url) {
+      userData.value.avatar_url = storedData.avatar_url
+    }
+    if (storedData.email) {
+      userData.value.email = storedData.email
+    }
+
+    // Fetch user profile from API (but don't override local nickname)
+    try {
+      const profileRes = await userProfileAPI.getUserProfile(authStore.userId)
+      if (profileRes.data.success) {
+        const data = profileRes.data.data
+        // 后端直接返回用户数据，不是包装在 user 对象中
+        userData.value = {
+          // 保留本地昵称，不被后端数据覆盖
+          first_name: localNickname || data.first_name || '',
+          last_name: data.last_name || '',
+          nickname: localNickname || data.first_name || '',
+          email: data.email || '',
+          avatar_url: storedData.avatar_url || data.avatar_url || '',
+          rating: data.ratings?.summary?.average || data.avg_rating || 0,
+          rating_count: data.ratings?.summary?.total || data.total_ratings || 0
+        }
+        couponsData.value = data.coupons || { summary: {}, active: [], used: [], expired: [] }
+        pointsData.value.total = data.statistics?.points || data.points || 0
       }
-      couponsData.value = data.coupons || { summary: {}, active: [], used: [], expired: [] }
-      pointsData.value.total = data.statistics?.points || data.points || 0
+    } catch (profileErr) {
+      console.log('Could not fetch profile from API, using local data')
     }
 
     // Fetch points history
-    const pointsRes = await userProfileAPI.getUserPointsHistory(authStore.userId)
-    if (pointsRes.data.success) {
-      pointsHistory.value = pointsRes.data.data.history || []
+    try {
+      const pointsRes = await userProfileAPI.getUserPointsHistory(authStore.userId)
+      if (pointsRes.data.success) {
+        pointsHistory.value = pointsRes.data.data.history || []
+      }
+    } catch (pointsErr) {
+      console.log('Could not fetch points history')
     }
   } catch (err) {
     console.error('Failed to fetch sidebar data:', err)
@@ -659,8 +703,56 @@ const handleFileSelect = (event) => {
   const reader = new FileReader()
   reader.onload = (e) => {
     uploadPreview.value = e.target.result
+    // Reset crop controls when new image is selected
+    cropScale.value = 100
+    cropX.value = 0
+    cropY.value = 0
   }
   reader.readAsDataURL(file)
+}
+
+const onImageLoad = (e) => {
+  originalImageSize.value = {
+    width: e.target.naturalWidth,
+    height: e.target.naturalHeight
+  }
+}
+
+// Drag handlers
+const startDrag = (e) => {
+  isDragging.value = true
+  const point = e.touches ? e.touches[0] : e
+  dragStart.value = {
+    x: point.clientX - cropX.value,
+    y: point.clientY - cropY.value
+  }
+}
+
+const onDrag = (e) => {
+  if (!isDragging.value) return
+  e.preventDefault()
+  const point = e.touches ? e.touches[0] : e
+  cropX.value = point.clientX - dragStart.value.x
+  cropY.value = point.clientY - dragStart.value.y
+}
+
+const endDrag = () => {
+  isDragging.value = false
+}
+
+const onWheel = (e) => {
+  e.preventDefault()
+  const delta = e.deltaY > 0 ? -10 : 10
+  const newScale = cropScale.value + delta
+  cropScale.value = Math.max(50, Math.min(300, newScale))
+}
+
+const cancelUpload = () => {
+  showUploadModal.value = false
+  uploadPreview.value = null
+  cropScale.value = 100
+  cropX.value = 0
+  cropY.value = 0
 }
 
 const uploadAvatar = async () => {
@@ -669,39 +761,78 @@ const uploadAvatar = async () => {
   try {
     uploading.value = true
 
-    // Upload avatar using the dedicated endpoint
-    const uploadRes = await userProfileAPI.uploadAvatar({ image: uploadPreview.value })
+    // Create a canvas to crop the image
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
 
-    if (uploadRes.data.success) {
-      message.success('Avatar updated successfully!')
-      const newAvatarUrl = uploadRes.data.data.user.avatar_url
-      userData.value.avatar_url = newAvatarUrl
-      authStore.updateUserAvatar(newAvatarUrl)
+    img.onload = async () => {
+      // Set canvas size to desired output (256x256 for avatar)
+      const outputSize = 256
+      const cropSize = 200 // Size of the crop area in the UI
+      canvas.width = outputSize
+      canvas.height = outputSize
 
-      // Update localStorage to sync with HeaderComponent
-      try {
-        const storedUserData = localStorage.getItem('userData')
-        if (storedUserData) {
-          const parsedData = JSON.parse(storedUserData)
-          parsedData.avatar_url = newAvatarUrl
-          localStorage.setItem('userData', JSON.stringify(parsedData))
+      // Calculate crop parameters based on drag position
+      const scale = cropScale.value / 100
+      const ratio = outputSize / cropSize
+
+      // Scale the drag offset to match output size
+      const offsetX = (outputSize / 2) + (cropX.value * ratio) - (img.width * scale * ratio / 2)
+      const offsetY = (outputSize / 2) + (cropY.value * ratio) - (img.height * scale * ratio / 2)
+
+      // Draw the image with crop settings
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, outputSize, outputSize)
+      ctx.drawImage(img, offsetX, offsetY, img.width * scale * ratio, img.height * scale * ratio)
+
+      // Convert to base64
+      const croppedImage = canvas.toDataURL('image/jpeg', 0.9)
+
+      // Upload avatar using the dedicated endpoint
+      const uploadRes = await userProfileAPI.uploadAvatar({ image: croppedImage })
+
+      if (uploadRes.data.success) {
+        message.success('Avatar updated successfully!')
+        const newAvatarUrl = uploadRes.data.data.user.avatar_url
+        userData.value.avatar_url = newAvatarUrl
+        authStore.updateUserAvatar(newAvatarUrl)
+
+        // Update localStorage to sync with HeaderComponent
+        try {
+          const storedUserData = localStorage.getItem('userData')
+          if (storedUserData) {
+            const parsedData = JSON.parse(storedUserData)
+            parsedData.avatar_url = newAvatarUrl
+            localStorage.setItem('userData', JSON.stringify(parsedData))
+          }
+        } catch (e) {
+          console.error('Failed to update localStorage:', e)
         }
-      } catch (e) {
-        console.error('Failed to update localStorage:', e)
+
+        // Dispatch event to notify HeaderComponent
+        window.dispatchEvent(new Event('user-updated'))
+
+        showUploadModal.value = false
+        uploadPreview.value = null
+        cropScale.value = 100
+        cropX.value = 0
+        cropY.value = 0
+      } else {
+        throw new Error(uploadRes.data.error?.message || 'Failed to upload avatar')
       }
-
-      // Dispatch event to notify HeaderComponent
-      window.dispatchEvent(new Event('user-updated'))
-
-      showUploadModal.value = false
-      uploadPreview.value = null
-    } else {
-      throw new Error(uploadRes.data.error?.message || 'Failed to upload avatar')
+      uploading.value = false
     }
+
+    img.onerror = () => {
+      message.error('Failed to process image')
+      uploading.value = false
+    }
+
+    img.src = uploadPreview.value
   } catch (err) {
     console.error('Upload avatar error:', err)
     message.error(err.message || 'Failed to upload avatar')
-  } finally {
     uploading.value = false
   }
 }
@@ -819,7 +950,9 @@ const fetchHideRankStatus = async () => {
       hideRankEnabled.value = response.data.data?.hide_rank || false
     }
   } catch (err) {
-    console.error('Failed to fetch hide rank status:', err)
+    // Silently fail - hide rank status is not critical
+    console.log('Could not fetch hide rank status')
+    hideRankEnabled.value = false
   }
 }
 
@@ -847,16 +980,17 @@ watch(
   (newValue) => {
     if (newValue) {
       fetchAllData()
+      checkPointsRankingEnabled()
     }
   },
   { immediate: true }
 )
 
-// Watch activeTab to fetch leaderboard data when user switches to leaderboard tab
+// Watch activeTab to fetch leaderboard data when user switches to points-ranking tab
 watch(
   () => activeTab.value,
   (newTab) => {
-    if (newTab === 'leaderboard' && props.isOpen) {
+    if (newTab === 'points-ranking' && props.isOpen) {
       fetchLeaderboard()
       fetchHideRankStatus()
     }
@@ -865,6 +999,20 @@ watch(
     }
   }
 )
+
+// Check if points & ranking feature is enabled
+const checkPointsRankingEnabled = async () => {
+  try {
+    const response = await adminAPI.checkPointsRankingEnabled()
+    if (response.data?.success) {
+      pointsRankingEnabled.value = response.data.data.enabled
+    }
+  } catch (error) {
+    console.error('Failed to check points ranking status:', error)
+    // Default to enabled if check fails
+    pointsRankingEnabled.value = true
+  }
+}
 </script>
 
 <style scoped>
@@ -874,5 +1022,68 @@ watch(
 
 .nav-link.active {
   @apply text-[#C24D45];
+}
+
+/* Avatar Crop Styles */
+.avatar-crop-container {
+  width: 100%;
+}
+
+.crop-wrapper {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #f0f0f0;
+}
+
+.crop-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: none;
+  transform-origin: center center;
+  transition: transform 0.05s ease;
+  cursor: grab;
+  user-select: none;
+}
+
+.crop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.crop-circle {
+  width: 100%;
+  height: 100%;
+  border: 3px solid #C24D45;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+}
+
+.crop-controls {
+  padding: 0 16px;
+}
+
+.crop-controls :deep(.ant-slider-track) {
+  background-color: #C24D45;
+}
+
+.crop-controls :deep(.ant-slider-handle) {
+  border-color: #C24D45;
+}
+
+.crop-controls :deep(.ant-slider-handle:hover) {
+  border-color: #A93C35;
 }
 </style>

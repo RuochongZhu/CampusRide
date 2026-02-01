@@ -716,6 +716,24 @@ export const adminAPI = {
 
   // 解封用户
   unbanUser: (userId) => api.post(`/admin/users/${userId}/unban`),
+
+  // 删除用户账户（完全注销）
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+
+  // 获取积分规则配置
+  getPointsConfig: () => api.get('/admin/points/config'),
+
+  // 更新积分规则配置
+  updatePointsConfig: (data) => api.put('/admin/points/config', data),
+
+  // 获取功能设置
+  getFeatureSettings: () => api.get('/admin/features/settings'),
+
+  // 更新功能设置
+  updateFeatureSettings: (data) => api.put('/admin/features/settings', data),
+
+  // 检查积分排行功能是否开启（公开接口）
+  checkPointsRankingEnabled: () => api.get('/admin/features/points-ranking'),
 };
 
 // ================================================
@@ -729,7 +747,7 @@ export const userProfileAPI = {
   getUserHistory: (userId, params = {}) => api.get(`/users/${userId}/history`, { params }),
 
   // 更新用户资料
-  updateUserProfile: (data) => api.put('/users/profile', data),
+  updateUserProfile: (data) => api.put('/users/me', data),
 
   // 上传用户头像
   uploadAvatar: (data) => api.post('/users/avatar', data),

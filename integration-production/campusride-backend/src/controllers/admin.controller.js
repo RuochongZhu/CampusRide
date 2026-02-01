@@ -620,6 +620,108 @@ export const unbanUser = async (req, res) => {
   }
 };
 
+// Delete user account completely
+export const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user.id;
+
+    // Can't delete yourself
+    if (userId === adminId) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Cannot delete yourself' }
+      });
+    }
+
+    // Check if target user exists
+    const { data: targetUser, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id, email')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !targetUser) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'User not found' }
+      });
+    }
+
+    // Can't delete other admins
+    if (ADMIN_EMAILS.includes(targetUser.email)) {
+      return res.status(403).json({
+        success: false,
+        error: { message: 'Cannot delete admin users' }
+      });
+    }
+
+    // Delete user's related data in order (to avoid foreign key constraints)
+    // 1. Delete ride bookings
+    await supabaseAdmin.from('ride_bookings').delete().eq('passenger_id', userId);
+
+    // 2. Delete rides
+    await supabaseAdmin.from('rides').delete().eq('driver_id', userId);
+
+    // 3. Delete marketplace favorites
+    await supabaseAdmin.from('item_favorites').delete().eq('user_id', userId);
+
+    // 4. Delete marketplace items
+    await supabaseAdmin.from('marketplace_items').delete().eq('seller_id', userId);
+
+    // 5. Delete activity participants
+    await supabaseAdmin.from('activity_participants').delete().eq('user_id', userId);
+
+    // 6. Delete activities
+    await supabaseAdmin.from('activities').delete().eq('organizer_id', userId);
+
+    // 7. Delete point transactions
+    await supabaseAdmin.from('point_transactions').delete().eq('user_id', userId);
+
+    // 8. Delete notifications
+    await supabaseAdmin.from('notifications').delete().eq('user_id', userId);
+
+    // 9. Delete messages
+    await supabaseAdmin.from('messages').delete().eq('sender_id', userId);
+    await supabaseAdmin.from('messages').delete().eq('receiver_id', userId);
+
+    // 10. Delete user coupons
+    await supabaseAdmin.from('user_coupons').delete().eq('user_id', userId);
+
+    // 11. Finally delete the user
+    const { error: deleteError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    // Log the action
+    await supabaseAdmin
+      .from('admin_actions')
+      .insert({
+        admin_id: adminId,
+        target_user_id: userId,
+        action: 'delete_user',
+        reason: 'User account permanently deleted',
+        metadata: { deleted_email: targetUser.email }
+      });
+
+    res.json({
+      success: true,
+      message: 'User account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to delete user account' }
+    });
+  }
+};
+
 // Admin delete ride
 export const deleteRide = async (req, res) => {
   try {
@@ -1288,6 +1390,223 @@ export const distributeWeeklyCoupons = async (req, res) => {
     res.status(500).json({
       success: false,
       error: { message: 'Failed to distribute weekly coupons' }
+    });
+  }
+};
+
+// Get points configuration
+export const getPointsConfig = async (req, res) => {
+  try {
+    const { data: rules, error } = await supabaseAdmin
+      .from('point_rules')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    // Convert to key-value format
+    const config = {};
+    (rules || []).forEach(rule => {
+      config[rule.action_type] = rule.points;
+    });
+
+    // Default values if not in database
+    const defaultConfig = {
+      carpool_driver: 10,
+      carpool_passenger: 5,
+      activity_create: 15,
+      activity_join: 5,
+      activity_checkin: 10,
+      marketplace_post: 3,
+      marketplace_sale: 8,
+      daily_login: 1
+    };
+
+    res.json({
+      success: true,
+      data: { ...defaultConfig, ...config }
+    });
+  } catch (error) {
+    console.error('Get points config error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to get points configuration' }
+    });
+  }
+};
+
+// Update points configuration
+export const updatePointsConfig = async (req, res) => {
+  try {
+    const config = req.body;
+    const adminId = req.user.id;
+
+    // Update each rule
+    for (const [actionType, points] of Object.entries(config)) {
+      // Try to update existing rule
+      const { data: existing } = await supabaseAdmin
+        .from('point_rules')
+        .select('id')
+        .eq('action_type', actionType)
+        .single();
+
+      if (existing) {
+        // Update existing
+        await supabaseAdmin
+          .from('point_rules')
+          .update({ points: parseInt(points, 10), updated_at: new Date().toISOString() })
+          .eq('action_type', actionType);
+      } else {
+        // Insert new
+        await supabaseAdmin
+          .from('point_rules')
+          .insert({
+            action_type: actionType,
+            points: parseInt(points, 10),
+            description: `Points for ${actionType.replace(/_/g, ' ')}`,
+            created_at: new Date().toISOString()
+          });
+      }
+    }
+
+    // Log the action
+    await supabaseAdmin
+      .from('admin_actions')
+      .insert({
+        admin_id: adminId,
+        action: 'update_points_config',
+        reason: 'Points configuration updated',
+        metadata: config
+      });
+
+    res.json({
+      success: true,
+      message: 'Points configuration updated successfully'
+    });
+  } catch (error) {
+    console.error('Update points config error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to update points configuration' }
+    });
+  }
+};
+
+// Get feature settings (points & ranking enabled status)
+export const getFeatureSettings = async (req, res) => {
+  try {
+    const { data: settings, error } = await supabaseAdmin
+      .from('app_settings')
+      .select('*')
+      .eq('key', 'points_ranking_enabled')
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        points_ranking_enabled: settings?.value === 'true' || settings?.value === true
+      }
+    });
+  } catch (error) {
+    console.error('Get feature settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to get feature settings' }
+    });
+  }
+};
+
+// Update feature settings
+export const updateFeatureSettings = async (req, res) => {
+  try {
+    const { points_ranking_enabled } = req.body;
+    const adminId = req.user.id;
+
+    // Check if setting exists
+    const { data: existing } = await supabaseAdmin
+      .from('app_settings')
+      .select('id')
+      .eq('key', 'points_ranking_enabled')
+      .single();
+
+    if (existing) {
+      await supabaseAdmin
+        .from('app_settings')
+        .update({
+          value: points_ranking_enabled.toString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('key', 'points_ranking_enabled');
+    } else {
+      await supabaseAdmin
+        .from('app_settings')
+        .insert({
+          key: 'points_ranking_enabled',
+          value: points_ranking_enabled.toString(),
+          description: 'Enable or disable points and ranking feature',
+          created_at: new Date().toISOString()
+        });
+    }
+
+    // Log the action
+    await supabaseAdmin
+      .from('admin_actions')
+      .insert({
+        admin_id: adminId,
+        action: 'update_feature_settings',
+        reason: `Points & Ranking feature ${points_ranking_enabled ? 'enabled' : 'disabled'}`,
+        metadata: { points_ranking_enabled }
+      });
+
+    res.json({
+      success: true,
+      message: `Points & Ranking feature ${points_ranking_enabled ? 'enabled' : 'disabled'} successfully`
+    });
+  } catch (error) {
+    console.error('Update feature settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to update feature settings' }
+    });
+  }
+};
+
+// Public endpoint to check if points & ranking is enabled
+export const checkPointsRankingEnabled = async (req, res) => {
+  try {
+    const { data: settings, error } = await supabaseAdmin
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'points_ranking_enabled')
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    // Default to true if no setting exists
+    const enabled = settings ? (settings.value === 'true' || settings.value === true) : true;
+
+    res.json({
+      success: true,
+      data: {
+        enabled
+      }
+    });
+  } catch (error) {
+    console.error('Check points ranking enabled error:', error);
+    // Default to enabled on error
+    res.json({
+      success: true,
+      data: {
+        enabled: true
+      }
     });
   }
 };

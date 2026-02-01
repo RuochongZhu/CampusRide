@@ -12,12 +12,21 @@
       <input
         v-model="newComment"
         type="text"
-        placeholder="Type your reply..."
+        placeholder="Type your comment..."
         class="comment-input"
         @keydown.enter="submitComment"
         @keydown.meta.enter="submitComment"
         @keydown.ctrl.enter="submitComment"
       />
+      <a-button
+        type="primary"
+        :disabled="!newComment.trim()"
+        :loading="submitting"
+        @click="submitComment"
+        class="send-btn"
+      >
+        <template #icon><SendOutlined /></template>
+      </a-button>
     </div>
 
     <!-- Login prompt for guests -->
@@ -63,7 +72,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { CommentOutlined } from '@ant-design/icons-vue'
+import { CommentOutlined, SendOutlined } from '@ant-design/icons-vue'
 import CommentItem from './CommentItem.vue'
 import { marketplaceAPI } from '@/utils/api'
 
@@ -118,13 +127,14 @@ const loadComments = async (append = false) => {
       limit
     })
 
+    const responseData = response.data?.data || response.data
     if (append) {
-      comments.value.push(...(response.data?.comments || []))
+      comments.value.push(...(responseData?.comments || []))
     } else {
-      comments.value = response.data?.comments || []
+      comments.value = responseData?.comments || []
     }
 
-    hasMore.value = response.data?.pagination?.has_more || false
+    hasMore.value = responseData?.pagination?.has_more || false
 
   } catch (error) {
     console.error('Load comments error:', error)
@@ -147,7 +157,8 @@ const submitComment = async () => {
     })
 
     // Add to the top of the list
-    comments.value.unshift(response.data)
+    const newCommentData = response.data?.data || response.data
+    comments.value.unshift(newCommentData)
     newComment.value = ''
 
     message.success('Comment posted successfully')
@@ -175,12 +186,13 @@ const handleReply = async (parentCommentId, content) => {
     })
 
     // Find parent comment and add reply
+    const replyData = response.data?.data || response.data
     const parentComment = comments.value.find(c => c.id === parentCommentId)
     if (parentComment) {
       if (!parentComment.replies) {
         parentComment.replies = []
       }
-      parentComment.replies.push(response.data)
+      parentComment.replies.push(replyData)
     }
 
     message.success('Reply posted successfully')
@@ -303,10 +315,11 @@ onMounted(() => {
   padding: 0;
   background: transparent;
   border-radius: 0;
+  align-items: center;
 }
 
 .comment-input {
-  width: 100%;
+  flex: 1;
   padding: 12px 16px;
   border: 1px solid #e0e0e0;
   border-radius: 24px;
@@ -315,6 +328,17 @@ onMounted(() => {
   background: #f5f5f5;
   transition: all 0.3s ease;
   outline: none;
+}
+
+.send-btn {
+  flex-shrink: 0;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .comment-input::placeholder {

@@ -336,7 +336,7 @@
                 <a-form-item label="Contact Email" name="contactEmail">
                   <a-input 
                     v-model:value="formData.contactInfo.email" 
-                    placeholder="your.email@cornell.edu"
+                    placeholder="your.email@university.edu"
                     size="large"
                   />
                 </a-form-item>

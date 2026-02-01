@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 // 导入页面组件
-import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import EmailVerificationView from '@/views/EmailVerificationView.vue'
@@ -38,20 +37,15 @@ const routes = [
   },
   {
     path: '/home',
-    name: 'Home',
-    component: HomeView,
-    meta: { 
-      requiresAuth: true,
-      title: 'CampusRide - Campus Transportation & Community'
-    }
+    redirect: '/activities'
   },
   {
     path: '/login',
     name: 'Login',
     component: LoginView,
-    meta: { 
+    meta: {
       requiresAuth: false,
-      title: 'Login - CampusRide',
+      title: 'Login - CampusGo',
       hideNavigation: true
     }
   },
@@ -61,7 +55,7 @@ const routes = [
     component: RegisterView,
     meta: { 
       requiresAuth: false,
-      title: 'Register - CampusRide',
+      title: 'Register - CampusGo',
       hideNavigation: true
     }
   },
@@ -71,7 +65,7 @@ const routes = [
     component: EmailVerificationView,
     meta: { 
       requiresAuth: false,
-      title: 'Email Verification - CampusRide',
+      title: 'Email Verification - CampusGo',
       hideNavigation: true
     }
   },
@@ -81,7 +75,7 @@ const routes = [
     component: ResendVerificationView,
     meta: { 
       requiresAuth: false,
-      title: 'Resend Verification - CampusRide',
+      title: 'Resend Verification - CampusGo',
       hideNavigation: true
     }
   },
@@ -91,7 +85,7 @@ const routes = [
     component: ForgotPasswordView,
     meta: { 
       requiresAuth: false,
-      title: 'Forgot Password - CampusRide',
+      title: 'Forgot Password - CampusGo',
       hideNavigation: true
     }
   },
@@ -101,7 +95,7 @@ const routes = [
     component: ResetPasswordView,
     meta: { 
       requiresAuth: false,
-      title: 'Reset Password - CampusRide',
+      title: 'Reset Password - CampusGo',
       hideNavigation: true
     }
   },
@@ -111,7 +105,7 @@ const routes = [
     component: RideshareView,
     meta: { 
       requiresAuth: true,
-      title: 'Rideshare - CampusRide'
+      title: 'Rideshare - CampusGo'
     }
   },
   {
@@ -120,7 +114,7 @@ const routes = [
     component: ActivitiesView,
     meta: {
       requiresAuth: true,
-      title: 'Campus Activities - CampusRide'
+      title: 'Campus Activities - CampusGo'
     }
   },
   {
@@ -129,7 +123,7 @@ const routes = [
     component: CreateActivityView,
     meta: {
       requiresAuth: true,
-      title: 'Create Activity - CampusRide'
+      title: 'Create Activity - CampusGo'
     }
   },
   {
@@ -138,7 +132,7 @@ const routes = [
     component: ParticipationHistoryView,
     meta: {
       requiresAuth: true,
-      title: 'Participation History - CampusRide'
+      title: 'Participation History - CampusGo'
     }
   },
   {
@@ -147,7 +141,7 @@ const routes = [
     component: ActivityDetailView,
     meta: {
       requiresAuth: true,
-      title: 'Activity Details - CampusRide'
+      title: 'Activity Details - CampusGo'
     }
   },
   {
@@ -156,7 +150,7 @@ const routes = [
     component: MarketplaceView,
     meta: {
       requiresAuth: true,
-      title: 'Campus Marketplace - CampusRide'
+      title: 'Campus Marketplace - CampusGo'
     }
   },
   {
@@ -165,7 +159,7 @@ const routes = [
     component: MyMarketplaceItems,
     meta: {
       requiresAuth: true,
-      title: 'My Items - CampusRide'
+      title: 'My Items - CampusGo'
     }
   },
   {
@@ -174,7 +168,7 @@ const routes = [
     component: MyFavoritesView,
     meta: {
       requiresAuth: true,
-      title: 'My Favorites - CampusRide'
+      title: 'My Favorites - CampusGo'
     }
   },
   {
@@ -183,7 +177,7 @@ const routes = [
     component: LeaderboardView,
     meta: {
       requiresAuth: true,
-      title: 'Leaderboard - CampusRide'
+      title: 'Leaderboard - CampusGo'
     }
   },
   {
@@ -192,7 +186,7 @@ const routes = [
     component: GroupMapView,
     meta: {
       requiresAuth: true,
-      title: 'Campus Groups - CampusRide'
+      title: 'Campus Groups - CampusGo'
     }
   },
   {
@@ -201,7 +195,7 @@ const routes = [
     component: GroupDetailView,
     meta: {
       requiresAuth: true,
-      title: 'Group Details - CampusRide'
+      title: 'Group Details - CampusGo'
     }
   },
   {
@@ -210,7 +204,7 @@ const routes = [
     component: MessagesView,
     meta: {
       requiresAuth: true,
-      title: 'Messages - CampusRide'
+      title: 'Messages - CampusGo'
     }
   },
   {
@@ -219,7 +213,7 @@ const routes = [
     component: AvatarTestView,
     meta: {
       requiresAuth: false,
-      title: 'ClickableAvatar Test - CampusRide'
+      title: 'ClickableAvatar Test - CampusGo'
     }
   },
   {
@@ -228,7 +222,7 @@ const routes = [
     component: UserProfileView,
     meta: {
       requiresAuth: true,
-      title: 'User Profile - CampusRide'
+      title: 'User Profile - CampusGo'
     }
   },
   {
@@ -237,7 +231,7 @@ const routes = [
     component: AdminView,
     meta: {
       requiresAuth: true,
-      title: 'Admin Panel - CampusRide'
+      title: 'Admin Panel - CampusGo'
     }
   },
   // Legal Pages - Public Access
@@ -247,7 +241,7 @@ const routes = [
     component: TermsOfServiceView,
     meta: {
       requiresAuth: false,
-      title: 'Terms of Service - CampusRide'
+      title: 'Terms of Service - CampusGo'
     }
   },
   {
@@ -256,7 +250,7 @@ const routes = [
     component: PrivacyPolicyView,
     meta: {
       requiresAuth: false,
-      title: 'Privacy Policy - CampusRide'
+      title: 'Privacy Policy - CampusGo'
     }
   },
   {
@@ -265,7 +259,7 @@ const routes = [
     component: CookiePolicyView,
     meta: {
       requiresAuth: false,
-      title: 'Cookie Policy - CampusRide'
+      title: 'Cookie Policy - CampusGo'
     }
   },
   {
@@ -274,7 +268,7 @@ const routes = [
     component: CarpoolDisclaimerView,
     meta: {
       requiresAuth: false,
-      title: 'Carpool Disclaimer - CampusRide'
+      title: 'Carpool Disclaimer - CampusGo'
     }
   },
   {
@@ -283,7 +277,7 @@ const routes = [
     component: DisclosuresView,
     meta: {
       requiresAuth: false,
-      title: 'Disclosures & Transparency - CampusRide'
+      title: 'Disclosures & Transparency - CampusGo'
     }
   },
   {
@@ -306,7 +300,7 @@ const router = createRouter({
 
 // 全局导航守卫
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title || 'CampusRide'
+  document.title = to.meta.title || 'CampusGo'
   
   const requiresAuth = to.meta.requiresAuth
   const isAuthenticated = checkAuthStatus()
@@ -317,7 +311,7 @@ router.beforeEach((to, from, next) => {
       query: { redirect: to.fullPath }
     })
   } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
-    next('/home')
+    next('/activities')
   } else {
     next()
   }

@@ -6,7 +6,7 @@
 <div class="w-full h-full flex items-center justify-center overflow-hidden">
 <img
 src="https://public.readdy.ai/ai/img_res/081b30f0b98732b66b8b3cd229f310e5.jpg"
-alt="Campus Ride Home"
+alt="CampusGo"
 class="object-cover w-full h-auto"
 />
 </div>
@@ -15,7 +15,7 @@ class="object-cover w-full h-auto"
 <div class="w-full md:w-3/5 bg-white p-8 md:p-12">
 <div class="max-w-md mx-auto">
 <div class="flex items-center mb-6">
-<h1 class="text-2xl font-bold text-[#B31B1B]">Campus Ride Home</h1>
+<h1 class="text-2xl font-bold text-[#B31B1B]">CampusGo</h1>
 </div>
           <h2 class="text-2xl font-bold text-gray-900 mb-6">Log in</h2>
           
@@ -37,7 +37,7 @@ class="object-cover w-full h-auto"
           <div class="mb-4 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded">
             <div class="font-semibold mb-1">🎯 Demo Account</div>
             <div class="text-sm">
-              Email: demo@cornell.edu<br>
+              Email: demo@university.edu<br>
               Password: demo1234
             </div>
           </div>
@@ -238,7 +238,7 @@ const handleSignIn = async () => {
         showResendButton.value = true
         resendEmail.value = email.value
       } else if (result.error?.includes('DATABASE_ERROR')) {
-        errorMessage.value = 'Database connection failed. Please use the demo account to log in:\nEmail: demo@cornell.edu\nPassword: demo1234'
+        errorMessage.value = 'Database connection failed. Please use the demo account to log in:\nEmail: demo@university.edu\nPassword: demo1234'
       } else {
         errorMessage.value = result.error || 'Invalid credentials'
       }
@@ -246,7 +246,7 @@ const handleSignIn = async () => {
   } catch (error) {
     console.error('Login error:', error)
     // Provide demo mode on network error
-    errorMessage.value = 'Unable to connect to server.\n\nYou can use the demo account to try the system:\nEmail: demo@cornell.edu\nPassword: demo1234'
+    errorMessage.value = 'Unable to connect to server.\n\nYou can use the demo account to try the system:\nEmail: demo@university.edu\nPassword: demo1234'
   } finally {
     isLoading.value = false
   }

@@ -14,7 +14,7 @@
           class="text-2xl md:text-3xl font-bold text-[#C24D45] tracking-wider"
           style="font-family: 'VT323', monospace"
         >
-          CampusRide
+          CampusGo
         </div>
 
         <nav class="hidden md:flex items-center space-x-6">
@@ -80,7 +80,7 @@
     >
       <template #title>
         <span class="text-xl font-bold text-[#C24D45]" style="font-family: 'VT323', monospace">
-          CampusRide
+          CampusGo
         </span>
       </template>
 
@@ -208,11 +208,13 @@ import {
 } from "@ant-design/icons-vue";
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
 import UserSidebar from '@/components/user/UserSidebar.vue';
+import { useAuthStore } from '@/stores/auth';
 
 // Admin emails allowed to access admin panel
-const ADMIN_EMAILS = ['rz469@cornell.edu'];
+const ADMIN_EMAILS = ['rz469@university.edu'];
 
 const router = useRouter();
+const authStore = useAuthStore();
 const isUserSidebarOpen = ref(false);
 const isMobileMenuOpen = ref(false);
 const userEmail = ref('');
@@ -222,7 +224,7 @@ const isAdmin = computed(() => {
   return ADMIN_EMAILS.includes(userEmail.value);
 });
 
-const defaultAvatar = "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
+const defaultAvatar = "/Profile_Photo.jpg";
 const userAvatar = ref(defaultAvatar);
 const userName = ref("Guest");
 
@@ -284,10 +286,9 @@ onUnmounted(() => {
   window.removeEventListener('storage', handleUserUpdate);
 });
 
-const logout = () => {
-  // Clear all user data from localStorage
-  localStorage.removeItem("userToken");
-  localStorage.removeItem("userData");
+const logout = async () => {
+  // Use auth store's logout to properly clear all tokens
+  await authStore.logout();
   isUserSidebarOpen.value = false;
   router.push("/login");
 };

@@ -326,7 +326,7 @@
                       </div>
                       <div class="mt-2 text-center">
                         <p class="font-medium">{{ getDriverName(ride.driver) }}</p>
-                        <p class="text-sm text-gray-600">{{ ride.driver?.university || 'Cornell University' }}</p>
+                        <p class="text-sm text-gray-600">{{ ride.driver?.university || 'Your University' }}</p>
                       </div>
                     </div>
                     <div class="md:w-2/4">

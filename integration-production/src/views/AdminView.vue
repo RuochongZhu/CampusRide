@@ -72,15 +72,25 @@
           <div class="stat-value">{{ dashboardStats.new_users || 0 }}</div>
           <div class="stat-label">Users registered</div>
         </a-card>
-
-        <a-card class="stat-card points">
-          <template #title>
-            <TrophyOutlined /> Points
-          </template>
-          <div class="stat-value">{{ dashboardStats.points_awarded || 0 }}</div>
-          <div class="stat-label">Points awarded</div>
-        </a-card>
       </div>
+
+      <!-- Feature Toggle Card -->
+      <a-card class="feature-toggle-card" style="margin-bottom: 24px;">
+        <template #title>
+          <SettingOutlined /> Feature Settings
+        </template>
+        <div class="feature-toggle-item">
+          <div class="feature-info">
+            <h4><TrophyOutlined /> Points & Ranking</h4>
+            <p>Enable or disable the points system and leaderboard for all users</p>
+          </div>
+          <a-switch
+            :checked="pointsRankingEnabled"
+            :loading="featureSettingsLoading"
+            @change="togglePointsRanking"
+          />
+        </div>
+      </a-card>
 
       <!-- Tabs for detailed stats -->
       <a-tabs v-model:activeKey="activeTab" class="admin-tabs">
@@ -236,6 +246,17 @@
                       <CheckOutlined /> Unban
                     </a-button>
                   </a-popconfirm>
+                  <a-popconfirm
+                    title="Delete this user's account permanently? This will remove ALL their data and cannot be undone."
+                    ok-text="Yes, Delete"
+                    cancel-text="Cancel"
+                    ok-type="danger"
+                    @confirm="handleDeleteUser(record)"
+                  >
+                    <a-button danger size="small">
+                      <DeleteOutlined /> Delete
+                    </a-button>
+                  </a-popconfirm>
                 </a-space>
               </template>
             </template>
@@ -351,6 +372,38 @@
         </a-tab-pane>
       </a-tabs>
 
+      <!-- Points Config Tab - Add as new section -->
+      <a-card title="Points Configuration" style="margin-top: 24px;" v-if="activeTab === 'points-config'">
+        <a-alert
+          type="info"
+          message="Edit Points Rules"
+          description="Configure how many points users earn for different activities. Changes take effect immediately."
+          style="margin-bottom: 24px"
+        />
+
+        <a-spin :spinning="loadingPointsConfig">
+          <a-form layout="vertical">
+            <a-row :gutter="16">
+              <a-col :span="8" v-for="(value, key) in pointsConfig" :key="key">
+                <a-form-item :label="formatPointsLabel(key)">
+                  <a-input-number
+                    v-model:value="pointsConfig[key]"
+                    :min="0"
+                    :max="1000"
+                    style="width: 100%"
+                  />
+                </a-form-item>
+              </a-col>
+            </a-row>
+            <a-form-item>
+              <a-button type="primary" @click="savePointsConfig" :loading="savingPointsConfig">
+                Save Points Configuration
+              </a-button>
+            </a-form-item>
+          </a-form>
+        </a-spin>
+      </a-card>
+
       <!-- Ban User Modal -->
       <a-modal
         v-model:open="showBanModal"
@@ -389,7 +442,8 @@ import {
   CheckOutlined,
   DownloadOutlined,
   EyeOutlined,
-  CopyOutlined
+  CopyOutlined,
+  DeleteOutlined
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { adminAPI } from '@/utils/api'
@@ -400,6 +454,10 @@ const accessDenied = ref(false)
 const period = ref('week')
 const dateRange = ref(null)
 const activeTab = ref('rides')
+
+// Feature settings
+const pointsRankingEnabled = ref(false)
+const featureSettingsLoading = ref(false)
 
 // Stats data
 const dashboardStats = ref({})
@@ -457,6 +515,20 @@ const loadingPreview = ref(false)
 const copyingEmails = ref(false)
 const showLeaderboardPreview = ref(false)
 const leaderboardPreviewData = ref([])
+
+// ===== Points Configuration =====
+const pointsConfig = ref({
+  carpool_driver: 10,
+  carpool_passenger: 5,
+  activity_create: 15,
+  activity_join: 5,
+  activity_checkin: 10,
+  marketplace_post: 3,
+  marketplace_sale: 8,
+  daily_login: 1
+})
+const loadingPointsConfig = ref(false)
+const savingPointsConfig = ref(false)
 
 const leaderboardPreviewColumns = [
   { title: 'Rank', dataIndex: 'rank', key: 'rank', width: 60 },
@@ -629,6 +701,17 @@ const handleUnbanUser = async (user) => {
   }
 }
 
+const handleDeleteUser = async (user) => {
+  try {
+    await adminAPI.deleteUser(user.id)
+    message.success('User account has been permanently deleted')
+    loadUsers()
+  } catch (error) {
+    console.error('Failed to delete user:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to delete user')
+  }
+}
+
 // ===== Leaderboard Export Methods =====
 const fetchLeaderboardData = async () => {
   const params = {
@@ -700,7 +783,7 @@ const downloadLeaderboardCSV = async () => {
     const periodLabel = exportForm.value.period
     const timestamp = dayjs().format('YYYYMMDD_HHmmss')
     link.setAttribute('href', url)
-    link.setAttribute('download', `campusride_leaderboard_${periodLabel}_top${exportForm.value.limit}_${timestamp}.csv`)
+    link.setAttribute('download', `campusgo_leaderboard_${periodLabel}_top${exportForm.value.limit}_${timestamp}.csv`)
     link.style.visibility = 'hidden'
 
     document.body.appendChild(link)
@@ -739,6 +822,79 @@ const copyEmailsToClipboard = async () => {
   }
 }
 
+// ===== Points Configuration Methods =====
+const formatPointsLabel = (key) => {
+  const labels = {
+    carpool_driver: 'Carpool (Driver)',
+    carpool_passenger: 'Carpool (Passenger)',
+    activity_create: 'Create Activity',
+    activity_join: 'Join Activity',
+    activity_checkin: 'Activity Check-in',
+    marketplace_post: 'Post Item',
+    marketplace_sale: 'Complete Sale',
+    daily_login: 'Daily Login'
+  }
+  return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+const loadPointsConfig = async () => {
+  try {
+    loadingPointsConfig.value = true
+    const response = await adminAPI.getPointsConfig()
+    if (response.data?.success && response.data?.data) {
+      pointsConfig.value = { ...pointsConfig.value, ...response.data.data }
+    }
+  } catch (error) {
+    console.error('Failed to load points config:', error)
+    // Use default values if API fails
+  } finally {
+    loadingPointsConfig.value = false
+  }
+}
+
+const savePointsConfig = async () => {
+  try {
+    savingPointsConfig.value = true
+    await adminAPI.updatePointsConfig(pointsConfig.value)
+    message.success('Points configuration saved successfully')
+  } catch (error) {
+    console.error('Failed to save points config:', error)
+    message.error('Failed to save points configuration')
+  } finally {
+    savingPointsConfig.value = false
+  }
+}
+
+// Load feature settings
+const loadFeatureSettings = async () => {
+  try {
+    featureSettingsLoading.value = true
+    const response = await adminAPI.getFeatureSettings()
+    if (response.data?.success) {
+      pointsRankingEnabled.value = response.data.data.points_ranking_enabled
+    }
+  } catch (error) {
+    console.error('Failed to load feature settings:', error)
+  } finally {
+    featureSettingsLoading.value = false
+  }
+}
+
+// Toggle points & ranking feature
+const togglePointsRanking = async (checked) => {
+  try {
+    featureSettingsLoading.value = true
+    await adminAPI.updateFeatureSettings({ points_ranking_enabled: checked })
+    pointsRankingEnabled.value = checked
+    message.success(`Points & Ranking ${checked ? 'enabled' : 'disabled'} successfully`)
+  } catch (error) {
+    console.error('Failed to toggle points ranking:', error)
+    message.error('Failed to update feature settings')
+  } finally {
+    featureSettingsLoading.value = false
+  }
+}
+
 // Check admin access on mount
 onMounted(async () => {
   try {
@@ -749,7 +905,9 @@ onMounted(async () => {
     // Load all data
     await Promise.all([
       loadAllStats(),
-      loadUsers()
+      loadUsers(),
+      loadPointsConfig(),
+      loadFeatureSettings()
     ])
   } catch (error) {
     console.error('Admin access check failed:', error)
@@ -825,7 +983,33 @@ onMounted(async () => {
 .stat-card.marketplace .stat-value { color: #52c41a; }
 .stat-card.activities .stat-value { color: #722ed1; }
 .stat-card.users .stat-value { color: #fa8c16; }
-.stat-card.points .stat-value { color: #eb2f96; }
+
+.feature-toggle-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+}
+
+.feature-toggle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+}
+
+.feature-toggle-item .feature-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feature-toggle-item .feature-info p {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+}
 
 .admin-tabs {
   background: white;
