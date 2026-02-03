@@ -89,16 +89,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { SearchOutlined, BellOutlined } from "@ant-design/icons-vue";
-import { messagesAPI } from "@/utils/api";
+import { useMessageStore } from "@/stores/message";
 import { message } from 'ant-design-vue';
 
 const router = useRouter();
+const messageStore = useMessageStore();
 const isUserMenuOpen = ref(false);
-const unreadCount = ref(0);
 let intervalId = null;
+
+// Use store's unreadCount for real-time sync
+const unreadCount = computed(() => messageStore.unreadCount);
 
 const userAvatar =
   "https://public.readdy.ai/ai/img_res/9a0c9c6cdab1f4bc283dccbb036ec8a1.jpg";
@@ -119,23 +122,17 @@ const loadUserData = () => {
   }
 };
 
-// Load unread message count
+// Load unread message count from store
 const loadUnreadCount = async () => {
   try {
     const token = localStorage.getItem('userToken');
     if (!token) {
-      unreadCount.value = 0;
       return;
     }
-
-    const response = await messagesAPI.getUnreadCount();
-    if (response.data?.success) {
-      unreadCount.value = response.data.data.count || 0;
-    }
+    await messageStore.loadUnreadCount();
   } catch (error) {
     // Silently fail if not authenticated or API unavailable
     console.log('Could not load unread count:', error.message);
-    unreadCount.value = 0;
   }
 };
 

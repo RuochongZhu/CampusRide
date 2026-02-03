@@ -59,7 +59,7 @@
                   required
                   pattern="[a-zA-Z0-9._-]+"
                 />
-                <span class="px-3 py-2 text-gray-600 bg-gray-50 border-l">@university.edu</span>
+                <span class="px-3 py-2 text-gray-600 bg-gray-50 border-l">@cornell.edu</span>
               </div>
               <p v-if="emailError" class="mt-1 text-sm text-red-600">{{ emailError }}</p>
               <p v-else class="mt-1 text-xs text-gray-500">Enter your Email Username (only letters, numbers, dots, underscores)</p>
@@ -184,7 +184,7 @@ const passwordChecks = ref({
 
 // Compute full email
 const fullEmail = computed(() => {
-  return emailUsername.value ? `${emailUsername.value}@university.edu` : ''
+  return emailUsername.value ? `${emailUsername.value}@cornell.edu` : ''
 })
 
 const isLoading = ref(false)
