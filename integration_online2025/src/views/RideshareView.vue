@@ -360,6 +360,7 @@ const userMode = ref('passenger');
 const loading = ref(false);
 const posting = ref(false);
 const bookingRide = ref(false);
+const universalSearch = ref('');
 
 // Search Form (Passenger)
 const searchForm = ref({
@@ -580,6 +581,24 @@ const searchRides = async () => {
   if (searchForm.value.minSeats) {
     params.minSeats = searchForm.value.minSeats;
   }
+
+  currentPage.value = 1;
+  await loadRides(params);
+};
+
+// Universal search
+const performUniversalSearch = async () => {
+  if (!universalSearch.value.trim()) {
+    notification.warning({
+      message: 'Empty Search',
+      description: 'Please enter a search term.'
+    });
+    return;
+  }
+
+  const params = {
+    search: universalSearch.value
+  };
 
   currentPage.value = 1;
   await loadRides(params);
