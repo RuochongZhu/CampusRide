@@ -1,387 +1,406 @@
-import { supabaseAdmin, pool } from '../config/database.js';
+import { supabaseAdmin } from '../config/database.js';
 import socketManager from '../config/socket.js';
 
 class MessageService {
   // Send a new message
   async sendMessage(messageData) {
-    const client = await pool.connect();
-
     try {
-      await client.query('BEGIN');
-
       const {
         activityId,
         senderId,
         receiverId,
+        receiverEmail,
         subject,
         content,
         messageType = 'activity_inquiry',
         priority = 'normal'
       } = messageData;
 
-      // Check if activity exists and sender has permission
-      const activityCheck = await client.query(
-        `SELECT id, organizer_id, title
-         FROM activities
-         WHERE id = $1 AND status != 'deleted'`,
-        [activityId]
-      );
+      // Check if activity exists
+      const { data: activities, error: activityError } = await supabaseAdmin
+        .from('activities')
+        .select('id, organizer_id, title')
+        .eq('id', activityId);
 
-      if (activityCheck.rows.length === 0) {
+      console.log('Activity query result:', { activityId, activities, activityError });
+
+      if (activityError || !activities || activities.length === 0) {
+        console.error('Activity not found - Query details:', { activityId, activities, activityError });
         throw new Error('Activity not found');
       }
 
-      const activity = activityCheck.rows[0];
+      const activity = activities[0];
 
-      // Use the database function to create message thread
-      const result = await client.query(
-        `SELECT create_message_thread($1, $2, $3, $4, $5, $6) as thread_id`,
-        [activityId, senderId, receiverId, subject, content, messageType]
-      );
+      // If receiver_email is provided, look up the receiver_id
+      let finalReceiverId = receiverId;
+      if (receiverEmail && !receiverId) {
+        const { data: receiver, error: receiverError } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('email', receiverEmail)
+          .single();
 
-      const threadId = result.rows[0].thread_id;
+        if (receiverError || !receiver) {
+          throw new Error(`User with email ${receiverEmail} not found`);
+        }
 
-      // Get the created message details
-      const messageQuery = await client.query(
-        `SELECT m.*,
-                sender.first_name as sender_first_name,
-                sender.last_name as sender_last_name,
-                receiver.first_name as receiver_first_name,
-                receiver.last_name as receiver_last_name,
-                a.title as activity_title
-         FROM messages m
-         JOIN users sender ON m.sender_id = sender.id
-         JOIN users receiver ON m.receiver_id = receiver.id
-         JOIN activities a ON m.activity_id = a.id
-         WHERE m.thread_id = $1
-         ORDER BY m.created_at DESC
-         LIMIT 1`,
-        [threadId]
-      );
+        finalReceiverId = receiver.id;
+      }
 
-      await client.query('COMMIT');
+      if (!finalReceiverId) {
+        throw new Error('Receiver ID or email is required');
+      }
 
-      const message = messageQuery.rows[0];
+      // Generate thread ID
+      const threadId = crypto.randomUUID();
+
+      // Create the message
+      const { data: messageResult, error: messageError } = await supabaseAdmin
+        .from('messages')
+        .insert({
+          activity_id: activityId,
+          sender_id: senderId,
+          receiver_id: finalReceiverId,
+          subject: subject,
+          content: content,
+          message_type: messageType,
+          thread_id: threadId,
+          priority: priority
+        })
+        .select()
+        .single();
+
+      if (messageError) {
+        throw messageError;
+      }
+
+      // Add participants to the thread
+      const { error: participantsError } = await supabaseAdmin
+        .from('message_participants')
+        .insert([
+          { thread_id: threadId, user_id: senderId },
+          { thread_id: threadId, user_id: finalReceiverId }
+        ]);
+
+      if (participantsError) {
+        console.error('Error adding participants:', participantsError);
+      }
+
+      // Create notification for receiver
+      const { error: notificationError } = await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: finalReceiverId,
+          type: 'new_message',
+          title: `New message: ${subject}`,
+          content: 'You received a new message about an activity',
+          data: {
+            message_id: messageResult.id,
+            thread_id: threadId,
+            activity_id: activityId,
+            sender_id: senderId
+          },
+          priority: 'medium'
+        });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+      }
 
       // Send real-time notification via Socket.IO
-      socketManager.sendMessageToThread(threadId, message);
+      if (socketManager) {
+        socketManager.sendMessageToThread(threadId, messageResult);
+      }
 
       return {
-        message: message,
-        threadId: threadId
+        message_id: messageResult.id,
+        thread_id: threadId,
+        status: 'sent'
       };
 
     } catch (error) {
-      await client.query('ROLLBACK');
       console.error('❌ Error in sendMessage service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Get messages for a user
   async getMessages(userId, filters) {
-    const client = await pool.connect();
-
     try {
-      const { page, limit, type, unreadOnly } = filters;
+      const { page = 1, limit = 20, type = 'all', unreadOnly = false } = filters;
       const offset = (page - 1) * limit;
 
-      let whereConditions = ['m.status = $1'];
-      let queryParams = ['active'];
-      let paramCount = 1;
+      let query = supabaseAdmin
+        .from('messages')
+        .select('*', { count: 'exact' })
+        .eq('status', 'active');
 
       // Filter by message type (sent/received/all)
       if (type === 'sent') {
-        whereConditions.push(`m.sender_id = $${++paramCount}`);
-        queryParams.push(userId);
+        query = query.eq('sender_id', userId);
       } else if (type === 'received') {
-        whereConditions.push(`m.receiver_id = $${++paramCount}`);
-        queryParams.push(userId);
+        query = query.eq('receiver_id', userId);
       } else {
         // All messages (sent or received)
-        whereConditions.push(`(m.sender_id = $${++paramCount} OR m.receiver_id = $${++paramCount})`);
-        queryParams.push(userId, userId);
+        query = query.or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
       }
 
       // Filter unread only
       if (unreadOnly && type !== 'sent') {
-        whereConditions.push(`m.receiver_id = $${++paramCount} AND m.is_read = false`);
-        queryParams.push(userId);
+        query = query.eq('receiver_id', userId).eq('is_read', false);
       }
 
-      const whereClause = whereConditions.join(' AND ');
+      const { data: messages, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-      // Get messages with user and activity details
-      const messagesQuery = `
-        SELECT m.*,
-               sender.first_name as sender_first_name,
-               sender.last_name as sender_last_name,
-               receiver.first_name as receiver_first_name,
-               receiver.last_name as receiver_last_name,
-               a.title as activity_title
-        FROM messages m
-        JOIN users sender ON m.sender_id = sender.id
-        JOIN users receiver ON m.receiver_id = receiver.id
-        JOIN activities a ON m.activity_id = a.id
-        WHERE ${whereClause}
-        ORDER BY m.created_at DESC
-        LIMIT $${++paramCount} OFFSET $${++paramCount}
-      `;
-
-      queryParams.push(limit, offset);
-
-      const messages = await client.query(messagesQuery, queryParams);
-
-      // Get total count
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM messages m
-        JOIN activities a ON m.activity_id = a.id
-        WHERE ${whereClause}
-      `;
-
-      const countParams = queryParams.slice(0, paramCount - 2); // Remove limit and offset
-      const countResult = await client.query(countQuery, countParams);
+      if (error) {
+        throw error;
+      }
 
       return {
-        messages: messages.rows,
+        messages: messages || [],
         pagination: {
           current_page: page,
           per_page: limit,
-          total: parseInt(countResult.rows[0].total),
-          total_pages: Math.ceil(countResult.rows[0].total / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       };
 
     } catch (error) {
       console.error('❌ Error in getMessages service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Get message threads for a user
   async getMessageThreads(userId, filters) {
-    const client = await pool.connect();
-
     try {
-      const { page, limit } = filters;
+      const { page = 1, limit = 20 } = filters;
       const offset = (page - 1) * limit;
 
-      const threadsQuery = `
-        WITH thread_summary AS (
-          SELECT
-            m.thread_id,
-            m.activity_id,
-            MAX(m.created_at) as last_message_time,
-            COUNT(*) as message_count,
-            COUNT(CASE WHEN m.receiver_id = $1 AND m.is_read = false THEN 1 END) as unread_count,
-            (SELECT m2.subject FROM messages m2 WHERE m2.thread_id = m.thread_id ORDER BY m2.created_at ASC LIMIT 1) as subject,
-            (SELECT m2.content FROM messages m2 WHERE m2.thread_id = m.thread_id ORDER BY m2.created_at DESC LIMIT 1) as last_message,
-            (SELECT m2.sender_id FROM messages m2 WHERE m2.thread_id = m.thread_id ORDER BY m2.created_at DESC LIMIT 1) as last_sender_id
-          FROM messages m
-          JOIN message_participants mp ON m.thread_id = mp.thread_id
-          WHERE mp.user_id = $1 AND mp.status = 'active' AND m.status = 'active'
-          GROUP BY m.thread_id, m.activity_id
-        )
-        SELECT
-          ts.*,
-          a.title as activity_title,
-          a.organizer_id,
-          sender.first_name as last_sender_first_name,
-          sender.last_name as last_sender_last_name,
-          organizer.first_name as organizer_first_name,
-          organizer.last_name as organizer_last_name
-        FROM thread_summary ts
-        JOIN activities a ON ts.activity_id = a.id
-        JOIN users sender ON ts.last_sender_id = sender.id
-        JOIN users organizer ON a.organizer_id = organizer.id
-        ORDER BY ts.last_message_time DESC
-        LIMIT $2 OFFSET $3
-      `;
+      // Get distinct threads for the user
+      const { data: threads, error, count } = await supabaseAdmin
+        .from('message_participants')
+        .select(`
+          thread_id,
+          messages(
+            id,
+            thread_id,
+            subject,
+            content,
+            sender_id,
+            receiver_id,
+            activity_id,
+            is_read,
+            created_at,
+            sender:sender_id(first_name, last_name),
+            receiver:receiver_id(first_name, last_name),
+            activity:activity_id(title)
+          )
+        `, { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .range(offset, offset + limit - 1);
 
-      const threads = await client.query(threadsQuery, [userId, limit, offset]);
+      if (error) {
+        throw error;
+      }
 
-      // Get total count
-      const countQuery = `
-        SELECT COUNT(DISTINCT m.thread_id) as total
-        FROM messages m
-        JOIN message_participants mp ON m.thread_id = mp.thread_id
-        WHERE mp.user_id = $1 AND mp.status = 'active' AND m.status = 'active'
-      `;
+      // Process threads to get summary info
+      const processedThreads = (threads || []).map(tp => {
+        const messages = tp.messages || [];
+        const lastMessage = messages[messages.length - 1];
+        const unreadCount = messages.filter(m => m.receiver_id === userId && !m.is_read).length;
 
-      const countResult = await client.query(countQuery, [userId]);
+        return {
+          thread_id: tp.thread_id,
+          subject: messages[0]?.subject || 'No subject',
+          last_message_preview: lastMessage?.content?.substring(0, 100) || '',
+          unread_count: unreadCount,
+          participant_count: 2,
+          last_message_time: lastMessage?.created_at,
+          activity_title: lastMessage?.activity?.title
+        };
+      });
 
       return {
-        threads: threads.rows,
+        data: processedThreads,
         pagination: {
           current_page: page,
           per_page: limit,
-          total: parseInt(countResult.rows[0].total),
-          total_pages: Math.ceil(countResult.rows[0].total / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       };
 
     } catch (error) {
       console.error('❌ Error in getMessageThreads service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Get messages in a specific thread
   async getThreadMessages(userId, threadId, filters) {
-    const client = await pool.connect();
-
     try {
       // Check if user is participant in this thread
-      const participantCheck = await client.query(
-        'SELECT * FROM message_participants WHERE thread_id = $1 AND user_id = $2 AND status = $3',
-        [threadId, userId, 'active']
-      );
+      const { data: participant, error: participantError } = await supabaseAdmin
+        .from('message_participants')
+        .select('*')
+        .eq('thread_id', threadId)
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
 
-      if (participantCheck.rows.length === 0) {
+      if (participantError || !participant) {
         throw new Error('Access denied: User is not a participant in this thread');
       }
 
-      const { page, limit } = filters;
+      const { page = 1, limit = 50 } = filters;
       const offset = (page - 1) * limit;
 
-      const messagesQuery = `
-        SELECT m.*,
-               sender.first_name as sender_first_name,
-               sender.last_name as sender_last_name,
-               receiver.first_name as receiver_first_name,
-               receiver.last_name as receiver_last_name,
-               a.title as activity_title
-        FROM messages m
-        JOIN users sender ON m.sender_id = sender.id
-        JOIN users receiver ON m.receiver_id = receiver.id
-        JOIN activities a ON m.activity_id = a.id
-        WHERE m.thread_id = $1 AND m.status = 'active'
-        ORDER BY m.created_at ASC
-        LIMIT $2 OFFSET $3
-      `;
+      const { data: messages, error, count } = await supabaseAdmin
+        .from('messages')
+        .select('*', { count: 'exact' })
+        .eq('thread_id', threadId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: true })
+        .range(offset, offset + limit - 1);
 
-      const messages = await client.query(messagesQuery, [threadId, limit, offset]);
-
-      // Get total count
-      const countResult = await client.query(
-        'SELECT COUNT(*) as total FROM messages WHERE thread_id = $1 AND status = $2',
-        [threadId, 'active']
-      );
+      if (error) {
+        throw error;
+      }
 
       return {
-        messages: messages.rows,
+        messages: messages || [],
         threadId: threadId,
         pagination: {
           current_page: page,
           per_page: limit,
-          total: parseInt(countResult.rows[0].total),
-          total_pages: Math.ceil(countResult.rows[0].total / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       };
 
     } catch (error) {
       console.error('❌ Error in getThreadMessages service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Reply to a message thread
   async replyToThread(userId, threadId, content, replyToId = null) {
-    const client = await pool.connect();
-
     try {
-      await client.query('BEGIN');
-
       // Check if user is participant in this thread
-      const participantCheck = await client.query(
-        'SELECT * FROM message_participants WHERE thread_id = $1 AND user_id = $2 AND status = $3',
-        [threadId, userId, 'active']
-      );
+      const { data: participant, error: participantError } = await supabaseAdmin
+        .from('message_participants')
+        .select('*')
+        .eq('thread_id', threadId)
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
 
-      if (participantCheck.rows.length === 0) {
+      if (participantError || !participant) {
         throw new Error('Access denied: User is not a participant in this thread');
       }
 
-      // Use the database function to reply to thread
-      const result = await client.query(
-        'SELECT reply_to_message_thread($1, $2, $3, $4) as message_id',
-        [threadId, userId, content, replyToId]
-      );
+      // Get the first message in the thread to get activity_id and receiver_id
+      const { data: firstMessage, error: firstMessageError } = await supabaseAdmin
+        .from('messages')
+        .select('activity_id, sender_id, receiver_id')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
 
-      const messageId = result.rows[0].message_id;
+      if (firstMessageError || !firstMessage) {
+        throw new Error('Thread not found');
+      }
 
-      // Get the created message details
-      const messageQuery = await client.query(
-        `SELECT m.*,
-                sender.first_name as sender_first_name,
-                sender.last_name as sender_last_name,
-                receiver.first_name as receiver_first_name,
-                receiver.last_name as receiver_last_name,
-                a.title as activity_title
-         FROM messages m
-         JOIN users sender ON m.sender_id = sender.id
-         JOIN users receiver ON m.receiver_id = receiver.id
-         JOIN activities a ON m.activity_id = a.id
-         WHERE m.id = $1`,
-        [messageId]
-      );
+      // Determine receiver (the other participant)
+      const receiverId = firstMessage.sender_id === userId ? firstMessage.receiver_id : firstMessage.sender_id;
 
-      await client.query('COMMIT');
+      // Create reply message
+      const { data: newMessage, error: messageError } = await supabaseAdmin
+        .from('messages')
+        .insert({
+          activity_id: firstMessage.activity_id,
+          sender_id: userId,
+          receiver_id: receiverId,
+          subject: 'Re: ' + (await this._getThreadSubject(threadId)),
+          content: content,
+          message_type: 'general',
+          thread_id: threadId,
+          reply_to: replyToId
+        })
+        .select()
+        .single();
 
-      const newMessage = messageQuery.rows[0];
+      if (messageError) {
+        throw messageError;
+      }
+
+      // Update last_read_at for the participant
+      await supabaseAdmin
+        .from('message_participants')
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('thread_id', threadId)
+        .eq('user_id', userId);
 
       // Send real-time notification via Socket.IO
-      socketManager.sendMessageToThread(threadId, newMessage);
+      if (socketManager) {
+        socketManager.sendMessageToThread(threadId, newMessage);
+      }
 
       return newMessage;
 
     } catch (error) {
-      await client.query('ROLLBACK');
       console.error('❌ Error in replyToThread service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Mark thread as read
   async markThreadAsRead(userId, threadId) {
-    const client = await pool.connect();
-
     try {
-      // Use the database function to mark messages as read
-      const result = await client.query(
-        'SELECT mark_messages_as_read($1, $2) as updated_count',
-        [threadId, userId]
-      );
+      // Update all messages in thread as read for this user
+      const { error: updateError } = await supabaseAdmin
+        .from('messages')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('thread_id', threadId)
+        .eq('receiver_id', userId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update last_read_at for the participant
+      const { error: participantError } = await supabaseAdmin
+        .from('message_participants')
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('thread_id', threadId)
+        .eq('user_id', userId);
+
+      if (participantError) {
+        console.error('Error updating participant last_read_at:', participantError);
+      }
 
       return {
-        updatedCount: result.rows[0].updated_count,
-        threadId: threadId
+        threadId: threadId,
+        marked_as_read: true
       };
 
     } catch (error) {
       console.error('❌ Error in markThreadAsRead service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Get unread message count for user
   async getUnreadCount(userId) {
     try {
-      // Query unread messages using Supabase
-      const { data, error, count } = await supabaseAdmin
+      const { count, error } = await supabaseAdmin
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', userId)
@@ -392,7 +411,9 @@ class MessageService {
         throw error;
       }
 
-      return count || 0;
+      return {
+        unread_count: count || 0
+      };
 
     } catch (error) {
       console.error('❌ Error in getUnreadCount service:', error);
@@ -402,73 +423,161 @@ class MessageService {
 
   // Delete a message (soft delete)
   async deleteMessage(userId, messageId) {
-    const client = await pool.connect();
-
     try {
       // Check if user is the sender of this message
-      const messageCheck = await client.query(
-        'SELECT * FROM messages WHERE id = $1 AND sender_id = $2 AND status = $3',
-        [messageId, userId, 'active']
-      );
+      const { data: message, error: messageError } = await supabaseAdmin
+        .from('messages')
+        .select('*')
+        .eq('id', messageId)
+        .eq('sender_id', userId)
+        .eq('status', 'active')
+        .single();
 
-      if (messageCheck.rows.length === 0) {
+      if (messageError || !message) {
         throw new Error('Message not found or access denied');
       }
 
       // Soft delete the message
-      const result = await client.query(
-        `UPDATE messages
-         SET status = 'deleted', updated_at = CURRENT_TIMESTAMP
-         WHERE id = $1 AND sender_id = $2`,
-        [messageId, userId]
-      );
+      const { error: deleteError } = await supabaseAdmin
+        .from('messages')
+        .update({ status: 'deleted', updated_at: new Date().toISOString() })
+        .eq('id', messageId)
+        .eq('sender_id', userId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
 
       return {
         messageId: messageId,
-        deleted: result.rowCount > 0
+        deleted: true
       };
 
     } catch (error) {
       console.error('❌ Error in deleteMessage service:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   // Archive a message
   async archiveMessage(userId, messageId) {
-    const client = await pool.connect();
-
     try {
       // Check if user is sender or receiver of this message
-      const messageCheck = await client.query(
-        'SELECT * FROM messages WHERE id = $1 AND (sender_id = $2 OR receiver_id = $2) AND status = $3',
-        [messageId, userId, 'active']
-      );
+      const { data: message, error: messageError } = await supabaseAdmin
+        .from('messages')
+        .select('*')
+        .eq('id', messageId)
+        .eq('status', 'active')
+        .single();
 
-      if (messageCheck.rows.length === 0) {
-        throw new Error('Message not found or access denied');
+      if (messageError || !message) {
+        throw new Error('Message not found');
+      }
+
+      if (message.sender_id !== userId && message.receiver_id !== userId) {
+        throw new Error('Access denied');
       }
 
       // Archive the message
-      const result = await client.query(
-        `UPDATE messages
-         SET status = 'archived', updated_at = CURRENT_TIMESTAMP
-         WHERE id = $1 AND (sender_id = $2 OR receiver_id = $2)`,
-        [messageId, userId]
-      );
+      const { error: archiveError } = await supabaseAdmin
+        .from('messages')
+        .update({ status: 'archived', updated_at: new Date().toISOString() })
+        .eq('id', messageId);
+
+      if (archiveError) {
+        throw archiveError;
+      }
 
       return {
         messageId: messageId,
-        archived: result.rowCount > 0
+        archived: true
       };
 
     } catch (error) {
       console.error('❌ Error in archiveMessage service:', error);
       throw error;
-    } finally {
-      client.release();
+    }
+  }
+
+  // Block a user
+  async blockUser(userId, blockedUserId) {
+    try {
+      const { error } = await supabaseAdmin
+        .from('blocked_users')
+        .insert({
+          user_id: userId,
+          blocked_user_id: blockedUserId
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      return { blocked: true };
+
+    } catch (error) {
+      console.error('❌ Error in blockUser service:', error);
+      throw error;
+    }
+  }
+
+  // Unblock a user
+  async unblockUser(userId, blockedUserId) {
+    try {
+      const { error } = await supabaseAdmin
+        .from('blocked_users')
+        .delete()
+        .eq('user_id', userId)
+        .eq('blocked_user_id', blockedUserId);
+
+      if (error) {
+        throw error;
+      }
+
+      return { unblocked: true };
+
+    } catch (error) {
+      console.error('❌ Error in unblockUser service:', error);
+      throw error;
+    }
+  }
+
+  // Check if user is blocked
+  async isUserBlocked(userId, otherUserId) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('blocked_users')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('blocked_user_id', otherUserId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return { blocked: !!data };
+
+    } catch (error) {
+      console.error('❌ Error in isUserBlocked service:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to get thread subject
+  async _getThreadSubject(threadId) {
+    try {
+      const { data: message } = await supabaseAdmin
+        .from('messages')
+        .select('subject')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      return message?.subject || 'No subject';
+    } catch (error) {
+      return 'No subject';
     }
   }
 }

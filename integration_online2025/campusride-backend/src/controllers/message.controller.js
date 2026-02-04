@@ -38,6 +38,7 @@ class MessageController {
 
       const userId = req.user.id;
       const messageData = {
+        activityId: req.body.activityId,
         senderId: userId,
         receiverId: req.body.receiver_id,
         receiverEmail: req.body.receiver_email,
