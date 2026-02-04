@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/database.js';
+import { supabaseAdmin, pool } from '../config/database.js';
 import socketManager from '../config/socket.js';
 
 class MessageService {

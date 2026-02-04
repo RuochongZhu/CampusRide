@@ -51,17 +51,7 @@
           />
           <SearchOutlined class="absolute left-3 top-2.5 text-[#666666]" />
         </div>
-        <div class="relative hover:scale-110 transition-transform duration-300">
-          <BellOutlined
-            class="text-xl text-[#666666] cursor-pointer hover:text-[#C24D45]"
-            @click="handleBellClick"
-          />
-          <span
-            v-if="unreadCount > 0"
-            class="absolute -top-1 -right-1 w-4 h-4 bg-[#C24D45] rounded-full text-white text-xs flex items-center justify-center"
-            >{{ unreadCount > 99 ? '99+' : unreadCount }}</span
-          >
-        </div>
+        <NotificationDropdown />
         <div class="relative">
           <div
             class="flex items-center space-x-2 cursor-pointer hover:scale-105 transition-transform duration-300"
@@ -91,14 +81,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { SearchOutlined, BellOutlined } from "@ant-design/icons-vue";
+import { SearchOutlined } from "@ant-design/icons-vue";
 import { useMessageStore } from "@/stores/message";
 import { message } from 'ant-design-vue';
+import NotificationDropdown from "@/components/common/NotificationDropdown.vue";
 
 const router = useRouter();
 const messageStore = useMessageStore();
 const isUserMenuOpen = ref(false);
-let intervalId = null;
 
 // Use store's unreadCount for real-time sync
 const unreadCount = computed(() => messageStore.unreadCount);
@@ -137,28 +127,6 @@ const loadUnreadCount = async () => {
 };
 
 // Handle bell icon click
-const handleBellClick = () => {
-  router.push('/messages');
-};
-
-// Load user data when component mounts
-onMounted(() => {
-  loadUserData();
-  loadUnreadCount();
-
-  // Poll for new messages every 30 seconds
-  intervalId = setInterval(() => {
-    loadUnreadCount();
-  }, 30000);
-});
-
-// Cleanup interval on unmount
-onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId);
-  }
-});
-
 const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value;
 };

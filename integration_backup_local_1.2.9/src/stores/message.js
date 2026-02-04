@@ -120,14 +120,17 @@ export const useMessageStore = defineStore('message', () => {
       // Update unread count in the thread list
       const threadIndex = messageThreads.value.findIndex(t => t.thread_id === threadId)
       if (threadIndex !== -1) {
+        const threadUnreadCount = messageThreads.value[threadIndex].unread_count || 0
         messageThreads.value[threadIndex].unread_count = 0
 
         // Update cache
         localStorage.setItem('messageThreads', JSON.stringify(messageThreads.value))
-      }
 
-      // Refresh unread count
-      await loadUnreadCount()
+        // Optimize: use local count reduction instead of full refresh
+        if (threadUnreadCount > 0) {
+          unreadCount.value = Math.max(0, unreadCount.value - threadUnreadCount)
+        }
+      }
     } catch (error) {
       console.error('Failed to mark thread as read:', error)
     }
@@ -236,11 +239,15 @@ export const useMessageStore = defineStore('message', () => {
       messageThreads.value[threadIndex].last_message_time = message.created_at
       messageThreads.value[threadIndex].message_count += 1
 
-      // If message is for current user, increment unread count
+      // If message is for current user and thread is not currently selected, increment unread count
       const storedUser = JSON.parse(localStorage.getItem('userData') || '{}')
       if (message.receiver_id === storedUser.id) {
-        messageThreads.value[threadIndex].unread_count += 1
-        unreadCount.value += 1
+        // Only increment if this thread is not currently open
+        if (selectedThreadId.value !== threadId) {
+          messageThreads.value[threadIndex].unread_count = (messageThreads.value[threadIndex].unread_count || 0) + 1
+          unreadCount.value += 1
+        }
+        // If thread is open, the message is already "read" - don't increment
       }
 
       // Move thread to top

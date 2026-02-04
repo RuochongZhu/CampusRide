@@ -11,11 +11,15 @@ export const useMessageStore = defineStore('message', () => {
   const messagesLoading = ref({}) // threadId -> boolean
   const unreadCount = ref(0)
   const socketConnected = ref(false)
+  const customSelectedThread = ref(null)
 
   // Getters
-  const selectedThread = computed(() =>
-    messageThreads.value.find(t => t.thread_id === selectedThreadId.value)
-  )
+  const selectedThread = computed(() => {
+    if (customSelectedThread.value && customSelectedThread.value.thread_id === selectedThreadId.value) {
+      return customSelectedThread.value
+    }
+    return messageThreads.value.find(t => t.thread_id === selectedThreadId.value)
+  })
 
   const currentThreadMessages = computed(() =>
     selectedThreadId.value ? threadMessages.value[selectedThreadId.value] || [] : []
@@ -195,6 +199,28 @@ export const useMessageStore = defineStore('message', () => {
 
   const closeThread = () => {
     selectedThreadId.value = null
+    customSelectedThread.value = null
+  }
+
+  const selectSystemMessages = (systemMessagesData) => {
+    selectedThreadId.value = 'system-messages'
+    customSelectedThread.value = {
+      thread_id: 'system-messages',
+      other_user: {
+        id: 'system',
+        first_name: 'System',
+        last_name: 'Messages',
+        email: 'system@campusride.com',
+        avatar_url: null
+      },
+      subject: 'Announcements & Feedback',
+      unread_count: 0
+    }
+    threadMessages.value['system-messages'] = systemMessagesData || []
+  }
+
+  const setMessagesLoading = (threadId, loading) => {
+    messagesLoading.value[threadId] = loading
   }
 
   const addNewMessage = (message) => {
@@ -326,6 +352,7 @@ export const useMessageStore = defineStore('message', () => {
     messagesLoading,
     unreadCount,
     socketConnected,
+    customSelectedThread,
 
     // Getters
     selectedThread,
@@ -340,6 +367,8 @@ export const useMessageStore = defineStore('message', () => {
     loadUnreadCount,
     selectThread,
     closeThread,
+    selectSystemMessages,
+    setMessagesLoading,
     addNewMessage,
     loadFromCache,
     clearCache,

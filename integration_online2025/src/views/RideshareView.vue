@@ -14,6 +14,25 @@
           <p class="text-xl mb-6">Connect with drivers and passengers for a more affordable, sustainable, and social way to travel.</p>
         </div>
       </div>
+
+      <!-- Universal Search Bar -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div class="flex gap-4">
+          <input
+            v-model="universalSearch"
+            placeholder="Search rides or trips..."
+            class="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          />
+          <button
+            @click="performUniversalSearch"
+            :disabled="loading"
+            class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-md font-medium transition-all disabled:bg-gray-400"
+          >
+            {{ loading ? 'Searching...' : 'Search' }}
+          </button>
+        </div>
+      </div>
+
       <!-- Main Booking and Ride Sections -->
       <div class="flex flex-col lg:flex-row gap-8">
         <!-- Left Panel - Passenger/Driver Forms -->
@@ -32,28 +51,10 @@
               Driver
             </button>
           </div>
-          <h2 class="text-2xl font-bold mb-6">{{ userMode === 'passenger' ? 'Search Rides' : 'Post a Trip' }}</h2>
+          <h2 class="text-2xl font-bold mb-6">{{ userMode === 'passenger' ? 'Book a Ride' : 'Post a Trip' }}</h2>
 
-          <!-- Passenger Search Form -->
+          <!-- Passenger Booking Form -->
           <div v-if="userMode === 'passenger'">
-            <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Origin</label>
-              <input
-                ref="passengerOriginInput"
-                v-model="searchForm.origin"
-                placeholder="Enter pickup location"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 mb-2">Destination</label>
-              <input
-                ref="passengerDestInput"
-                v-model="searchForm.destination"
-                placeholder="Enter destination"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
             <div class="mb-4">
               <label class="block text-gray-700 mb-2">Date</label>
               <a-date-picker v-model:value="searchForm.date" class="w-full" :disabled-date="disabledDate" format="YYYY-MM-DD" />
