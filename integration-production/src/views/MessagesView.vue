@@ -1504,8 +1504,12 @@ watch(
   { immediate: true }
 )
 
-watch([messageThreads, threadsLoading], () => {
-  handleQueryThreadSelection()
+watch([messageThreads, threadsLoading], ([threads, loading]) => {
+  console.log('👀 Watch [messageThreads, threadsLoading] triggered:', { threadsCount: threads?.length, loading })
+  // Only call when threads are loaded (not loading)
+  if (!loading) {
+    handleQueryThreadSelection()
+  }
 }, { immediate: true })
 
 // Initialize on mount
