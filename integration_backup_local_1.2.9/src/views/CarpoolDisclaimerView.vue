@@ -22,7 +22,7 @@
           <div>
             <h2 class="text-xl font-bold text-red-800 mb-3">THIS IS NOT A COMMERCIAL RIDESHARE SERVICE</h2>
             <p class="text-red-700 mb-4">
-              CampusRide is NOT Uber, Lyft, or any other Transportation Network Company (TNC).
+              CampusGo is NOT Uber, Lyft, or any other Transportation Network Company (TNC).
               We do NOT provide commercial transportation services. We are a community bulletin
               board that facilitates shared-expense carpool arrangements between private individuals.
             </p>
@@ -56,7 +56,7 @@
           </div>
 
           <p class="text-gray-700 mb-4">
-            CampusRide facilitates shared-expense carpool arrangements as defined under
+            CampusGo facilitates shared-expense carpool arrangements as defined under
             New York Vehicle and Traffic Law. This means:
           </p>
           <ul class="list-disc list-inside text-gray-700 space-y-2">
@@ -69,7 +69,7 @@
 
         <!-- What We Are NOT -->
         <section>
-          <h2 class="text-xl font-bold text-gray-900 mb-4">What CampusRide Is NOT</h2>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">What CampusGo Is NOT</h2>
 
           <div class="grid md:grid-cols-2 gap-4">
             <div class="border border-red-200 rounded-lg p-4 bg-red-50">
@@ -96,7 +96,7 @@
             <div class="border border-red-200 rounded-lg p-4 bg-red-50">
               <h3 class="font-semibold text-red-800 mb-2">NOT a Party to Arrangements</h3>
               <p class="text-sm text-gray-700">
-                All carpool arrangements are directly between users. CampusRide is not a
+                All carpool arrangements are directly between users. CampusGo is not a
                 party to any transportation arrangement.
               </p>
             </div>
@@ -178,7 +178,7 @@
           <h2 class="text-xl font-bold text-gray-900 mb-4">Driver Responsibilities</h2>
 
           <p class="text-gray-700 mb-4">
-            By offering rides on CampusRide, you represent and warrant that:
+            By offering rides on CampusGo, you represent and warrant that:
           </p>
 
           <div class="space-y-3">
@@ -232,7 +232,7 @@
           <h2 class="text-xl font-bold text-gray-900 mb-4">Passenger Responsibilities</h2>
 
           <p class="text-gray-700 mb-4">
-            By requesting rides on CampusRide, you agree to:
+            By requesting rides on CampusGo, you agree to:
           </p>
 
           <div class="space-y-3">
@@ -282,7 +282,7 @@
             <h3 class="text-lg font-semibold text-yellow-800 mb-3">⚠️ IMPORTANT INSURANCE INFORMATION</h3>
             <ul class="list-disc list-inside text-gray-700 space-y-2">
               <li>
-                <strong>CampusRide provides NO insurance coverage.</strong> We do not carry
+                <strong>CampusGo provides NO insurance coverage.</strong> We do not carry
                 liability insurance, collision insurance, or any other coverage for carpools.
               </li>
               <li>
@@ -335,7 +335,7 @@
 
           <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 uppercase text-sm">
             <p class="text-gray-700 mb-4">
-              TO THE MAXIMUM EXTENT PERMITTED BY NEW YORK LAW, CAMPUSRIDE, ITS OFFICERS,
+              TO THE MAXIMUM EXTENT PERMITTED BY NEW YORK LAW, CAMPUSGO, ITS OFFICERS,
               DIRECTORS, EMPLOYEES, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY DAMAGES
               ARISING FROM OR RELATED TO:
             </p>
@@ -353,7 +353,7 @@
 
           <p class="text-gray-700 mt-4 text-sm">
             <strong>Exception:</strong> This disclaimer does not apply to liability arising
-            from CampusRide's own gross negligence or willful misconduct.
+            from CampusGo's own gross negligence or willful misconduct.
           </p>
         </section>
 
@@ -362,7 +362,7 @@
           <h2 class="text-xl font-bold text-gray-900 mb-4">User Agreement</h2>
 
           <p class="text-gray-700 mb-4">
-            By using the carpool feature on CampusRide, you confirm that you have read,
+            By using the carpool feature on CampusGo, you confirm that you have read,
             understood, and agree to the following:
           </p>
 
@@ -372,7 +372,7 @@
                 <CheckOutlined class="text-green-600 text-xs" />
               </div>
               <p class="text-gray-700 text-sm">
-                I understand that CampusRide is NOT a Transportation Network Company (TNC)
+                I understand that CampusGo is NOT a Transportation Network Company (TNC)
                 and does not provide commercial transportation services.
               </p>
             </div>
@@ -390,7 +390,7 @@
                 <CheckOutlined class="text-green-600 text-xs" />
               </div>
               <p class="text-gray-700 text-sm">
-                I understand that CampusRide provides NO insurance coverage and I assume
+                I understand that CampusGo provides NO insurance coverage and I assume
                 all risks associated with carpooling.
               </p>
             </div>
@@ -399,7 +399,7 @@
                 <CheckOutlined class="text-green-600 text-xs" />
               </div>
               <p class="text-gray-700 text-sm">
-                I agree not to hold CampusRide liable for any claims arising from my
+                I agree not to hold CampusGo liable for any claims arising from my
                 use of the carpool feature.
               </p>
             </div>
@@ -468,11 +468,11 @@
             If you have questions about this disclaimer or the carpool feature:
           </p>
           <div class="bg-gray-50 rounded-lg p-4">
-            <p class="text-gray-700"><strong>CampusRide</strong></p>
-            <p class="text-gray-700">Cornell University</p>
+            <p class="text-gray-700"><strong>CampusGo</strong></p>
+            <p class="text-gray-700">Your University</p>
             <p class="text-gray-700">Ithaca, NY 14853</p>
             <p class="text-gray-700 mt-2">
-              <strong>Email:</strong> legal@campusride.com
+              <strong>Email:</strong> legal@campusgo.college
             </p>
           </div>
         </section>

@@ -27,6 +27,7 @@ import ratingRoutes from './routes/rating.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
+import webhookRoutes from './routes/webhook.routes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware.js';
@@ -37,6 +38,7 @@ import socketManager from './config/socket.js';
 
 // Import Swagger documentation
 import { swaggerUi, specs } from './config/swagger.js';
+import { supabaseAdmin } from './config/database.js';
 
 // Load environment variables
 dotenv.config();
@@ -58,6 +60,12 @@ const devOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
+  'http://localhost:5177',
+  'http://127.0.0.1:5177',
   'http://localhost:3002',
   'http://127.0.0.1:3002',
   'http://localhost:3003',
@@ -130,6 +138,7 @@ app.use('/api/v1/ratings', ratingRoutes);
 app.use('/api/v1/friends', friendsRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/announcements', announcementRoutes);
+app.use('/api/v1/webhook', webhookRoutes);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
@@ -144,6 +153,55 @@ app.get('/', (req, res) => {
   });
 });
 
+// New GET endpoint for 1Dj025lEVj.txt
+app.get('/1Dj025lEVj.txt', (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.send('c82801c84003105ee7094936dbfd7f16');
+});
+
+app.get("/wxgroup_notice_wait", async (req, res) => {
+  try {
+    // 查询 wxgroup_notice_record 表，获取 sendtime 为空的记录
+    const { data: notices, error } = await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .select('id, content')
+      .is('sendtime', null)
+      .order('created_at', { ascending: true }); // 按创建时间升序，先处理旧记录
+
+    if (error) {
+      console.error('Error fetching wxgroup notices:', error);
+      res.set('Content-Type', 'text/plain');
+      res.send('');
+      return;
+    }
+
+    if (!notices || notices.length === 0) {
+      // 如果没有找到记录，返回空文本
+      res.set('Content-Type', 'text/plain');
+      res.send('');
+      return;
+    }
+
+    // 选择第一条记录（最早创建的）
+    const selectedNotice = notices[0];
+    const currentTime = new Date().toISOString();
+
+    // 更新该记录的 sendtime 为当前时间
+    await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .update({ sendtime: currentTime })
+      .eq('id', selectedNotice.id);
+
+    // 直接响应文本内容
+    res.set('Content-Type', 'text/plain');
+    res.send(selectedNotice.content);
+  } catch (error) {
+    console.error('Error in wxgroup_notice_wait endpoint:', error);
+    res.set('Content-Type', 'text/plain');
+    res.send('');
+  }
+})
+
 // 404 handler
 app.use(notFound);
 
@@ -152,3 +210,4 @@ app.use(errorHandler);
 
 export default app;
 export { socketManager }; 
+

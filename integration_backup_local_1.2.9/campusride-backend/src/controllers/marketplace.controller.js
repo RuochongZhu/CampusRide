@@ -58,6 +58,20 @@ export const createItem = async (req, res, next) => {
       throw new AppError('Failed to create item', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    // 构建商品访问链接
+    const itemLink = `https://www.campusgo.college/marketplace`;
+    
+    // 创建微信通知记录 start
+    const noticeContent = `上新商品  ${item.title}  \n${itemLink}`;
+    
+    await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .insert({
+        content: noticeContent,
+      });
+    // 创建微信通知记录 end
+      
+
     res.status(201).json({
       success: true,
       data: { item },

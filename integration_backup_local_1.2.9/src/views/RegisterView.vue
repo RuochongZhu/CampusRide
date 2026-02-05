@@ -44,9 +44,9 @@
               />
             </div>
 
-            <!-- Email Address with Cornell suffix -->
+            <!-- Email Address field -->
             <div class="mb-4">
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Cornell NetID</label>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Username</label>
               <div class="flex items-center border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-[#B31B1B] focus-within:border-transparent">
                 <input
                   type="text"
@@ -62,7 +62,7 @@
                 <span class="px-3 py-2 text-gray-600 bg-gray-50 border-l">@cornell.edu</span>
               </div>
               <p v-if="emailError" class="mt-1 text-sm text-red-600">{{ emailError }}</p>
-              <p v-else class="mt-1 text-xs text-gray-500">Enter your Cornell NetID (only letters, numbers, dots, underscores)</p>
+              <p v-else class="mt-1 text-xs text-gray-500">Enter your Email Username (only letters, numbers, dots, underscores)</p>
             </div>
 
             <!-- Password -->
@@ -121,7 +121,7 @@
                     <li>• <router-link to="/privacy" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Privacy Policy</router-link> - How we handle your data</li>
                     <li>• <router-link to="/carpool-disclaimer" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Carpool Disclaimer</router-link> - Shared-expense carpool terms</li>
                     <li>• <router-link to="/cookies" target="_blank" class="text-[#B31B1B] underline hover:text-[#8F1515]">Cookie Policy</router-link> - Browser data usage</li>
-                    <li>• Anonymized data may be used for academic research under Cornell IRB oversight</li>
+                    <li>• Anonymized data may be used for academic research under IRB oversight</li>
                   </ul>
                   <p class="mt-2 text-xs text-gray-500">
                     By checking this box, you confirm you have read and agree to all policies above.
@@ -309,7 +309,7 @@ const validateForm = () => {
 
   // Validate terms agreement
   if (!form.value.userAgreement) {
-    errorMessage.value = 'You must agree to the Terms, Privacy Policy, and other policies to use CampusRide'
+    errorMessage.value = 'You must agree to the Terms, Privacy Policy, and other policies to use CampusGo'
     return false
   }
 
@@ -326,7 +326,7 @@ const handleRegister = async () => {
   try {
     const { data } = await authAPI.register({
       nickname: form.value.nickname.trim(),
-      email: fullEmail.value,
+      email: fullEmail.value,  // Use the computed full email
       password: form.value.password,
       user_agreement: form.value.userAgreement,
       user_agreement_at: new Date().toISOString(),

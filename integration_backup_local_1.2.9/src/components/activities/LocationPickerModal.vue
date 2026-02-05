@@ -107,7 +107,7 @@ const initializeMap = async () => {
   if (!mapContainer.value || !window.google) return
 
   try {
-    // Default location (Cornell University)
+    // Default location (Your University)
     const defaultLocation = props.initialLocation || {
       lat: 42.4534,
       lng: -76.4735
@@ -137,7 +137,7 @@ const initializeMap = async () => {
     selectedLocation.value = {
       lat: defaultLocation.lat,
       lng: defaultLocation.lng,
-      address: 'Cornell University, Ithaca, NY, USA'
+      address: 'Your University, Ithaca, NY, USA'
     }
 
     // Add click listener to map

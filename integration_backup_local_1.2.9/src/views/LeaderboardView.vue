@@ -1,20 +1,28 @@
 <template>
   <div class="min-h-screen bg-[#EDEEE8] main-content pt-16">
     <div class="pt-4 md:pt-8 pb-8 md:pb-16 max-w-5xl mx-auto px-3 md:px-4">
-      <!-- Header -->
-      <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-xl md:text-3xl font-bold text-[#C24D45]">Weekly Leaderboard</h1>
-            <p class="text-gray-600 mt-1 text-sm md:text-base">Top users by points this week</p>
-            <p class="text-xs md:text-sm text-gray-500 mt-1 md:mt-2">Points reset every Sunday • Earn rewards!</p>
-          </div>
-          <TrophyOutlined class="text-4xl md:text-6xl text-[#C24D45] opacity-20" />
-        </div>
+      <!-- Feature Disabled Notice -->
+      <div v-if="!loading && !featureEnabled" class="bg-white rounded-lg shadow-sm p-8 text-center">
+        <LockOutlined class="text-6xl text-gray-300 mb-4" />
+        <h3 class="text-xl font-medium text-gray-600 mb-2">Points & Ranking Unavailable</h3>
+        <p class="text-gray-400">This feature is currently disabled by the administrator.</p>
       </div>
 
-      <!-- My Rank Card -->
-      <div v-if="myRank" class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6 border border-purple-200">
+      <template v-else>
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-xl md:text-3xl font-bold text-[#C24D45]">Weekly Leaderboard</h1>
+              <p class="text-gray-600 mt-1 text-sm md:text-base">Top users by points this week</p>
+              <p class="text-xs md:text-sm text-gray-500 mt-1 md:mt-2">Points reset every Sunday • Earn rewards!</p>
+            </div>
+            <TrophyOutlined class="text-4xl md:text-6xl text-[#C24D45] opacity-20" />
+          </div>
+        </div>
+
+        <!-- My Rank Card -->
+        <div v-if="myRank" class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6 border border-purple-200">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3 md:space-x-4">
             <div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg md:text-2xl">
@@ -135,57 +143,106 @@
         </div>
       </div>
 
-      <!-- How to Earn Points Section -->
+      <!-- Points Ranking Section - Consolidated -->
       <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mt-4 md:mt-6">
-        <h3 class="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900">How to Earn Points</h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base md:text-lg font-semibold text-gray-900">
+            <TrophyOutlined class="mr-2 text-[#C24D45]" />
+            Weekly Points Rules
+          </h3>
+          <a-tag color="blue">Resets Sunday</a-tag>
+        </div>
+
+        <!-- Points Distribution Visualization -->
+        <div class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-100">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">Your Position in Community</h4>
+          <div class="relative h-8 bg-gray-200 rounded-full overflow-hidden">
+            <!-- Distribution bar -->
+            <div class="absolute inset-0 flex">
+              <div class="h-full bg-gradient-to-r from-yellow-400 to-yellow-500" style="width: 5%"></div>
+              <div class="h-full bg-gradient-to-r from-gray-300 to-gray-400" style="width: 10%"></div>
+              <div class="h-full bg-gradient-to-r from-orange-300 to-orange-400" style="width: 15%"></div>
+              <div class="h-full bg-gradient-to-r from-blue-200 to-blue-300" style="width: 70%"></div>
+            </div>
+            <!-- User position marker -->
+            <div
+              v-if="myRank"
+              class="absolute top-0 h-full w-1 bg-[#C24D45] shadow-lg"
+              :style="{ left: `${Math.min(95, Math.max(2, (myRank.rank / 50) * 100))}%` }"
+            >
+              <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-[#C24D45] text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                You: #{{ myRank.rank }}
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between mt-2 text-xs text-gray-500">
+            <span>Top 5%</span>
+            <span>Top 15%</span>
+            <span>Top 30%</span>
+            <span>Others</span>
+          </div>
+        </div>
+
+        <!-- How to Earn Points -->
+        <h4 class="text-sm font-medium text-gray-700 mb-3">How to Earn Points This Week</h4>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-          <div class="flex items-start space-x-2 md:space-x-3">
-            <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span class="text-green-600 font-bold text-xs md:text-sm">+50</span>
+          <div class="flex items-start space-x-2 md:space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-600 font-bold text-sm">+50</span>
             </div>
             <div>
-              <p class="font-medium text-gray-900 text-sm md:text-base">Create an Activity</p>
-              <p class="text-xs md:text-sm text-gray-600">Organize events for the community</p>
+              <p class="font-medium text-gray-900 text-sm">Create an Activity</p>
+              <p class="text-xs text-gray-600">Organize events for the community</p>
             </div>
           </div>
-          <div class="flex items-start space-x-2 md:space-x-3">
-            <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span class="text-green-600 font-bold text-xs md:text-sm">+30</span>
+          <div class="flex items-start space-x-2 md:space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-600 font-bold text-sm">+30</span>
             </div>
             <div>
-              <p class="font-medium text-gray-900 text-sm md:text-base">Complete a Ride</p>
-              <p class="text-xs md:text-sm text-gray-600">Finish carpooling trips</p>
+              <p class="font-medium text-gray-900 text-sm">Complete a Ride</p>
+              <p class="text-xs text-gray-600">Finish carpooling trips</p>
             </div>
           </div>
-          <div class="flex items-start space-x-2 md:space-x-3">
-            <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span class="text-green-600 font-bold text-xs md:text-sm">+20</span>
+          <div class="flex items-start space-x-2 md:space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-600 font-bold text-sm">+20</span>
             </div>
             <div>
-              <p class="font-medium text-gray-900 text-sm md:text-base">Check-in to Activity</p>
-              <p class="text-xs md:text-sm text-gray-600">Attend organized events</p>
+              <p class="font-medium text-gray-900 text-sm">Check-in to Activity</p>
+              <p class="text-xs text-gray-600">Attend organized events</p>
             </div>
           </div>
-          <div class="flex items-start space-x-2 md:space-x-3">
-            <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span class="text-green-600 font-bold text-xs md:text-sm">+15</span>
+          <div class="flex items-start space-x-2 md:space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-600 font-bold text-sm">+15</span>
             </div>
             <div>
-              <p class="font-medium text-gray-900 text-sm md:text-base">Marketplace Transaction</p>
-              <p class="text-xs md:text-sm text-gray-600">Buy or sell items</p>
+              <p class="font-medium text-gray-900 text-sm">Marketplace Transaction</p>
+              <p class="text-xs text-gray-600">Buy or sell items</p>
             </div>
           </div>
-          <div class="flex items-start space-x-2 md:space-x-3">
-            <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span class="text-green-600 font-bold text-xs md:text-sm">+10</span>
+          <div class="flex items-start space-x-2 md:space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-600 font-bold text-sm">+10</span>
             </div>
             <div>
-              <p class="font-medium text-gray-900 text-sm md:text-base">Join an Activity</p>
-              <p class="text-xs md:text-sm text-gray-600">Participate in community events</p>
+              <p class="font-medium text-gray-900 text-sm">Join an Activity</p>
+              <p class="text-xs text-gray-600">Participate in community events</p>
+            </div>
+          </div>
+          <div class="flex items-start space-x-2 md:space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-600 font-bold text-sm">+5</span>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 text-sm">Daily Login</p>
+              <p class="text-xs text-gray-600">Log in every day</p>
             </div>
           </div>
         </div>
       </div>
+      </template>
     </div>
   </div>
 </template>
@@ -197,9 +254,10 @@ import {
   TrophyOutlined,
   StarFilled,
   ExclamationCircleOutlined,
-  UserOutlined
+  UserOutlined,
+  LockOutlined
 } from '@ant-design/icons-vue'
-import { leaderboardAPI } from '@/utils/api'
+import { leaderboardAPI, adminAPI } from '@/utils/api'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
 
 // State
@@ -207,12 +265,33 @@ const loading = ref(true)
 const error = ref(null)
 const leaderboardData = ref([])
 const myRank = ref(null)
+const featureEnabled = ref(true)
 
 // Methods
+const checkFeatureEnabled = async () => {
+  try {
+    const response = await adminAPI.checkPointsRankingEnabled()
+    if (response.data?.success) {
+      featureEnabled.value = response.data.data.enabled
+    }
+  } catch (err) {
+    console.error('Failed to check feature status:', err)
+    featureEnabled.value = true
+  }
+}
+
 const fetchLeaderboard = async () => {
   try {
     loading.value = true
     error.value = null
+
+    // Check if feature is enabled first
+    await checkFeatureEnabled()
+
+    if (!featureEnabled.value) {
+      loading.value = false
+      return
+    }
 
     // Fetch top 50 users
     const leaderboardRes = await leaderboardAPI.getLeaderboard({ limit: 50 })

@@ -42,7 +42,7 @@
                   {{ profileData.user.first_name }} {{ profileData.user.last_name }}
                 </h1>
                 <p class="text-gray-600">{{ profileData.user.email }}</p>
-                <p class="text-sm text-gray-500">{{ profileData.user.university || 'Cornell University' }}</p>
+                <p class="text-sm text-gray-500">{{ profileData.user.university || 'Your University' }}</p>
 
                 <!-- Rating Badge -->
                 <div class="flex items-center mt-2">
@@ -465,7 +465,7 @@ const editForm = ref({
   university: ''
 })
 
-const defaultAvatar = 'https://via.placeholder.com/100?text=User'
+const defaultAvatar = '/Profile_Photo.jpg'
 
 // Computed
 const userId = computed(() => route.params.userId || authStore.userId)

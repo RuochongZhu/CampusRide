@@ -149,38 +149,6 @@ class="w-full"
 </div>
 </section>
 
-<!-- Top Contributors -->
-<section class="py-8 md:py-16 bg-[#EDEEE8]">
-<div class="max-w-7xl mx-auto px-4">
-<div class="flex justify-between items-center mb-4 md:mb-8">
-<h3 class="text-xl md:text-2xl font-bold text-[#333333]">Top Contributors</h3>
-<router-link to="/leaderboard" class="text-sm md:text-base text-[#C24D45] hover:text-[#63B5B7] font-medium flex items-center">
-<span class="hidden sm:inline">View Leaderboard</span>
-<span class="sm:hidden">View</span>
-<RightOutlined class="ml-1 md:ml-2" />
-</router-link>
-</div>
-<div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
-<div v-for="(user, index) in topContributors" :key="user.id"
-class="flex items-center justify-between py-3 md:py-4 border-b last:border-0">
-<div class="flex items-center">
-<span class="w-6 md:w-8 text-lg md:text-xl font-bold text-[#666666]">#{{ index + 1 }}</span>
-<img :src="user.avatar" class="w-8 h-8 md:w-10 md:h-10 rounded-full mx-2 md:mx-4" />
-<div>
-<div class="font-medium text-sm md:text-base text-[#333333]">{{ user.name }}</div>
-<div class="text-xs md:text-sm text-[#666666]">{{ user.points }} points</div>
-</div>
-</div>
-<div v-if="user.badge" class="hidden sm:flex items-center">
-<TrophyOutlined class="text-[#F9D367] mr-2" />
-<span class="text-sm text-[#666666]">{{ user.badge }}</span>
-</div>
-<TrophyOutlined v-if="user.badge" class="sm:hidden text-[#F9D367]" />
-</div>
-</div>
-</div>
-</section>
-
 </div>
 </template>
 
@@ -193,7 +161,6 @@ import {
   ClockCircleOutlined,
   TeamOutlined,
   StarFilled,
-  TrophyOutlined,
   RightOutlined
 } from '@ant-design/icons-vue'
 
@@ -290,14 +257,6 @@ const activities = [
   { id: 3, title: 'Sports Tournament', date: 'May 5, 2025', participants: '400+', image: 'https://readdy.ai/api/search-image?query=university%20sports%20tournament%20with%20students%20competing%20in%20various%20sports%20activities%20on%20modern%20campus%20facilities&width=400&height=300&seq=24&orientation=landscape' },
   { id: 4, title: 'Cultural Exchange Day', date: 'May 8, 2025', participants: '250+', image: 'https://readdy.ai/api/search-image?query=diverse%20group%20of%20students%20participating%20in%20cultural%20exchange%20activities%20with%20traditional%20performances%20and%20food%20stalls&width=400&height=300&seq=25&orientation=landscape' },
   { id: 5, title: 'Career Networking', date: 'May 10, 2025', participants: '350+', image: 'https://readdy.ai/api/search-image?query=professional%20networking%20event%20at%20university%20with%20students%20and%20industry%20professionals%20in%20modern%20conference%20setting&width=400&height=300&seq=26&orientation=landscape' }
-]
-
-const topContributors = [
-  { id: 1, name: 'Michael Thompson', points: 2850, badge: 'Platinum Driver', avatar: 'https://public.readdy.ai/ai/img_res/3a55d9951f6d28d049d46e80b7498fff.jpg' },
-  { id: 2, name: 'Sarah Williams', points: 2340, badge: 'Super Carpooler', avatar: 'https://public.readdy.ai/ai/img_res/de2255ba37565d676e2c732b5dc5961c.jpg' },
-  { id: 3, name: 'David Chen', points: 2100, badge: 'Eco Warrior', avatar: 'https://public.readdy.ai/ai/img_res/029cfe63e7ca84c12cf074136933dac4.jpg' },
-  { id: 4, name: 'Rachel Martinez', points: 1980, avatar: 'https://public.readdy.ai/ai/img_res/59c314dd753a4a6eaabedb8770dd9035.jpg' },
-  { id: 5, name: 'James Wilson', points: 1850, avatar: 'https://public.readdy.ai/ai/img_res/3906d7badfb76c747139257a73a0c07c.jpg' }
 ]
 
 </script>

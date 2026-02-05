@@ -2,7 +2,7 @@
 // Routes for user profile management
 
 import express from 'express';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
 import {
   getUserProfile,
   getUserHistory,

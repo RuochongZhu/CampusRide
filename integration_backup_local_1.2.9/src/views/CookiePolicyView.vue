@@ -12,7 +12,7 @@
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
         <h2 class="text-lg font-semibold text-blue-800 mb-3">Quick Summary</h2>
         <p class="text-gray-700 mb-3">
-          We use cookies and similar technologies to provide, protect, and improve CampusRide.
+          We use cookies and similar technologies to provide, protect, and improve CampusGo.
           This policy explains what cookies are, how we use them, and your choices.
         </p>
         <ul class="list-disc list-inside text-gray-700 space-y-1">
@@ -158,7 +158,7 @@
         <section id="cookie-list">
           <h2 class="text-xl font-bold text-gray-900 mb-4">4. Specific Cookies We Use</h2>
 
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">4.1 First-Party Cookies (Set by CampusRide)</h3>
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">4.1 First-Party Cookies (Set by CampusGo)</h3>
           <div class="overflow-x-auto mb-6">
             <table class="min-w-full border border-gray-200 rounded-lg">
               <thead class="bg-gray-50">
@@ -293,16 +293,16 @@
           <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
             <p class="text-yellow-800 text-sm">
               <strong>Warning:</strong> If you disable essential cookies, you will not be able to
-              use CampusRide. You will not be able to log in or access any authenticated features.
+              use CampusGo. You will not be able to log in or access any authenticated features.
             </p>
           </div>
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3 mt-4">5.3 Clearing Stored Data</h3>
           <p class="text-gray-700 mb-4">
-            To clear all CampusRide data from your browser:
+            To clear all CampusGo data from your browser:
           </p>
           <ol class="list-decimal list-inside text-gray-700 space-y-2">
-            <li>Log out of CampusRide</li>
+            <li>Log out of CampusGo</li>
             <li>Open your browser's developer tools (F12 or right-click → Inspect)</li>
             <li>Go to Application tab → Storage</li>
             <li>Click "Clear site data"</li>
@@ -379,11 +379,11 @@
             If you have questions about our use of cookies, please contact us:
           </p>
           <div class="bg-gray-50 rounded-lg p-4">
-            <p class="text-gray-700"><strong>CampusRide</strong></p>
-            <p class="text-gray-700">Cornell University</p>
+            <p class="text-gray-700"><strong>CampusGo</strong></p>
+            <p class="text-gray-700">Your University</p>
             <p class="text-gray-700">Ithaca, NY 14853</p>
             <p class="text-gray-700 mt-2">
-              <strong>Email:</strong> privacy@campusride.com
+              <strong>Email:</strong> privacy@campusgo.college
             </p>
           </div>
         </section>

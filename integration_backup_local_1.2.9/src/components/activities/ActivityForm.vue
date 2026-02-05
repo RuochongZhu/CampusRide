@@ -109,7 +109,7 @@
         <a-form-item label="Location" name="location">
           <a-input
             v-model:value="formData.location"
-            placeholder="Enter location (e.g., Cornell University Library)"
+            placeholder="Enter location (e.g., Your University Library)"
             suffix-icon
           >
             <template #suffix>

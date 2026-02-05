@@ -1,7 +1,7 @@
 <template>
   <div class="user-quick-card">
     <div class="card-header">
-      <a-avatar :src="user?.avatar_url" :size="64">
+      <a-avatar :src="user?.avatar_url || defaultAvatar" :size="64">
         {{ getInitials(user) }}
       </a-avatar>
       <div class="user-info">
@@ -68,6 +68,8 @@ const props = defineProps({
 
 const emit = defineEmits(['message', 'close'])
 
+const defaultAvatar = '/Profile_Photo.jpg'
+
 // Stats data
 const stats = ref({
   rides: 0,
@@ -91,11 +93,8 @@ const getInitials = (user) => {
 
 const maskEmail = (email) => {
   if (!email) return ''
-  const parts = email.split('@')
-  if (parts.length !== 2) return email
-  const name = parts[0]
-  const domain = parts[1]
-  return name.substring(0, 3) + '***@' + domain
+  // Show full email instead of masking
+  return email
 }
 
 // Load user stats

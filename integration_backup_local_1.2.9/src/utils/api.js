@@ -27,11 +27,26 @@ api.interceptors.request.use(
 );
 
 // 响应拦截器 - 错误处理
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+// 处理token刷新后的请求重试
+const onRefreshed = (newToken) => {
+  refreshSubscribers.map(callback => callback(newToken));
+  refreshSubscribers = [];
+};
+
+// 订阅token刷新
+const subscribeTokenRefresh = (callback) => {
+  refreshSubscribers.push(callback);
+};
+
+// 响应拦截器 - 错误处理
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     // 网络错误或超时
     if (!error.response) {
       console.error('🌐 Network error or timeout:', error.message);
@@ -43,23 +58,104 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
 
-      // 如果已经在登录页面，不需要重定向
-      if (currentPath === '/login' || currentPath === '/register') {
-        return Promise.reject(error);
-      }
+      // // 如果已经在登录页面，不需要重定向
+      // if (currentPath === '/login' || currentPath === '/register') {
+      //   return Promise.reject(error);
+      // }
 
-      // 检查错误代码，只在token真的过期或无效时才清除
+      // 检查错误代码，只在token真的过期或无效时才处理
       const errorCode = error.response?.data?.error?.code;
 
-      // 只有明确的token过期/无效才清除并跳转
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID' || errorCode === 'INVALID_CREDENTIALS') {
-        console.warn('🔐 Token expired or invalid, redirecting to login');
+      // 只有明确的token过期/无效才尝试刷新
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'TOKEN_INVALID') {
+        const originalRequest = error.config;
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (refreshToken && !isRefreshing) {
+          isRefreshing = true;
+
+          try {
+            // 调用刷新token的API
+            const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
+
+            if (response.data.success) {
+              const newAccessToken = response.data.data.token;
+              const newRefreshToken = response.data.data.refresh_token;
+
+              // 更新本地存储的token
+              localStorage.setItem('userToken', newAccessToken);
+              localStorage.setItem('refreshToken', newRefreshToken);
+              window.location.href = `/home`;
+              // 更新API请求头
+              api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+
+              // 通知所有订阅的请求使用新token重试
+              isRefreshing = false;
+              onRefreshed(newAccessToken);
+
+              // 重试原请求
+              originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+              return api(originalRequest);
+            } else {
+              // 刷新token失败，清除登录状态
+              throw new Error('Failed to refresh token');
+            }
+          } catch (refreshError) {
+            console.error('🔄 Token refresh failed:', refreshError);
+            isRefreshing = false;
+            
+            // 清除登录状态并跳转到登录页
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userData');
+
+            // 保存当前路径以便登录后返回
+            // 如果已经在登录页面，不需要重定向
+            if (currentPath === '/login' || currentPath === '/register') {
+              return Promise.reject(error);
+            }else{
+              const returnPath = currentPath !== '/' ? currentPath : '/home';
+              window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+              return Promise.reject(refreshError);
+            }
+          }
+        } else if (refreshToken) {
+          // 正在刷新token，将请求加入队列
+          return new Promise((resolve) => {
+            subscribeTokenRefresh((newToken) => {
+              originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+              resolve(api(originalRequest));
+            });
+          });
+        } else {
+          // 没有refresh token，清除登录状态
+          console.warn('🔐 No refresh token available, redirecting to login');
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+
+          // 保存当前路径以便登录后返回
+          if (currentPath === '/login' || currentPath === '/register') {
+              return Promise.reject(error);
+          }else{
+            const returnPath = currentPath !== '/' ? currentPath : '/home';
+            window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;  
+          }
+        }
+      } else if (errorCode === 'INVALID_CREDENTIALS') {
+        // 无效的凭证，直接清除登录状态
+        console.warn('🔐 Invalid credentials, redirecting to login');
         localStorage.removeItem('userToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('userData');
 
         // 保存当前路径以便登录后返回
-        const returnPath = currentPath !== '/' ? currentPath : '/home';
-        window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+        if (currentPath === '/login' || currentPath === '/register') {
+              return Promise.reject(error);
+        }else{
+          const returnPath = currentPath !== '/' ? currentPath : '/home';
+          window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+        }
       } else {
         // 其他401错误（如ACCESS_DENIED等）不清除token，只是拒绝请求
         console.log('⚠️ 401 error but not token issue:', errorCode);
@@ -76,6 +172,7 @@ export const authAPI = {
 
   // 登录
   login: (data) => api.post('/auth/login', data),
+  wechatLogin: (data) => api.post('/auth/wechat-login', data),
 
   // 游客登录
   guestLogin: () => api.post('/auth/guest-login'),
@@ -619,6 +716,24 @@ export const adminAPI = {
 
   // 解封用户
   unbanUser: (userId) => api.post(`/admin/users/${userId}/unban`),
+
+  // 删除用户账户（完全注销）
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+
+  // 获取积分规则配置
+  getPointsConfig: () => api.get('/admin/points/config'),
+
+  // 更新积分规则配置
+  updatePointsConfig: (data) => api.put('/admin/points/config', data),
+
+  // 获取功能设置
+  getFeatureSettings: () => api.get('/admin/features/settings'),
+
+  // 更新功能设置
+  updateFeatureSettings: (data) => api.put('/admin/features/settings', data),
+
+  // 检查积分排行功能是否开启（公开接口）
+  checkPointsRankingEnabled: () => api.get('/admin/features/points-ranking'),
 };
 
 // ================================================
@@ -632,7 +747,7 @@ export const userProfileAPI = {
   getUserHistory: (userId, params = {}) => api.get(`/users/${userId}/history`, { params }),
 
   // 更新用户资料
-  updateUserProfile: (data) => api.put('/users/profile', data),
+  updateUserProfile: (data) => api.put('/users/me', data),
 
   // 上传用户头像
   uploadAvatar: (data) => api.post('/users/avatar', data),
@@ -677,3 +792,4 @@ export const announcementsAPI = {
 
 // 导出默认API实例
 export default api;
+

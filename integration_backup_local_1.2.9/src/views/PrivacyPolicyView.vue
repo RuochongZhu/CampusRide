@@ -42,7 +42,7 @@
         <section id="introduction">
           <h2 class="text-xl font-bold text-gray-900 mb-4">1. Introduction</h2>
           <p class="text-gray-700 mb-4">
-            CampusRide ("we," "our," or "us") is committed to protecting your privacy. This Privacy
+            CampusGo ("we," "our," or "us") is committed to protecting your privacy. This Privacy
             Policy explains how we collect, use, disclose, and safeguard your information when you
             use our platform.
           </p>
@@ -52,7 +52,7 @@
             implement reasonable data security safeguards.
           </p>
           <p class="text-gray-700">
-            By using CampusRide, you consent to the data practices described in this policy.
+            By using CampusGo, you consent to the data practices described in this policy.
           </p>
         </section>
 
@@ -73,7 +73,7 @@
               <tbody class="divide-y divide-gray-200">
                 <tr>
                   <td class="px-4 py-3 text-sm text-gray-700">Account Information</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">Email (@cornell.edu), password, name</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Email (@university.edu), password, name</td>
                   <td class="px-4 py-3 text-sm text-gray-600">Account creation and authentication</td>
                 </tr>
                 <tr>
@@ -192,7 +192,7 @@
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3">4.1 Sharing with Other Users</h3>
           <p class="text-gray-700 mb-4">
-            When you use CampusRide, certain information is shared with other users as part of the
+            When you use CampusGo, certain information is shared with other users as part of the
             service functionality:
           </p>
           <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
@@ -393,7 +393,7 @@
           </div>
 
           <p class="text-gray-700 mt-4">
-            To exercise these rights, contact us at <strong>privacy@campusride.com</strong>.
+            To exercise these rights, contact us at <strong>privacy@campusgo.college</strong>.
             We will respond within 30 days.
           </p>
         </section>
@@ -434,13 +434,13 @@
         <section id="children">
           <h2 class="text-xl font-bold text-gray-900 mb-4">9. Children's Privacy</h2>
           <p class="text-gray-700 mb-4">
-            CampusRide is not intended for use by individuals under 18 years of age. We do not
+            CampusGo is not intended for use by individuals under 18 years of age. We do not
             knowingly collect personal information from children under 18.
           </p>
           <p class="text-gray-700">
             If we learn that we have collected information from a child under 18, we will delete
             that information promptly. If you believe we have collected information from a child,
-            please contact us at <strong>privacy@campusride.com</strong>.
+            please contact us at <strong>privacy@campusgo.college</strong>.
           </p>
         </section>
 
@@ -461,141 +461,95 @@
         <section id="academic-research">
           <h2 class="text-xl font-bold text-gray-900 mb-4">11. Academic Research Use</h2>
 
-          <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-            <p class="text-blue-800">
-              <strong>Important Context:</strong> CampusRide is a public platform. Content you post
-              (rides, listings, activities) is already visible to all logged-in users. Our research
-              only uses aggregated statistics from this publicly shared content - never individual
-              identities or private communications.
+          <div class="bg-purple-50 border-l-4 border-purple-400 p-4 mb-6">
+            <p class="text-purple-800">
+              <strong>Your University Affiliation:</strong> CampusGo is affiliated with Your University.
+              With your explicit consent, anonymized data may be used for academic research purposes.
             </p>
           </div>
 
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.1 Public vs Private Data</h3>
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.1 Research Purpose</h3>
+          <p class="text-gray-700 mb-4">
+            Academic research using CampusGo data aims to:
+          </p>
+          <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
+            <li>Improve campus transportation systems and sustainability</li>
+            <li>Study community-building and peer-to-peer sharing behaviors</li>
+            <li>Advance understanding of student mobility patterns</li>
+            <li>Develop better tools for campus communities</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.2 IRB Oversight</h3>
+          <p class="text-gray-700 mb-4">
+            All academic research using CampusGo data is conducted under the oversight of the
+            <strong>Your University Institutional Review Board (IRB)</strong>, which ensures
+            ethical standards and participant protections are maintained.
+          </p>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.3 Data Used for Research</h3>
           <div class="overflow-x-auto mb-6">
             <table class="min-w-full border border-gray-200 rounded-lg">
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Data Type</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nature</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Who Can See</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Research Use</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Used in Research</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">How It's Protected</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200">
-                <tr class="bg-green-50">
-                  <td class="px-4 py-3 text-sm text-gray-700">Ride Posts</td>
-                  <td class="px-4 py-3 text-sm text-green-600">You made it public</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Usage Statistics</td>
+                  <td class="px-4 py-3 text-sm text-green-600">✓ Yes (aggregated)</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated, no individual identification</td>
                 </tr>
-                <tr class="bg-green-50">
-                  <td class="px-4 py-3 text-sm text-gray-700">Marketplace Listings</td>
-                  <td class="px-4 py-3 text-sm text-green-600">You made it public</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Route Patterns</td>
+                  <td class="px-4 py-3 text-sm text-green-600">✓ Yes (anonymized)</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Locations generalized to regions</td>
                 </tr>
-                <tr class="bg-green-50">
-                  <td class="px-4 py-3 text-sm text-gray-700">Activity Posts</td>
-                  <td class="px-4 py-3 text-sm text-green-600">You made it public</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Feature Usage</td>
+                  <td class="px-4 py-3 text-sm text-green-600">✓ Yes (aggregated)</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Statistical summaries only</td>
                 </tr>
-                <tr class="bg-green-50">
-                  <td class="px-4 py-3 text-sm text-gray-700">Profile Info</td>
-                  <td class="px-4 py-3 text-sm text-green-600">You chose to share</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">All users</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">Aggregated stats only</td>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Email Address</td>
+                  <td class="px-4 py-3 text-sm text-red-600">✗ Never</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Never included in research data</td>
                 </tr>
-                <tr class="bg-red-50">
-                  <td class="px-4 py-3 text-sm text-gray-700">Private Messages</td>
-                  <td class="px-4 py-3 text-sm text-red-600">Private</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">Only you & recipient</td>
-                  <td class="px-4 py-3 text-sm text-red-600 font-medium">❌ Never used</td>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Real Name</td>
+                  <td class="px-4 py-3 text-sm text-red-600">✗ Never</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Never included in research data</td>
                 </tr>
-                <tr class="bg-red-50">
-                  <td class="px-4 py-3 text-sm text-gray-700">Email / Password</td>
-                  <td class="px-4 py-3 text-sm text-red-600">Private</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">System only</td>
-                  <td class="px-4 py-3 text-sm text-red-600 font-medium">❌ Never used</td>
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-700">Message Content</td>
+                  <td class="px-4 py-3 text-sm text-red-600">✗ Never</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">Never included in research data</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.2 What Staff Can Access</h3>
-          <div class="grid md:grid-cols-2 gap-4 mb-6">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 class="font-semibold text-green-800 mb-2">✓ Staff Can See</h4>
-              <ul class="text-sm text-gray-700 space-y-1">
-                <li>• Public posts (same as any user)</li>
-                <li>• Reported content (for moderation)</li>
-                <li>• Aggregated platform statistics</li>
-                <li>• Account status (active/suspended)</li>
-              </ul>
-            </div>
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 class="font-semibold text-red-800 mb-2">✗ Staff Cannot See</h4>
-              <ul class="text-sm text-gray-700 space-y-1">
-                <li>• Private messages (unless reported)</li>
-                <li>• Your password (encrypted)</li>
-                <li>• Browsing history on platform</li>
-                <li>• Draft posts you didn't publish</li>
-              </ul>
-            </div>
-          </div>
-
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.3 What Appears in Research Papers</h3>
-          <div class="grid md:grid-cols-2 gap-4 mb-6">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 class="font-semibold text-green-800 mb-2">✓ May Appear</h4>
-              <ul class="text-sm text-gray-700 space-y-1">
-                <li>• "67% of rides occur on Fridays"</li>
-                <li>• "Ithaca-NYC is the most popular route"</li>
-                <li>• "Average 50 new listings per week"</li>
-                <li>• "Peak usage hours: 2-6 PM"</li>
-              </ul>
-            </div>
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 class="font-semibold text-red-800 mb-2">✗ Never Appears</h4>
-              <ul class="text-sm text-gray-700 space-y-1">
-                <li>• Any user's name or email</li>
-                <li>• Specific user's behavior pattern</li>
-                <li>• Individual post content</li>
-                <li>• Any identifiable information</li>
-              </ul>
-            </div>
-          </div>
-
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.4 Research Example</h3>
-          <div class="bg-gray-50 rounded-lg p-4 mb-6">
-            <p class="text-gray-700 mb-3">Here's an example of how research findings are reported:</p>
-            <div class="bg-white border border-gray-200 rounded p-4 italic text-gray-600">
-              "Analysis of platform data from Fall 2025 showed that shared-expense carpools
-              reduced individual transportation costs by an estimated 40%. The Ithaca-NYC
-              corridor accounted for 45% of all rides, with Friday afternoons being the
-              peak booking time. These findings suggest significant potential for campus
-              carpooling programs to reduce costs and environmental impact."
-            </div>
-            <p class="text-sm text-gray-500 mt-3">
-              Note: No individual user, specific post, or personal behavior is mentioned.
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.4 Your Consent & Rights</h3>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <p class="text-gray-700 mb-3">
+              <strong>Research participation is completely voluntary.</strong> You can:
             </p>
-          </div>
-
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.5 IRB Oversight</h3>
-          <p class="text-gray-700 mb-4">
-            All research is conducted under <strong>Cornell University IRB</strong> oversight,
-            ensuring ethical standards are maintained. Research focuses on platform-level
-            trends, not individual user behavior.
-          </p>
-
-          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.6 Your Rights</h3>
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <ul class="list-disc list-inside text-gray-700 space-y-2">
-              <li>Request information about research using platform data</li>
-              <li>Contact privacy@campusride.com with any concerns</li>
-              <li>Contact Cornell IRB for research ethics questions</li>
+              <li>Choose to opt-in or opt-out during registration</li>
+              <li>Change your preference at any time in Account Settings</li>
+              <li>Request that your data be excluded from future research</li>
+              <li>Use CampusGo fully regardless of your research participation choice</li>
             </ul>
           </div>
+
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">11.5 Research Publications</h3>
+          <p class="text-gray-700">
+            Research findings may be published in academic journals, conferences, or reports.
+            All publications will only contain aggregated, anonymized data that cannot be
+            traced back to any individual user.
+          </p>
         </section>
 
         <!-- Section 12 - Sponsor Disclosure -->
@@ -604,14 +558,14 @@
 
           <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
             <p class="text-yellow-800">
-              <strong>Transparency Notice:</strong> CampusRide partners with local businesses who
+              <strong>Transparency Notice:</strong> CampusGo partners with local businesses who
               sponsor rewards for our community. We believe in full transparency about these relationships.
             </p>
           </div>
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3">12.1 Sponsor Relationships</h3>
           <p class="text-gray-700 mb-4">
-            CampusRide may partner with local businesses (restaurants, cafes, retailers) who provide
+            CampusGo may partner with local businesses (restaurants, cafes, retailers) who provide
             coupons and rewards for active community members. These partnerships help us:
           </p>
           <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
@@ -623,7 +577,7 @@
           <h3 class="text-lg font-semibold text-gray-800 mb-3">12.2 Affiliate Disclosure</h3>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
             <p class="text-gray-700 mb-3">
-              <strong>Important Disclosure:</strong> Members of the CampusRide team may have
+              <strong>Important Disclosure:</strong> Members of the CampusGo team may have
               employment or business relationships with sponsor companies. Specifically:
             </p>
             <ul class="list-disc list-inside text-gray-700 space-y-2">
@@ -654,7 +608,7 @@
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3 mt-4">12.4 Your Choice</h3>
           <p class="text-gray-700">
-            Participation in sponsor reward programs is voluntary. You can use all CampusRide
+            Participation in sponsor reward programs is voluntary. You can use all CampusGo
             features without participating in any sponsor programs.
           </p>
         </section>
@@ -683,14 +637,14 @@
             For questions about this Privacy Policy or our data practices, please contact:
           </p>
           <div class="bg-gray-50 rounded-lg p-4">
-            <p class="text-gray-700"><strong>CampusRide Privacy Team</strong></p>
-            <p class="text-gray-700">Cornell University</p>
+            <p class="text-gray-700"><strong>CampusGo Privacy Team</strong></p>
+            <p class="text-gray-700">Your University</p>
             <p class="text-gray-700">Ithaca, NY 14853</p>
             <p class="text-gray-700 mt-2">
-              <strong>Email:</strong> privacy@campusride.com
+              <strong>Email:</strong> privacy@campusgo.college
             </p>
             <p class="text-gray-700">
-              <strong>Data Protection Inquiries:</strong> dpo@campusride.com
+              <strong>Data Protection Inquiries:</strong> dpo@campusgo.college
             </p>
           </div>
         </section>
@@ -699,7 +653,7 @@
         <section class="border-t pt-8 mt-8">
           <div class="bg-green-50 border border-green-200 rounded-lg p-4">
             <p class="text-gray-700">
-              <strong>By using CampusRide, you acknowledge that you have read and understood
+              <strong>By using CampusGo, you acknowledge that you have read and understood
               this Privacy Policy and consent to our collection, use, and disclosure of your
               information as described herein.</strong>
             </p>

@@ -37,12 +37,12 @@
         <section id="acceptance">
           <h2 class="text-xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
           <p class="text-gray-700 mb-4">
-            Welcome to CampusRide. By accessing or using our platform, website, or services (collectively, the "Platform"),
+            Welcome to CampusGo. By accessing or using our platform, website, or services (collectively, the "Platform"),
             you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not
             access or use the Platform.
           </p>
           <p class="text-gray-700 mb-4">
-            These Terms constitute a legally binding agreement between you and CampusRide. By clicking "I Agree,"
+            These Terms constitute a legally binding agreement between you and CampusGo. By clicking "I Agree,"
             creating an account, or using the Platform, you acknowledge that you have read, understood, and agree
             to be bound by these Terms, as well as our Privacy Policy and Cookie Policy.
           </p>
@@ -60,8 +60,8 @@
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3">2.1 What We Are</h3>
           <p class="text-gray-700 mb-4">
-            CampusRide is an online community bulletin board and information-sharing platform designed for
-            Cornell University students and affiliates. The Platform facilitates:
+            CampusGo is an online community bulletin board and information-sharing platform designed for
+            Your University students and affiliates. The Platform facilitates:
           </p>
           <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
             <li>Shared-expense carpool arrangements between users</li>
@@ -72,7 +72,7 @@
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3">2.2 What We Are NOT</h3>
           <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p class="text-gray-700 font-medium mb-2">CampusRide is NOT:</p>
+            <p class="text-gray-700 font-medium mb-2">CampusGo is NOT:</p>
             <ul class="list-disc list-inside text-gray-700 space-y-2">
               <li>
                 <strong>A Transportation Network Company (TNC)</strong> - We do not provide transportation services
@@ -94,7 +94,7 @@
           <p class="text-gray-700">
             We provide technology to connect users. We do not employ drivers, verify product quality,
             guarantee transactions, or assume responsibility for user actions. Users interact with each
-            other as independent individuals, not through CampusRide as an intermediary.
+            other as independent individuals, not through CampusGo as an intermediary.
           </p>
         </section>
 
@@ -104,7 +104,7 @@
           <p class="text-gray-700 mb-4">To use the Platform, you must:</p>
           <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
             <li>Be at least 18 years old or the age of majority in your jurisdiction</li>
-            <li>Have a valid Cornell University email address (@cornell.edu)</li>
+            <li>Have a valid Your University email address (@university.edu)</li>
             <li>Have the legal capacity to enter into binding contracts</li>
             <li>Not be prohibited from using the Platform under applicable laws</li>
           </ul>
@@ -197,7 +197,7 @@
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3">5.4 No Platform Liability for Rides</h3>
           <p class="text-gray-700">
-            CampusRide does not provide transportation, insurance, or guarantee any aspect of carpool
+            CampusGo does not provide transportation, insurance, or guarantee any aspect of carpool
             arrangements. We are not responsible for personal injury, property damage, delays, or any
             incidents arising from carpools. Users participate at their own risk.
           </p>
@@ -210,7 +210,7 @@
           <h3 class="text-lg font-semibold text-gray-800 mb-3">6.1 Peer-to-Peer Transactions</h3>
           <p class="text-gray-700 mb-4">
             The marketplace allows users to list and purchase personal items from other users. All
-            transactions are directly between buyers and sellers. CampusRide is not a party to any
+            transactions are directly between buyers and sellers. CampusGo is not a party to any
             transaction and does not take possession of, title to, or responsibility for any items.
           </p>
 
@@ -234,7 +234,7 @@
 
           <h3 class="text-lg font-semibold text-gray-800 mb-3">6.4 No Platform Liability for Transactions</h3>
           <p class="text-gray-700">
-            CampusRide does not verify listings, guarantee product quality, or mediate disputes.
+            CampusGo does not verify listings, guarantee product quality, or mediate disputes.
             We are not responsible for fraud, misrepresentation, product defects, non-delivery,
             or any issues arising from marketplace transactions.
           </p>
@@ -265,7 +265,7 @@
           <h3 class="text-lg font-semibold text-gray-800 mb-3">8.1 Your Content</h3>
           <p class="text-gray-700 mb-4">
             You retain ownership of content you post ("User Content"). By posting User Content, you
-            grant CampusRide a non-exclusive, worldwide, royalty-free license to use, display, and
+            grant CampusGo a non-exclusive, worldwide, royalty-free license to use, display, and
             distribute such content in connection with the Platform.
           </p>
 
@@ -318,7 +318,7 @@
           <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-4 uppercase text-sm">
             <p class="font-bold mb-2">LIMITATION OF LIABILITY</p>
             <p class="text-gray-700 mb-4">
-              TO THE MAXIMUM EXTENT PERMITTED BY NEW YORK LAW, CAMPUSRIDE, ITS OFFICERS, DIRECTORS,
+              TO THE MAXIMUM EXTENT PERMITTED BY NEW YORK LAW, CAMPUSGO, ITS OFFICERS, DIRECTORS,
               EMPLOYEES, AGENTS, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
               SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
             </p>
@@ -340,9 +340,9 @@
           <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-4 uppercase text-sm">
             <p class="font-bold mb-2">MAXIMUM LIABILITY</p>
             <p class="text-gray-700">
-              IN NO EVENT SHALL CAMPUSRIDE'S TOTAL LIABILITY TO YOU FOR ALL CLAIMS ARISING OUT OF
+              IN NO EVENT SHALL CAMPUSGO'S TOTAL LIABILITY TO YOU FOR ALL CLAIMS ARISING OUT OF
               OR RELATED TO THESE TERMS OR YOUR USE OF THE PLATFORM EXCEED ONE HUNDRED DOLLARS
-              ($100.00) OR THE AMOUNT YOU PAID TO CAMPUSRIDE IN THE TWELVE (12) MONTHS PRECEDING
+              ($100.00) OR THE AMOUNT YOU PAID TO CAMPUSGO IN THE TWELVE (12) MONTHS PRECEDING
               THE CLAIM, WHICHEVER IS GREATER.
             </p>
           </div>
@@ -362,7 +362,7 @@
         <section id="indemnification">
           <h2 class="text-xl font-bold text-gray-900 mb-4">11. Indemnification</h2>
           <p class="text-gray-700">
-            You agree to indemnify, defend, and hold harmless CampusRide, its officers, directors,
+            You agree to indemnify, defend, and hold harmless CampusGo, its officers, directors,
             employees, agents, and affiliates from and against any and all claims, damages, obligations,
             losses, liabilities, costs, and expenses (including attorney's fees) arising from:
           </p>
@@ -395,7 +395,7 @@
           <h3 class="text-lg font-semibold text-gray-800 mb-3">12.2 Informal Resolution</h3>
           <p class="text-gray-700 mb-4">
             Before initiating any formal dispute resolution, you agree to first contact us at
-            legal@campusride.com to attempt to resolve the dispute informally. We will attempt
+            legal@campusgo.college to attempt to resolve the dispute informally. We will attempt
             to resolve the dispute within 30 days.
           </p>
 
@@ -476,11 +476,11 @@
             If you have questions about these Terms, please contact us at:
           </p>
           <div class="bg-gray-50 rounded-lg p-4">
-            <p class="text-gray-700"><strong>CampusRide</strong></p>
-            <p class="text-gray-700">Cornell University</p>
+            <p class="text-gray-700"><strong>CampusGo</strong></p>
+            <p class="text-gray-700">Your University</p>
             <p class="text-gray-700">Ithaca, NY 14853</p>
             <p class="text-gray-700 mt-2">
-              <strong>Email:</strong> legal@campusride.com
+              <strong>Email:</strong> legal@campusgo.college
             </p>
           </div>
         </section>
@@ -489,7 +489,7 @@
         <section class="border-t pt-8 mt-8">
           <div class="bg-green-50 border border-green-200 rounded-lg p-4">
             <p class="text-gray-700">
-              <strong>By using CampusRide, you acknowledge that you have read, understood, and
+              <strong>By using CampusGo, you acknowledge that you have read, understood, and
               agree to be bound by these Terms of Service.</strong>
             </p>
           </div>

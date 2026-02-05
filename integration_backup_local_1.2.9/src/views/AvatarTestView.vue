@@ -89,7 +89,7 @@
                   </div>
                 </div>
                 <div class="mt-3 text-sm text-gray-600">
-                  📍 Cornell → NYC • Tomorrow 2:00 PM
+                  📍 Campus → NYC • Tomorrow 2:00 PM
                 </div>
               </div>
             </div>
@@ -143,9 +143,9 @@ const testUser = ref({
   id: 'test-user-1',
   first_name: 'John',
   last_name: 'Doe',
-  email: 'john.doe@cornell.edu',
+  email: 'john.doe@university.edu',
   avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
-  university: 'Cornell University',
+  university: 'Your University',
   is_online: true,
   avg_rating: 4.8,
   total_carpools: 12,
@@ -158,9 +158,9 @@ const testUsers = ref([
     id: 'user-1',
     first_name: 'Alice',
     last_name: 'Smith',
-    email: 'alice.smith@cornell.edu',
+    email: 'alice.smith@university.edu',
     avatar_url: 'https://avatars.githubusercontent.com/u/2?v=4',
-    university: 'Cornell University',
+    university: 'Your University',
     is_online: true,
     avatarSize: 'small',
     avg_rating: 4.9,
@@ -172,9 +172,9 @@ const testUsers = ref([
     id: 'user-2',
     first_name: 'Bob',
     last_name: 'Johnson',
-    email: 'bob.johnson@cornell.edu',
+    email: 'bob.johnson@university.edu',
     avatar_url: 'https://avatars.githubusercontent.com/u/3?v=4',
-    university: 'Cornell University',
+    university: 'Your University',
     is_online: false,
     avatarSize: 'default',
     avg_rating: 4.7,
@@ -186,9 +186,9 @@ const testUsers = ref([
     id: 'user-3',
     first_name: 'Carol',
     last_name: 'Williams',
-    email: 'carol.williams@cornell.edu',
+    email: 'carol.williams@university.edu',
     avatar_url: 'https://avatars.githubusercontent.com/u/4?v=4',
-    university: 'Cornell University',
+    university: 'Your University',
     is_online: true,
     avatarSize: 'large',
     avg_rating: 5.0,
@@ -200,9 +200,9 @@ const testUsers = ref([
     id: 'user-4',
     first_name: 'David',
     last_name: 'Brown',
-    email: 'david.brown@cornell.edu',
+    email: 'david.brown@university.edu',
     avatar_url: 'https://avatars.githubusercontent.com/u/5?v=4',
-    university: 'Cornell University',
+    university: 'Your University',
     is_online: true,
     avatarSize: 'default',
     avg_rating: 4.6,

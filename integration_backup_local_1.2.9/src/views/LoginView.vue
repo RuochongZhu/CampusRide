@@ -6,7 +6,7 @@
 <div class="w-full h-full flex items-center justify-center overflow-hidden">
 <img
 src="https://public.readdy.ai/ai/img_res/081b30f0b98732b66b8b3cd229f310e5.jpg"
-alt="Campus Ride Home"
+alt="CampusGo"
 class="object-cover w-full h-auto"
 />
 </div>
@@ -15,7 +15,7 @@ class="object-cover w-full h-auto"
 <div class="w-full md:w-3/5 bg-white p-8 md:p-12">
 <div class="max-w-md mx-auto">
 <div class="flex items-center mb-6">
-<h1 class="text-2xl font-bold text-[#B31B1B]">Campus Ride Home</h1>
+<h1 class="text-2xl font-bold text-[#B31B1B]">CampusGo</h1>
 </div>
           <h2 class="text-2xl font-bold text-gray-900 mb-6">Log in</h2>
           
@@ -37,7 +37,7 @@ class="object-cover w-full h-auto"
           <div class="mb-4 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded">
             <div class="font-semibold mb-1">🎯 Demo Account</div>
             <div class="text-sm">
-              Email: demo@cornell.edu<br>
+              Email: demo@university.edu<br>
               Password: demo1234
             </div>
           </div>
@@ -114,7 +114,7 @@ required
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { authAPI } from '../utils/api'
@@ -128,6 +128,74 @@ const errorMessage = ref('')
 const showResendButton = ref(false)
 const resendEmail = ref('')
 const isResending = ref(false)
+
+// 加载微信 JSSDK
+const loadWeChatSDK = () => {
+  return new Promise((resolve, reject) => {
+    if (window.wx) {
+      resolve(window.wx)
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://res.wx.qq.com/open/js/jweixin-1.3.2.js'
+    script.onload = () => {
+      resolve(window.wx)
+    }
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
+const currentOpenid = ref('');
+// 检测是否在微信小程序内
+const checkWeChatMiniProgram = async () => {
+  try {
+    await loadWeChatSDK()
+    // 检测 userAgent 中是否包含 MicroMessenger 和 miniProgram
+    const userAgent = navigator.userAgent.toLowerCase()
+    isResending.value = userAgent.includes('micromessenger') && window.__wxjs_environment === 'miniprogram'
+    if (isResending.value) {
+      // 从 URL query 中获取 tk
+      const tk = localStorage.getItem('tk')
+      if (tk) {
+        try {
+          // 调用后端 wechatlogin 接口，用 tk 换取 openid
+          const response = await authAPI.wechatLogin({ code: tk })
+          if (response.data.success) {
+            const { token, user, openid } = response.data.data;
+            currentOpenid.value = openid;
+            if (user && token){
+              // 存储 token 和用户信息
+              localStorage.setItem('userToken', token)
+              localStorage.setItem('userData', JSON.stringify(user))
+              // 更新 auth store
+              authStore.token = token
+              authStore.user = user
+              // 跳转到首页
+              const redirect = router.currentRoute.value.query.redirect || '/home'
+              setTimeout(() => router.push(redirect), 500)  
+            }
+            
+          } else {
+            console.error('WeChat login failed:', response.data.message)
+          }
+        } catch (error) {
+          console.error('WeChat login error:', error)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load WeChat SDK:', error)
+    isWeChatMiniProgram.value = false
+  }
+}
+
+
+// 页面加载完成后检测环境
+onMounted(() => {
+  checkWeChatMiniProgram()
+})
 
 // Use centralized API client
 
@@ -152,7 +220,8 @@ const handleSignIn = async () => {
   try {
     const result = await authStore.login({
       email: email.value,
-      password: password.value
+      password: password.value,
+      openid: currentOpenid.value,
     })
 
     if (result.success) {
@@ -169,7 +238,7 @@ const handleSignIn = async () => {
         showResendButton.value = true
         resendEmail.value = email.value
       } else if (result.error?.includes('DATABASE_ERROR')) {
-        errorMessage.value = 'Database connection failed. Please use the demo account to log in:\nEmail: demo@cornell.edu\nPassword: demo1234'
+        errorMessage.value = 'Database connection failed. Please use the demo account to log in:\nEmail: demo@university.edu\nPassword: demo1234'
       } else {
         errorMessage.value = result.error || 'Invalid credentials'
       }
@@ -177,7 +246,7 @@ const handleSignIn = async () => {
   } catch (error) {
     console.error('Login error:', error)
     // Provide demo mode on network error
-    errorMessage.value = 'Unable to connect to server.\n\nYou can use the demo account to try the system:\nEmail: demo@cornell.edu\nPassword: demo1234'
+    errorMessage.value = 'Unable to connect to server.\n\nYou can use the demo account to try the system:\nEmail: demo@university.edu\nPassword: demo1234'
   } finally {
     isLoading.value = false
   }
@@ -253,3 +322,4 @@ input[type="number"]::-webkit-outer-spin-button {
 margin: 0;
 }
 </style>
+

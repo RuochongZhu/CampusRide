@@ -14,25 +14,6 @@
           <p class="text-sm md:text-xl mb-4 md:mb-6">Connect with drivers and passengers for a more affordable, sustainable, and social way to travel.</p>
         </div>
       </div>
-
-      <!-- Universal Search Bar -->
-      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-6 md:mb-8">
-        <div class="flex gap-3 md:gap-4">
-          <input
-            v-model="universalSearch"
-            placeholder="Search rides or trips..."
-            class="flex-1 px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-          />
-          <button
-            @click="performUniversalSearch"
-            :disabled="loading"
-            class="bg-red-600 hover:bg-red-700 text-white px-4 md:px-8 py-2 md:py-3 rounded-md font-medium transition-all disabled:bg-gray-400 text-sm md:text-base"
-          >
-            {{ loading ? 'Searching...' : 'Search' }}
-          </button>
-        </div>
-      </div>
-
       <!-- Main Booking and Ride Sections -->
       <div class="flex flex-col lg:flex-row gap-4 md:gap-8">
         <!-- Left Panel - Passenger/Driver Forms -->
@@ -51,13 +32,48 @@
               Driver
             </button>
           </div>
+          <!-- Passenger Mode Toggle -->
+          <div v-if="userMode === 'passenger'" class="flex items-center bg-blue-50 rounded-lg p-1 mb-4">
+            <button
+              :class="['px-2 md:px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all flex-1', passengerMode === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600']"
+              @click="passengerMode = 'search'"
+            >
+              Search Rides
+            </button>
+            <button
+              :class="['px-2 md:px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all flex-1', passengerMode === 'post' ? 'bg-blue-600 text-white' : 'text-gray-600']"
+              @click="passengerMode = 'post'"
+            >
+              Post Request
+            </button>
+          </div>
 
           <h2 class="text-lg md:text-2xl font-bold mb-4 md:mb-6">
-            {{ userMode === 'passenger' ? 'Book a Ride' : 'Post a Trip' }}
+            {{ userMode === 'passenger'
+              ? (passengerMode === 'search' ? 'Search Rides' : 'Post Ride Request')
+              : 'Post a Trip' }}
           </h2>
 
-          <!-- Passenger Booking Form -->
-          <div v-if="userMode === 'passenger'">
+          <!-- Passenger Search Form -->
+          <div v-if="userMode === 'passenger' && passengerMode === 'search'">
+            <div class="mb-3 md:mb-4">
+              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Origin</label>
+              <input
+                ref="passengerOriginInput"
+                v-model="searchForm.origin"
+                placeholder="Enter pickup location"
+                class="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+            </div>
+            <div class="mb-3 md:mb-4">
+              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Destination</label>
+              <input
+                ref="passengerDestInput"
+                v-model="searchForm.destination"
+                placeholder="Enter destination"
+                class="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+            </div>
             <div class="mb-3 md:mb-4">
               <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Date</label>
               <a-date-picker v-model:value="searchForm.date" class="w-full" :disabled-date="disabledDate" format="YYYY-MM-DD" />
@@ -310,7 +326,7 @@
                       </div>
                       <div class="mt-2 text-center">
                         <p class="font-medium">{{ getDriverName(ride.driver) }}</p>
-                        <p class="text-sm text-gray-600">{{ ride.driver?.university || 'Cornell University' }}</p>
+                        <p class="text-sm text-gray-600">{{ ride.driver?.university || 'Your University' }}</p>
                       </div>
                     </div>
                     <div class="md:w-2/4">
@@ -581,7 +597,6 @@ const loading = ref(false);
 const posting = ref(false);
 const bookingRide = ref(false);
 const showAdvancedFilters = ref(false);
-const universalSearch = ref('');
 
 // Search Form (Passenger)
 const searchForm = ref({
@@ -876,24 +891,6 @@ const searchRides = async () => {
   if (searchForm.value.sortBy) {
     params.sortBy = searchForm.value.sortBy;
   }
-
-  currentPage.value = 1;
-  await loadRides(params);
-};
-
-// Universal search
-const performUniversalSearch = async () => {
-  if (!universalSearch.value.trim()) {
-    notification.warning({
-      message: 'Empty Search',
-      description: 'Please enter a search term.'
-    });
-    return;
-  }
-
-  const params = {
-    search: universalSearch.value
-  };
 
   currentPage.value = 1;
   await loadRides(params);

@@ -1,6 +1,47 @@
 <template>
 <div class="min-h-screen bg-[#EDEEE8] pt-16">
 
+  <!-- 新消息通知横幅 -->
+  <div v-if="hasNewMessages" class="sticky top-16 z-50 bg-blue-50 border-b border-blue-200 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <MessageOutlined class="text-blue-600 text-lg" />
+        <div>
+          <p class="text-sm font-medium text-blue-900">You have {{ unreadCount }} new message(s)</p>
+          <p class="text-xs text-blue-700">New items and messages are being synced</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <a-button type="primary" size="small" @click="requestNotificationPermission">
+          Enable Notifications
+        </a-button>
+        <a-button size="small" @click="clearNewMessageNotifications">
+          Dismiss
+        </a-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新消息列表 -->
+  <div v-if="newMessageNotifications.length > 0" class="bg-white border-b shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+      <div class="space-y-2">
+        <div v-for="notification in newMessageNotifications.slice(0, 3)" :key="notification.id"
+          class="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-200">
+          <div class="flex-grow">
+            <p class="text-sm font-medium text-gray-900">{{ notification.from }}</p>
+            <p class="text-xs text-gray-600">{{ notification.subject }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ notification.preview }}</p>
+          </div>
+          <div class="flex items-center space-x-2 ml-4">
+            <span class="text-xs text-gray-500">{{ formatTime(notification.timestamp) }}</span>
+            <a-button type="text" size="small" @click="clearNewMessageNotifications">×</a-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Search and Filter Section -->
   <div class="sticky top-16 z-40 bg-white shadow-sm">
     <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
@@ -222,21 +263,15 @@
           <p class="text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
         </div>
       </div>
-      <div class="flex items-center justify-between pt-4">
+      <div class="flex space-x-2 pt-4">
+        <a-button type="primary" block>
+          <template #icon><MessageOutlined /></template> Contact Seller
+        </a-button>
         <a-button @click="toggleFavorite(selectedItem)">
           <template #icon>
             <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
             <HeartOutlined v-else />
           </template>
-          {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
-        </a-button>
-        <a-button
-          v-if="currentUser && (selectedItem.seller_id === currentUser.id || selectedItem.seller?.id === currentUser.id)"
-          danger
-          @click="confirmDeleteItem(selectedItem)"
-        >
-          <template #icon><DeleteOutlined /></template>
-          Delete
         </a-button>
       </div>
 
@@ -250,15 +285,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { message, Modal } from 'ant-design-vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { message } from 'ant-design-vue'
 import {
   SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined,
-  HeartOutlined, HeartFilled, PlusOutlined, EyeOutlined, DeleteOutlined
+  HeartOutlined, HeartFilled, MessageOutlined, PlusOutlined, EyeOutlined
 } from '@ant-design/icons-vue';
 import { marketplaceAPI } from '@/utils/api'
 import CommentSection from '@/components/marketplace/CommentSection.vue'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
+import {useRoute} from "vue-router";
+import { io } from 'socket.io-client'
 
 // State management
 const loading = ref(false)
@@ -276,10 +313,18 @@ const selectedItem = ref(null)
 const uploadingImages = ref(false)
 const fileInput = ref(null)
 
+// 新消息监控状态
+const socket = ref(null)
+const newMessageNotifications = ref([])
+const hasNewMessages = ref(false)
+const unreadCount = ref(0)
+const lastFetchTime = ref(null)
+const messageCheckInterval = ref(null)
+
 // Current user (get from localStorage)
 const currentUser = ref(null)
 try {
-  const userStr = localStorage.getItem('userData')
+  const userStr = localStorage.getItem('user')
   if (userStr) {
     currentUser.value = JSON.parse(userStr)
   }
@@ -302,9 +347,9 @@ const items = ref([
       id: 'seller-1',
       first_name: 'Alice',
       last_name: 'Johnson',
-      email: 'alice.johnson@university.edu',
+      email: 'alice.johnson@cornell.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/2?v=4',
-      university: 'Your University',
+      university: 'Cornell University',
       is_online: true,
       avg_rating: 4.8,
       total_sales: 12,
@@ -325,9 +370,9 @@ const items = ref([
       id: 'seller-2',
       first_name: 'Bob',
       last_name: 'Smith',
-      email: 'bob.smith@university.edu',
+      email: 'bob.smith@cornell.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/3?v=4',
-      university: 'Your University',
+      university: 'Cornell University',
       is_online: false,
       avg_rating: 4.6,
       total_sales: 8,
@@ -348,9 +393,9 @@ const items = ref([
       id: 'seller-3',
       first_name: 'Carol',
       last_name: 'Williams',
-      email: 'carol.williams@university.edu',
+      email: 'carol.williams@cornell.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/4?v=4',
-      university: 'Your University',
+      university: 'Cornell University',
       is_online: true,
       avg_rating: 5.0,
       total_sales: 25,
@@ -371,9 +416,9 @@ const items = ref([
       id: 'seller-4',
       first_name: 'David',
       last_name: 'Brown',
-      email: 'david.brown@university.edu',
+      email: 'david.brown@cornell.edu',
       avatar_url: 'https://avatars.githubusercontent.com/u/5?v=4',
-      university: 'Your University',
+      university: 'Cornell University',
       is_online: true,
       avg_rating: 4.7,
       total_sales: 15,
@@ -537,49 +582,6 @@ const viewItemDetails = (item) => {
   showDetailsModal.value = true
 }
 
-// Delete item
-const confirmDeleteItem = (item) => {
-  Modal.confirm({
-    title: 'Delete Item',
-    content: `Are you sure you want to delete "${item.title}"? This action cannot be undone.`,
-    okText: 'Delete',
-    okType: 'danger',
-    cancelText: 'Cancel',
-    onOk: async () => {
-      try {
-        await marketplaceAPI.deleteItem(item.id)
-        message.success('Item deleted successfully')
-        showDetailsModal.value = false
-        await fetchItems()
-      } catch (error) {
-        console.error('Delete item error:', error)
-        message.error(error.response?.data?.error?.message || 'Failed to delete item')
-      }
-    }
-  })
-}
-
-// Scroll to comments section
-const scrollToComments = () => {
-  // Find the comment section within the modal
-  const modal = document.querySelector('.ant-modal-content')
-  if (modal) {
-    const commentSection = modal.querySelector('.comment-section')
-    if (commentSection) {
-      // Scroll the modal content to show the comment section
-      const textarea = commentSection.querySelector('textarea')
-      if (textarea) {
-        // Focus on the textarea
-        setTimeout(() => {
-          textarea.focus()
-          // Scroll into view
-          commentSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }, 100)
-      }
-    }
-  }
-}
-
 // Helper functions
 const getItemImage = (item) => {
   if (item.images && item.images.length > 0) {
@@ -619,6 +621,23 @@ const getConditionColor = (cond) => {
 const truncateText = (text, maxLength) => {
   if (!text || text.length <= maxLength) return text
   return text.substring(0, maxLength) + '...'
+}
+
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+
+  return date.toLocaleDateString()
 }
 
 // Handle user message from ClickableAvatar
@@ -714,9 +733,216 @@ const fileToBase64 = (file) => {
 }
 
 // Lifecycle
+const route = useRoute();
 onMounted(() => {
   fetchItems()
+  const initID = route.query?.id;
+  if (initID) {
+    marketplaceAPI.getItem(initID).then((response) => {
+      viewItemDetails(response.data.data.item)
+    })
+  }
+
+  // 初始化新消息监控
+  initializeMessageMonitoring()
+  setupSocketConnection()
+  startMessagePolling()
 })
+
+onUnmounted(() => {
+  // 清理消息监控
+  if (messageCheckInterval.value) {
+    clearInterval(messageCheckInterval.value)
+  }
+  if (socket.value) {
+    socket.value.disconnect()
+  }
+})
+
+// 新消息监控功能
+const initializeMessageMonitoring = () => {
+  // 从localStorage获取最后检查时间
+  const lastCheck = localStorage.getItem('lastMessageCheck')
+  if (lastCheck) {
+    lastFetchTime.value = new Date(lastCheck)
+  }
+}
+
+const setupSocketConnection = () => {
+  try {
+    const API_BASE_URL = window.__API_BASE_URL__ || 'http://localhost:3001'
+    socket.value = io(API_BASE_URL, {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
+    })
+
+    socket.value.on('connect', () => {
+      console.log('Socket connected for marketplace monitoring')
+    })
+
+    // 监听新商品发布
+    socket.value.on('new_marketplace_item', (data) => {
+      handleNewMarketplaceItem(data)
+    })
+
+    // 监听新消息
+    socket.value.on('new_message', (data) => {
+      handleNewMessage(data)
+    })
+
+    socket.value.on('disconnect', () => {
+      console.log('Socket disconnected')
+    })
+  } catch (error) {
+    console.error('Failed to setup socket connection:', error)
+  }
+}
+
+const startMessagePolling = () => {
+  // 每30秒检查一次新消息
+  messageCheckInterval.value = setInterval(() => {
+    checkForNewMessages()
+  }, 30000)
+
+  // 立即检查一次
+  checkForNewMessages()
+}
+
+const checkForNewMessages = async () => {
+  try {
+    const response = await marketplaceAPI.getUnreadMessages?.()
+    if (response?.data?.data) {
+      const newMessages = response.data.data.messages || []
+      const newCount = response.data.data.unread_count || 0
+
+      if (newCount > unreadCount.value) {
+        hasNewMessages.value = true
+        unreadCount.value = newCount
+
+        // 发送通知
+        if (newMessages.length > 0) {
+          newMessages.forEach(msg => {
+            showMessageNotification(msg)
+          })
+        }
+
+        // 保存检查时间
+        localStorage.setItem('lastMessageCheck', new Date().toISOString())
+      }
+    }
+  } catch (error) {
+    console.error('Failed to check for new messages:', error)
+  }
+}
+
+const handleNewMarketplaceItem = (data) => {
+  console.log('New marketplace item published:', data)
+
+  // 如果当前在查看该类别，自动刷新
+  if (selectedCategory.value === 'All' || selectedCategory.value === data.category) {
+    message.info(`New item posted: ${data.title}`)
+    // 延迟刷新以避免频繁更新
+    setTimeout(() => {
+      fetchItems()
+    }, 2000)
+  }
+}
+
+const handleNewMessage = (data) => {
+  console.log('New message received:', data)
+  hasNewMessages.value = true
+  unreadCount.value += 1
+  showMessageNotification(data)
+}
+
+const showMessageNotification = (messageData) => {
+  // 创建通知对象
+  const notification = {
+    id: messageData.id || Date.now(),
+    from: messageData.sender_name || 'Unknown',
+    subject: messageData.subject || 'New Message',
+    preview: messageData.content?.substring(0, 50) || '',
+    timestamp: new Date(),
+    read: false
+  }
+
+  newMessageNotifications.value.push(notification)
+
+  // 显示浏览器通知（如果用户允许）
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('New Message', {
+      body: `${notification.from}: ${notification.subject}`,
+      icon: '/logo.png'
+    })
+  }
+
+  // 显示消息提示
+  message.info({
+    content: `New message from ${notification.from}`,
+    duration: 5
+  })
+
+  // 如果是移动设备，发送推送通知
+  if (isMobileDevice()) {
+    sendMobilePushNotification(notification)
+  }
+}
+
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
+const sendMobilePushNotification = async (notification) => {
+  try {
+    // 检查是否支持Service Worker
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready
+
+      // 发送推送通知
+      if (registration.showNotification) {
+        await registration.showNotification('CampusRide - New Message', {
+          body: `${notification.from}: ${notification.subject}`,
+          icon: '/logo.png',
+          badge: '/badge.png',
+          tag: 'marketplace-message',
+          requireInteraction: false,
+          actions: [
+            {
+              action: 'open',
+              title: 'Open'
+            },
+            {
+              action: 'close',
+              title: 'Close'
+            }
+          ]
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Failed to send mobile push notification:', error)
+  }
+}
+
+const clearNewMessageNotifications = () => {
+  newMessageNotifications.value = []
+  hasNewMessages.value = false
+}
+
+const requestNotificationPermission = async () => {
+  if ('Notification' in window && Notification.permission === 'default') {
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission === 'granted') {
+        message.success('Notifications enabled')
+      }
+    } catch (error) {
+      console.error('Failed to request notification permission:', error)
+    }
+  }
+}
 </script>
 
 <style scoped>

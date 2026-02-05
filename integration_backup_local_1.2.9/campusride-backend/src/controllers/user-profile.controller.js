@@ -339,7 +339,7 @@ export const getUserHistory = async (req, res) => {
 export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?.userId;
-    const { first_name, last_name, avatar_url, university } = req.body;
+    const { first_name, last_name, avatar_url, university, nickname } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -353,18 +353,34 @@ export const updateUserProfile = async (req, res) => {
 
     // 构建更新对象
     const updateData = {};
-    if (first_name !== undefined) updateData.first_name = first_name;
+    // 支持 nickname 作为 first_name 的别名
+    if (nickname !== undefined) {
+      updateData.first_name = nickname;
+    } else if (first_name !== undefined) {
+      updateData.first_name = first_name;
+    }
     if (last_name !== undefined) updateData.last_name = last_name;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     if (university !== undefined) updateData.university = university;
+
+    // 检查是否有要更新的数据
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'No valid fields to update'
+        }
+      });
+    }
 
     // 更新用户信息
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', userId)
-      .select('id, first_name, last_name, email, avatar_url, university, is_online')
-      .single();
+      .select('id, first_name, last_name, email, avatar_url, university')
+      .maybeSingle();
 
     if (error) {
       logger.error('Update user profile error:', error);
@@ -372,7 +388,18 @@ export const updateUserProfile = async (req, res) => {
         success: false,
         error: {
           code: 'UPDATE_ERROR',
-          message: 'Failed to update profile'
+          message: 'Failed to update profile',
+          details: error.message
+        }
+      });
+    }
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found'
         }
       });
     }
