@@ -933,6 +933,7 @@ const getThreadPreview = (thread) => {
 
 // Select a thread
 const selectThread = async (thread) => {
+  console.log('🎯 selectThread called in MessagesView:', thread.thread_id, thread)
   try {
     // Leave previous thread room
     if (selectedThreadId.value && socket.value) {
@@ -941,6 +942,7 @@ const selectThread = async (thread) => {
 
     // Select new thread
     messageStore.selectThread(thread)
+    console.log('🎯 After messageStore.selectThread, selectedThreadId:', messageStore.selectedThreadId)
     messageStore.persistSelectedThread()
 
     // Join new thread room

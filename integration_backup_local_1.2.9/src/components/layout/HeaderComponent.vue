@@ -103,16 +103,6 @@
         <!-- Navigation Links -->
         <nav class="flex-1 py-2">
           <router-link
-            to="/"
-            class="mobile-nav-link"
-            :class="{ active: $route.path === '/' }"
-            @click="closeMobileMenu"
-          >
-            <HomeOutlined class="text-lg" />
-            <span>Home</span>
-          </router-link>
-
-          <router-link
             to="/activities"
             class="mobile-nav-link"
             :class="{ active: $route.path.includes('activities') }"
@@ -198,7 +188,6 @@ import { useRouter } from "vue-router";
 import {
   SettingOutlined,
   MenuOutlined,
-  HomeOutlined,
   CalendarOutlined,
   CarOutlined,
   ShopOutlined,
