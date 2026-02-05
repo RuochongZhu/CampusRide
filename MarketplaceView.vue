@@ -294,8 +294,12 @@ import {
 import { marketplaceAPI } from '@/utils/api'
 import CommentSection from '@/components/marketplace/CommentSection.vue'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
-import {useRoute} from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { io } from 'socket.io-client'
+
+// Router
+const router = useRouter()
+const route = useRoute()
 
 // State management
 const loading = ref(false)
@@ -640,10 +644,19 @@ const formatTime = (timestamp) => {
   return date.toLocaleDateString()
 }
 
-// Handle user message from ClickableAvatar
+// Handle user message from ClickableAvatar - 直接打开对话框
 const handleUserMessage = (user) => {
-  // This will be handled by the ClickableAvatar component internally
-  // It navigates to /messages with userId query parameter
+  if (!user || !user.id) return
+
+  // 直接导航到消息页面，打开与该用户的对话
+  router.push({
+    name: 'Messages',
+    query: {
+      userId: user.id,
+      userEmail: user.email,
+      userName: `${user.first_name || ''} ${user.last_name || ''}`.trim()
+    }
+  })
 }
 
 // Image upload methods
