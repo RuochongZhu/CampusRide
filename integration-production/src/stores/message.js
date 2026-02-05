@@ -189,7 +189,13 @@ export const useMessageStore = defineStore('message', () => {
 
   const selectThread = (thread) => {
     selectedThreadId.value = thread.thread_id
-    loadThreadMessages(thread.thread_id)
+    // Store custom thread data for new conversations
+    if (thread.is_new_conversation) {
+      customSelectedThread.value = thread
+    } else {
+      customSelectedThread.value = null
+      loadThreadMessages(thread.thread_id)
+    }
   }
 
   const closeThread = () => {

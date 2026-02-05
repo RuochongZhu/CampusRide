@@ -215,53 +215,8 @@
         <!-- Message Content Area - Full width on mobile when thread selected -->
         <div class="lg:col-span-2" :class="{ 'hidden lg:block': !selectedThreadId }">
           <div class="bg-white rounded-lg shadow-sm h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)]">
-            <!-- New conversation form -->
-            <div
-              v-if="pendingNewConversationUserId && !selectedThreadId"
-              class="h-full flex items-center justify-center px-4 md:px-8"
-            >
-              <div class="max-w-lg w-full space-y-3 md:space-y-4 text-gray-700">
-                <div class="text-center">
-                  <MessageOutlined class="text-4xl md:text-5xl text-[#C24D45] mb-3 md:mb-4" />
-                  <p class="text-lg md:text-xl font-semibold">Start a conversation</p>
-                  <p class="text-xs md:text-sm text-gray-500">
-                    {{ pendingUserLoading ? 'Loading user...' : `Send a message to ${pendingUserName}` }}
-                  </p>
-                </div>
-                <a-input
-                  v-model:value="newConversationSubject"
-                  placeholder="Subject (optional)"
-                  :disabled="creatingNewConversation"
-                  size="small"
-                />
-                <a-textarea
-                  v-model:value="newConversationMessage"
-                  placeholder="Type your first message..."
-                  :rows="3"
-                  :maxlength="1000"
-                  show-count
-                  :disabled="creatingNewConversation"
-                />
-                <div class="flex justify-end space-x-2 md:space-x-3">
-                  <a-button size="small" @click="cancelNewConversation" :disabled="creatingNewConversation">
-                    Cancel
-                  </a-button>
-                  <a-button
-                    type="primary"
-                    size="small"
-                    class="bg-[#C24D45] border-none hover:bg-[#A93C35]"
-                    :loading="creatingNewConversation"
-                    :disabled="!newConversationMessage.trim() || creatingNewConversation"
-                    @click="startNewConversation"
-                  >
-                    Send
-                  </a-button>
-                </div>
-              </div>
-            </div>
-
             <!-- No thread selected -->
-            <div v-else-if="!selectedThreadId" class="h-full flex items-center justify-center text-gray-500">
+            <div v-if="!selectedThreadId" class="h-full flex items-center justify-center text-gray-500">
               <div class="text-center px-4">
                 <MessageOutlined class="text-5xl md:text-6xl mb-3 md:mb-4" />
                 <p class="text-base md:text-lg">Select a conversation to start chatting</p>
