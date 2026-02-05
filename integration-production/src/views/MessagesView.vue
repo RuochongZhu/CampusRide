@@ -1109,6 +1109,25 @@ const sendReply = async () => {
         // Update store's threadMessages to trigger reactivity
         messageStore.threadMessages['system-messages'] = [...systemMessages.value]
       }
+    } else if (selectedThread.value?.is_new_conversation) {
+      // New conversation with stranger - send first message
+      const receiverIdentifier = pendingNewConversationUserId.value
+      const isEmail = receiverIdentifier && receiverIdentifier.includes('@')
+
+      const payload = {
+        [isEmail ? 'receiver_email' : 'receiver_id']: receiverIdentifier,
+        subject: 'New conversation',
+        content: replyMessage.value.trim(),
+        message_type: 'general',
+        context_type: 'general'
+      }
+
+      await messagesAPI.sendMessage(payload)
+
+      // Reload threads and select the new one
+      await messageStore.loadMessageThreads(true)
+      userQueryHandled.value = false
+      await handleQueryThreadSelection()
     } else {
       // Regular message sending
       await messageStore.sendReply(selectedThreadId.value, replyMessage.value.trim())
@@ -1236,12 +1255,29 @@ const handleQueryThreadSelection = async () => {
       return
     }
 
-    if (targetUserEmail && targetUserEmail.includes('@')) {
-      await prepareNewConversationByEmail(targetUserEmail)
-    } else {
-      await prepareNewConversation(targetIdentifier)
+    // No existing thread - create a temporary thread for the new conversation
+    // This shows the same chat interface as existing conversations
+    const tempThread = {
+      thread_id: 'new-' + Date.now(),
+      is_new_conversation: true,
+      other_user: {
+        id: targetUserId || null,
+        email: targetUserEmail || null,
+        first_name: route.query.userName?.split(' ')[0] || (targetUserEmail ? targetUserEmail.split('@')[0] : 'User'),
+        last_name: route.query.userName?.split(' ').slice(1).join(' ') || '',
+        avatar_url: null
+      },
+      subject: 'New conversation',
+      last_message: null,
+      unread_count: 0,
+      created_at: new Date().toISOString()
     }
 
+    // Store pending user info for sending
+    pendingNewConversationUserId.value = targetUserEmail || targetUserId
+
+    // Select the temp thread to show chat interface
+    selectThread(tempThread)
     userQueryHandled.value = true
   } catch (error) {
     console.error('Failed while handling query thread selection:', error)

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/database.js';
 import socketManager from '../config/socket.js';
+import crypto from 'crypto';
 
 class MessageService {
   // Send a new message (now with reply restriction logic)
@@ -217,22 +218,60 @@ class MessageService {
   // Create new message thread
   async createNewThread(threadData) {
     try {
-      // Use the new universal function instead of direct insert
-      const { data, error } = await supabaseAdmin
-        .rpc('create_universal_message_thread', {
-          sender_id_param: threadData.senderId,
-          receiver_id_param: threadData.receiverId,
-          subject_param: threadData.subject || 'New Message',
-          content_param: threadData.content,
-          message_type_param: threadData.messageType || 'general',
-          activity_id_param: threadData.activityId || null,
-          context_type_param: threadData.contextType || 'general',
-          context_id_param: threadData.contextId || null
-        });
+      // Generate new thread ID
+      const threadId = crypto.randomUUID();
 
-      if (error) throw error;
+      // Create the first message directly (no database function needed)
+      const { data: messageData, error: messageError } = await supabaseAdmin
+        .from('messages')
+        .insert({
+          activity_id: threadData.activityId || null,
+          sender_id: threadData.senderId,
+          receiver_id: threadData.receiverId,
+          subject: threadData.subject || 'New Message',
+          content: threadData.content,
+          message_type: threadData.messageType || 'general',
+          context_type: threadData.contextType || 'general',
+          context_id: threadData.contextId || null,
+          thread_id: threadId
+        })
+        .select()
+        .single();
 
-      const threadId = data;
+      if (messageError) throw messageError;
+
+      // Add participants to the thread
+      const { error: participantsError } = await supabaseAdmin
+        .from('message_participants')
+        .insert([
+          { thread_id: threadId, user_id: threadData.senderId },
+          { thread_id: threadId, user_id: threadData.receiverId }
+        ]);
+
+      if (participantsError) {
+        console.error('Error adding participants:', participantsError);
+      }
+
+      // Create notification for receiver
+      try {
+        await supabaseAdmin
+          .from('notifications')
+          .insert({
+            user_id: threadData.receiverId,
+            type: 'new_message',
+            title: `新消息: ${threadData.subject || 'New Message'}`,
+            content: '您收到了一条新消息',
+            data: {
+              message_id: messageData.id,
+              thread_id: threadId,
+              activity_id: threadData.activityId,
+              sender_id: threadData.senderId
+            },
+            priority: 'medium'
+          });
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
 
       // Get the created message with user details
       const latestMessage = await this.getLatestMessageInThread(threadId);
