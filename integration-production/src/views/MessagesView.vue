@@ -1186,29 +1186,37 @@ const prepareNewConversationByEmail = async (userEmail) => {
 const handleQueryThreadSelection = async () => {
   const targetUserId = route.query.userId
   const targetUserEmail = route.query.userEmail
+  const targetUserName = route.query.userName
   const targetIdentifier = targetUserId || targetUserEmail
 
-  if (!targetIdentifier || userQueryHandled.value) return
+  console.log('🔍 handleQueryThreadSelection called:', { targetUserId, targetUserEmail, targetUserName, targetIdentifier, userQueryHandled: userQueryHandled.value, threadsLoading: threadsLoading.value })
+
+  if (!targetIdentifier) return
+  if (userQueryHandled.value) return
   if (threadsLoading.value) return
 
   try {
     const threads = messageThreads.value || []
+    console.log('🔍 Searching in threads:', threads.length)
 
     const existingThread = threads.find(thread => {
       const otherUser = thread.other_user
       const otherId = otherUser?.id || thread.receiver_id || thread.sender_id
-      const idMatch = otherId && String(otherId) === String(targetIdentifier)
+      const idMatch = otherId && String(otherId) === String(targetUserId)
       const otherEmail = otherUser?.email
-      const emailMatch = otherEmail && String(otherEmail) === String(targetIdentifier)
+      const emailMatch = otherEmail && String(otherEmail).toLowerCase() === String(targetUserEmail).toLowerCase()
       return idMatch || emailMatch
     })
 
     if (existingThread) {
+      console.log('✅ Found existing thread:', existingThread.thread_id)
       resetNewConversationState()
       selectThread(existingThread)
       userQueryHandled.value = true
       return
     }
+
+    console.log('📝 Creating new conversation thread for:', targetIdentifier)
 
     // No existing thread - create a temporary thread for the new conversation
     // This shows the same chat interface as existing conversations
@@ -1218,8 +1226,8 @@ const handleQueryThreadSelection = async () => {
       other_user: {
         id: targetUserId || null,
         email: targetUserEmail || null,
-        first_name: route.query.userName?.split(' ')[0] || (targetUserEmail ? targetUserEmail.split('@')[0] : 'User'),
-        last_name: route.query.userName?.split(' ').slice(1).join(' ') || '',
+        first_name: targetUserName?.split(' ')[0] || (targetUserEmail ? targetUserEmail.split('@')[0] : 'User'),
+        last_name: targetUserName?.split(' ').slice(1).join(' ') || '',
         avatar_url: null
       },
       subject: 'New conversation',
@@ -1230,9 +1238,11 @@ const handleQueryThreadSelection = async () => {
 
     // Store pending user info for sending
     pendingNewConversationUserId.value = targetUserEmail || targetUserId
+    console.log('📝 Set pendingNewConversationUserId:', pendingNewConversationUserId.value)
 
     // Select the temp thread to show chat interface
     selectThread(tempThread)
+    console.log('✅ Selected temp thread:', tempThread.thread_id)
     userQueryHandled.value = true
   } catch (error) {
     console.error('Failed while handling query thread selection:', error)

@@ -97,6 +97,10 @@ const handleMessage = () => {
   if (props.user?.email) {
     query.userEmail = props.user.email
   }
+  // Add user name for display
+  if (props.user?.first_name || props.user?.last_name) {
+    query.userName = `${props.user.first_name || ''} ${props.user.last_name || ''}`.trim()
+  }
 
   if (!query.userId && !query.userEmail) {
     console.warn('⚠️ ClickableAvatar: Missing user identifier for messaging', props.user)

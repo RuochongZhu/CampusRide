@@ -49,9 +49,12 @@
         <div class="p-8">
           <!-- Organizer Info -->
           <div class="flex items-center mb-6 p-4 bg-gray-50 rounded-lg">
-            <div class="w-12 h-12 bg-[#C24D45] rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-              {{ getOrganizerInitial() }}
-            </div>
+            <img
+              :src="activity.organizer?.avatar_url || defaultAvatar"
+              :alt="getOrganizerName()"
+              class="w-12 h-12 rounded-full object-cover mr-4"
+              @error="handleAvatarError"
+            />
             <div>
               <div class="font-semibold text-lg">Organizer</div>
               <div class="text-gray-600">{{ getOrganizerName() }}</div>
@@ -407,9 +410,12 @@
                 class="bg-gray-50 p-4 rounded-lg"
               >
                 <div class="flex items-start space-x-3">
-                  <div class="w-10 h-10 bg-[#C24D45] rounded-full flex items-center justify-center text-white font-bold">
-                    {{ getCommentUserInitial(comment) }}
-                  </div>
+                  <img
+                    :src="comment.user?.avatar_url || defaultAvatar"
+                    :alt="getCommentUserName(comment)"
+                    class="w-10 h-10 rounded-full object-cover"
+                    @error="handleAvatarError"
+                  />
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center space-x-2 mb-2">
                       <span class="font-medium text-gray-900">{{ getCommentUserName(comment) }}</span>
@@ -480,6 +486,9 @@ import ContactOrganizerModal from '@/components/activities/ContactOrganizerModal
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+
+// Default avatar
+const defaultAvatar = '/Profile_Photo.jpg'
 
 const storedUser = ref(null)
 try {
@@ -985,6 +994,10 @@ const getOrganizerInitial = () => {
   if (!activity.value?.organizer) return 'O'
   const name = activity.value.organizer.name || activity.value.organizer.email || 'Organizer'
   return name.charAt(0).toUpperCase()
+}
+
+const handleAvatarError = (e) => {
+  e.target.src = defaultAvatar
 }
 
 const getCheckinStatusText = () => {

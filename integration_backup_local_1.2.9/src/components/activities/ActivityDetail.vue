@@ -53,7 +53,7 @@
 
         <div class="organizer-info">
           <a-avatar
-            :src="activity.organizer?.avatar_url"
+            :src="activity.organizer?.avatar_url || defaultAvatar"
             :size="32"
           >
             {{ getInitials(activity.organizer) }}
@@ -125,7 +125,7 @@
             <a-avatar
               v-for="participant in activity.participants"
               :key="participant.id"
-              :src="participant.user?.avatar_url"
+              :src="participant.user?.avatar_url || defaultAvatar"
               :title="`${participant.user?.first_name} ${participant.user?.last_name}`"
             >
               {{ getInitials(participant.user) }}
@@ -312,6 +312,9 @@ const emit = defineEmits([
 // Stores
 const activityStore = useActivityStore()
 const authStore = useAuthStore()
+
+// Default avatar
+const defaultAvatar = '/Profile_Photo.jpg'
 
 // Reactive data
 const loading = ref(false)
