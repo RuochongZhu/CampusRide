@@ -18,6 +18,28 @@
       <div class="flex flex-col lg:flex-row gap-4 md:gap-8">
         <!-- Left Panel - Passenger/Driver Forms -->
         <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-lg p-4 md:p-6 h-fit">
+          <!-- Universal Search Bar -->
+          <div class="mb-4">
+            <div class="relative">
+              <input
+                v-model="universalSearch"
+                @keyup.enter="performUniversalSearch"
+                placeholder="Search rides by keyword..."
+                class="w-full px-4 py-3 pl-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <button
+                v-if="universalSearch"
+                @click="clearUniversalSearch"
+                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
           <div class="flex items-center bg-gray-100 rounded-full p-1 mb-4 md:mb-6">
             <button
               :class="['px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap flex-1', userMode === 'passenger' ? 'bg-red-600 text-white' : 'text-gray-600']"
@@ -32,132 +54,13 @@
               Driver
             </button>
           </div>
-          <!-- Passenger Mode Toggle -->
-          <div v-if="userMode === 'passenger'" class="flex items-center bg-blue-50 rounded-lg p-1 mb-4">
-            <button
-              :class="['px-2 md:px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all flex-1', passengerMode === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600']"
-              @click="passengerMode = 'search'"
-            >
-              Search Rides
-            </button>
-            <button
-              :class="['px-2 md:px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all flex-1', passengerMode === 'post' ? 'bg-blue-600 text-white' : 'text-gray-600']"
-              @click="passengerMode = 'post'"
-            >
-              Post Request
-            </button>
-          </div>
 
           <h2 class="text-lg md:text-2xl font-bold mb-4 md:mb-6">
-            {{ userMode === 'passenger'
-              ? (passengerMode === 'search' ? 'Search Rides' : 'Post Ride Request')
-              : 'Post a Trip' }}
+            {{ userMode === 'passenger' ? 'Post Ride Request' : 'Post a Trip' }}
           </h2>
 
-          <!-- Passenger Search Form -->
-          <div v-if="userMode === 'passenger' && passengerMode === 'search'">
-            <div class="mb-3 md:mb-4">
-              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Origin</label>
-              <input
-                ref="passengerOriginInput"
-                v-model="searchForm.origin"
-                placeholder="Enter pickup location"
-                class="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
-            <div class="mb-3 md:mb-4">
-              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Destination</label>
-              <input
-                ref="passengerDestInput"
-                v-model="searchForm.destination"
-                placeholder="Enter destination"
-                class="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
-            <div class="mb-3 md:mb-4">
-              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Date</label>
-              <a-date-picker v-model:value="searchForm.date" class="w-full" :disabled-date="disabledDate" format="YYYY-MM-DD" />
-            </div>
-            <div class="mb-3 md:mb-4">
-              <label class="block text-gray-700 mb-1 md:mb-2 text-sm md:text-base">Minimum Seats</label>
-              <a-input-number v-model:value="searchForm.minSeats" :min="1" :max="8" class="w-full" />
-            </div>
-
-            <!-- Advanced Filters Toggle -->
-            <div class="mb-4">
-              <a-button type="link" @click="showAdvancedFilters = !showAdvancedFilters" class="p-0">
-                {{ showAdvancedFilters ? '▼' : '▶' }} Advanced Filters
-              </a-button>
-            </div>
-
-            <!-- Advanced Filters -->
-            <div v-if="showAdvancedFilters" class="mb-4 space-y-4">
-              <div>
-                <label class="block text-gray-700 mb-2">Max Price per Seat ($)</label>
-                <a-input-number
-                  v-model:value="searchForm.maxPrice"
-                  :min="0"
-                  class="w-full"
-                  :formatter="value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
-                  :parser="value => value.replace(/\$\s?|(,*)/g, '')"
-                />
-              </div>
-
-              <div>
-                <label class="block text-gray-700 mb-2">Departure Time Range</label>
-                <a-time-picker
-                  v-model:value="searchForm.timeFrom"
-                  class="w-full mb-2"
-                  format="HH:mm"
-                  placeholder="From"
-                />
-                <a-time-picker
-                  v-model:value="searchForm.timeTo"
-                  class="w-full"
-                  format="HH:mm"
-                  placeholder="To"
-                />
-              </div>
-
-              <div>
-                <label class="block text-gray-700 mb-2">Preferences</label>
-                <a-checkbox v-model:checked="searchForm.noSmoking">No Smoking</a-checkbox>
-                <br />
-                <a-checkbox v-model:checked="searchForm.petsAllowed">Pets Allowed</a-checkbox>
-              </div>
-
-              <div>
-                <label class="block text-gray-700 mb-2">Sort By</label>
-                <a-select v-model:value="searchForm.sortBy" class="w-full">
-                  <a-select-option value="price_asc">Price: Low to High</a-select-option>
-                  <a-select-option value="price_desc">Price: High to Low</a-select-option>
-                  <a-select-option value="time_asc">Time: Earliest First</a-select-option>
-                  <a-select-option value="time_desc">Time: Latest First</a-select-option>
-                  <a-select-option value="rating_desc">Rating: High to Low</a-select-option>
-                </a-select>
-              </div>
-            </div>
-
-            <button
-              @click="searchRides"
-              :disabled="loading"
-              class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-md font-medium transition-all disabled:bg-gray-400"
-            >
-              {{ loading ? 'Searching...' : 'Find Rides' }}
-            </button>
-
-            <!-- Clear Filters Button -->
-            <button
-              v-if="hasActiveFilters"
-              @click="clearFilters"
-              class="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-md font-medium transition-all"
-            >
-              Clear All Filters
-            </button>
-          </div>
-
           <!-- Passenger Post Request Form -->
-          <div v-if="userMode === 'passenger' && passengerMode === 'post'">
+          <div v-if="userMode === 'passenger'">
             <div class="mb-4">
               <label class="block text-gray-700 mb-2">Origin</label>
               <input
@@ -590,27 +493,14 @@ const handleResize = () => {
   windowWidth.value = window.innerWidth;
 };
 
+// Universal Search
+const universalSearch = ref('');
+
 // Refs
 const userMode = ref('passenger');
-const passengerMode = ref('search'); // 'search' or 'post'
 const loading = ref(false);
 const posting = ref(false);
 const bookingRide = ref(false);
-const showAdvancedFilters = ref(false);
-
-// Search Form (Passenger)
-const searchForm = ref({
-  origin: '',
-  destination: '',
-  date: null,
-  minSeats: 1,
-  maxPrice: null,
-  timeFrom: null,
-  timeTo: null,
-  noSmoking: false,
-  petsAllowed: false,
-  sortBy: 'time_asc'
-});
 
 // Passenger Request Form
 const passengerRequestForm = ref({
@@ -653,8 +543,6 @@ const bookingForm = ref({
 });
 
 // Google Maps refs
-const passengerOriginInput = ref(null);
-const passengerDestInput = ref(null);
 const passengerRequestOriginInput = ref(null);
 const passengerRequestDestInput = ref(null);
 const driverOriginInput = ref(null);
@@ -718,40 +606,6 @@ const setupAutocomplete = () => {
       }
 
       let setupCount = 0;
-
-      // Passenger Origin Input
-      if (passengerOriginInput.value) {
-        const autocomplete1 = new google.maps.places.Autocomplete(passengerOriginInput.value, {
-          types: ['geocode', 'establishment'],
-          componentRestrictions: { country: 'us' } // 限制为美国地址
-        });
-        autocomplete1.addListener('place_changed', () => {
-          const place = autocomplete1.getPlace();
-          if (place.formatted_address) {
-            searchForm.value.origin = place.formatted_address;
-          } else if (place.name) {
-            searchForm.value.origin = place.name;
-          }
-        });
-        setupCount++;
-      }
-
-      // Passenger Destination Input
-      if (passengerDestInput.value) {
-        const autocomplete2 = new google.maps.places.Autocomplete(passengerDestInput.value, {
-          types: ['geocode', 'establishment'],
-          componentRestrictions: { country: 'us' }
-        });
-        autocomplete2.addListener('place_changed', () => {
-          const place = autocomplete2.getPlace();
-          if (place.formatted_address) {
-            searchForm.value.destination = place.formatted_address;
-          } else if (place.name) {
-            searchForm.value.destination = place.name;
-          }
-        });
-        setupCount++;
-      }
 
       // Passenger Request Origin Input
       if (passengerRequestOriginInput.value) {
@@ -855,72 +709,24 @@ const loadRides = async (params = {}) => {
   }
 };
 
-// Search rides
-const searchRides = async () => {
-  const params = {};
-
-  if (searchForm.value.origin) {
-    params.departure = searchForm.value.origin;
-  }
-  if (searchForm.value.destination) {
-    params.destination = searchForm.value.destination;
-  }
-  if (searchForm.value.date) {
-    params.date = dayjs(searchForm.value.date).format('YYYY-MM-DD');
-  }
-  if (searchForm.value.minSeats) {
-    params.minSeats = searchForm.value.minSeats;
+// Universal search functions
+const performUniversalSearch = async () => {
+  if (!universalSearch.value.trim()) {
+    await loadRides();
+    return;
   }
 
-  // Advanced filters
-  if (searchForm.value.maxPrice !== null && searchForm.value.maxPrice > 0) {
-    params.maxPrice = searchForm.value.maxPrice;
-  }
-  if (searchForm.value.timeFrom) {
-    params.timeFrom = dayjs(searchForm.value.timeFrom).format('HH:mm');
-  }
-  if (searchForm.value.timeTo) {
-    params.timeTo = dayjs(searchForm.value.timeTo).format('HH:mm');
-  }
-  if (searchForm.value.noSmoking) {
-    params.noSmoking = true;
-  }
-  if (searchForm.value.petsAllowed) {
-    params.petsAllowed = true;
-  }
-  if (searchForm.value.sortBy) {
-    params.sortBy = searchForm.value.sortBy;
-  }
-
-  currentPage.value = 1;
-  await loadRides(params);
+  const keyword = universalSearch.value.trim();
+  await loadRides({
+    departure: keyword,
+    destination: keyword,
+    searchMode: 'keyword'
+  });
 };
 
-// Computed property to check if any advanced filters are active
-const hasActiveFilters = computed(() => {
-  return searchForm.value.maxPrice !== null ||
-    searchForm.value.timeFrom !== null ||
-    searchForm.value.timeTo !== null ||
-    searchForm.value.noSmoking ||
-    searchForm.value.petsAllowed ||
-    searchForm.value.sortBy !== 'time_asc';
-});
-
-// Clear all filters
-const clearFilters = () => {
-  searchForm.value = {
-    origin: searchForm.value.origin,
-    destination: searchForm.value.destination,
-    date: searchForm.value.date,
-    minSeats: 1,
-    maxPrice: null,
-    timeFrom: null,
-    timeTo: null,
-    noSmoking: false,
-    petsAllowed: false,
-    sortBy: 'time_asc'
-  };
-  searchRides();
+const clearUniversalSearch = async () => {
+  universalSearch.value = '';
+  await loadRides();
 };
 
 // Post trip (Driver)
@@ -1061,9 +867,6 @@ const postPassengerRequest = async () => {
 
       // Reload rides
       await loadRides();
-
-      // Switch to search mode to see results
-      passengerMode.value = 'search';
     }
   } catch (error) {
     console.error('Post passenger request error:', error);

@@ -44,27 +44,31 @@ export const createRide = async (req, res, next) => {
     }
 
     // 创建拼车行程
+    const insertData = {
+      driver_id: userId,
+      title,
+      description,
+      departure_location: departureLocation,
+      destination_location: destinationLocation,
+      departure_time: depTime.toISOString(),
+      arrival_time: arrivalTime ? new Date(arrivalTime).toISOString() : null,
+      available_seats: availableSeats,
+      price_per_seat: pricePerSeat,
+      vehicle_info: vehicleInfo || {},
+      preferences: preferences || {},
+      contact_info: contactInfo || {},
+      recurring_type: recurringType,
+      rules: rules,
+      status: 'active'
+    };
+
+    // 注意: ride_type 和 flexibility 字段需要先在数据库中添加
+    // ALTER TABLE rides ADD COLUMN IF NOT EXISTS ride_type VARCHAR(20) DEFAULT 'offer';
+    // ALTER TABLE rides ADD COLUMN IF NOT EXISTS flexibility TEXT;
+
     const { data: ride, error } = await supabaseAdmin
       .from('rides')
-      .insert({
-        driver_id: userId,
-        title,
-        description,
-        departure_location: departureLocation,
-        destination_location: destinationLocation,
-        departure_time: depTime.toISOString(),
-        arrival_time: arrivalTime ? new Date(arrivalTime).toISOString() : null,
-        available_seats: availableSeats,
-        price_per_seat: pricePerSeat,
-        vehicle_info: vehicleInfo || {},
-        preferences: preferences || {},
-        contact_info: contactInfo || {},
-        recurring_type: recurringType,
-        rules: rules,
-        status: 'active',
-        ride_type: rideType,
-        flexibility: flexibility
-      })
+      .insert(insertData)
       .select(`
         *,
         driver:users!driver_id(id, first_name, last_name, university, avatar_url)
@@ -113,11 +117,16 @@ export const getRides = async (req, res, next) => {
       .gte('departure_time', new Date().toISOString()); // 只显示未来的行程
 
     // 添加筛选条件
-    if (departure) {
-      query = query.ilike('departure_location', `%${departure}%`);
-    }
-    if (destination) {
-      query = query.ilike('destination_location', `%${destination}%`);
+    if (departure && destination && req.query.searchMode === 'keyword') {
+      // 关键词搜索模式：在出发地或目的地中搜索
+      query = query.or(`departure_location.ilike.%${departure}%,destination_location.ilike.%${destination}%,title.ilike.%${departure}%`);
+    } else {
+      if (departure) {
+        query = query.ilike('departure_location', `%${departure}%`);
+      }
+      if (destination) {
+        query = query.ilike('destination_location', `%${destination}%`);
+      }
     }
     if (date) {
       const startOfDay = new Date(date);
