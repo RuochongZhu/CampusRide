@@ -1303,7 +1303,8 @@ const getOtherUserId = () => {
 
 // Check reply status for a thread
 const checkReplyStatus = async (threadId) => {
-  if (!threadId) {
+  // Skip for new conversations (thread_id starts with 'new-')
+  if (!threadId || threadId.startsWith('new-')) {
     replyStatus.value = { can_send: true, awaiting_reply: false, conversation_unlocked: false }
     return
   }
