@@ -15,7 +15,11 @@ export const useMessageStore = defineStore('message', () => {
 
   // Getters
   const selectedThread = computed(() => {
-    // If there's a custom selected thread (like system messages), use it
+    console.log('📊 selectedThread computed:', {
+      customSelectedThread: customSelectedThread.value?.thread_id,
+      selectedThreadId: selectedThreadId.value
+    })
+    // If there's a custom selected thread (like system messages or new conversations), use it
     if (customSelectedThread.value && customSelectedThread.value.thread_id === selectedThreadId.value) {
       return customSelectedThread.value
     }
