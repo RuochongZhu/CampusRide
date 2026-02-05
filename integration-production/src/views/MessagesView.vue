@@ -1191,9 +1191,16 @@ const handleQueryThreadSelection = async () => {
 
   console.log('🔍 handleQueryThreadSelection called:', { targetUserId, targetUserEmail, targetUserName, targetIdentifier, userQueryHandled: userQueryHandled.value, threadsLoading: threadsLoading.value })
 
-  if (!targetIdentifier) return
-  if (userQueryHandled.value) return
-  if (threadsLoading.value) return
+  if (!targetIdentifier) {
+    console.log('❌ No targetIdentifier, returning')
+    return
+  }
+  if (userQueryHandled.value) {
+    console.log('❌ userQueryHandled is true, returning')
+    return
+  }
+  // Don't wait for threads to load - we can create new conversation without existing threads
+  // if (threadsLoading.value) return
 
   try {
     const threads = messageThreads.value || []
