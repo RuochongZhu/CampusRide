@@ -312,6 +312,42 @@ class GroupService {
   // 检查用户是否是小组成员
   async checkMembership(groupId, userId) {
     try {
+      // 系统群组ID常量
+      const SYSTEM_GROUP_IDS = [
+        '00000000-0000-0000-0000-000000000001', // Carpooling
+        '00000000-0000-0000-0000-000000000002'  // Marketplace
+      ];
+
+      // 如果是系统群组，自动添加用户
+      if (SYSTEM_GROUP_IDS.includes(groupId)) {
+        console.log(`🔄 Checking system group ${groupId} for user ${userId}`);
+
+        // 尝试添加用户到系统群组（如果还不是成员）
+        const { error: insertError } = await supabaseAdmin
+          .from('group_members')
+          .insert({
+            group_id: groupId,
+            user_id: userId,
+            role: 'member'
+          });
+
+        // 忽略唯一约束冲突错误（用户已经是成员）
+        if (insertError && insertError.code !== '23505') {
+          console.error('❌ Failed to add user to system group:', insertError);
+          throw insertError;
+        }
+
+        console.log(`✅ User ${userId} is member of system group ${groupId}`);
+
+        // 系统群组成员检查总是返回true
+        return {
+          success: true,
+          isMember: true,
+          role: 'member'
+        };
+      }
+
+      // 普通群组的检查逻辑
       const { data: membership, error } = await supabaseAdmin
         .from('group_members')
         .select('role')
@@ -410,6 +446,173 @@ class GroupService {
       return {
         success: false,
         error: error.message
+      };
+    }
+  }
+
+  // 禁言用户
+  async muteUser(groupId, userId, mutedByUserId, reason = '') {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('group_muted_users')
+        .upsert({
+          group_id: groupId,
+          user_id: userId,
+          muted_by: mutedByUserId,
+          reason: reason,
+          muted_at: new Date().toISOString(),
+          unmuted_at: null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`✅ User ${userId} muted in group ${groupId}`);
+
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      console.error('❌ Failed to mute user:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // 取消禁言用户
+  async unmuteUser(groupId, userId) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('group_muted_users')
+        .update({ unmuted_at: new Date().toISOString() })
+        .eq('group_id', groupId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`✅ User ${userId} unmuted in group ${groupId}`);
+
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      console.error('❌ Failed to unmute user:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // 检查用户是否被禁言
+  async isUserMuted(groupId, userId) {
+    try {
+      const { data: muteRecord, error } = await supabaseAdmin
+        .from('group_muted_users')
+        .select('*')
+        .eq('group_id', groupId)
+        .eq('user_id', userId)
+        .is('unmuted_at', null)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return {
+        success: true,
+        isMuted: !!muteRecord,
+        muteRecord
+      };
+    } catch (error) {
+      console.error('❌ Failed to check mute status:', error);
+      return {
+        success: false,
+        error: error.message,
+        isMuted: false
+      };
+    }
+  }
+
+  // 撤回消息
+  async deleteMessage(messageId, deletedByUserId, reason = '') {
+    try {
+      // 先获取消息信息
+      const { data: message, error: fetchError } = await supabaseAdmin
+        .from('group_messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 标记消息为已删除
+      const { data: updatedMessage, error: updateError } = await supabaseAdmin
+        .from('group_messages')
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: deletedByUserId,
+          content: '[消息已被撤回]'
+        })
+        .eq('id', messageId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      // 记录删除日志
+      await supabaseAdmin
+        .from('group_message_deletions')
+        .insert({
+          message_id: messageId,
+          deleted_by: deletedByUserId,
+          reason: reason
+        });
+
+      console.log(`✅ Message ${messageId} deleted by ${deletedByUserId}`);
+
+      return {
+        success: true,
+        message: updatedMessage
+      };
+    } catch (error) {
+      console.error('❌ Failed to delete message:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // 检查用户是否是群组管理员（创建者）
+  async isGroupAdmin(groupId, userId) {
+    try {
+      const { data: group, error } = await supabaseAdmin
+        .from('groups')
+        .select('creator_id')
+        .eq('id', groupId)
+        .single();
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        isAdmin: group?.creator_id === userId
+      };
+    } catch (error) {
+      console.error('❌ Failed to check admin status:', error);
+      return {
+        success: false,
+        error: error.message,
+        isAdmin: false
       };
     }
   }

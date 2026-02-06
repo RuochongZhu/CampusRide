@@ -38,8 +38,26 @@
             :class="message.sender_id === currentUserId ? 'justify-end' : 'justify-start'"
           >
             <div class="max-w-[70%]">
-              <div v-if="message.sender_id !== currentUserId" class="text-xs text-gray-500 mb-1 ml-2">
-                {{ getUserName(message.sender) }}
+              <div v-if="message.sender_id !== currentUserId" class="flex items-center space-x-2 mb-1 ml-2">
+                <!-- 用户头像 -->
+                <img
+                  v-if="message.sender?.avatar_url"
+                  :src="message.sender.avatar_url"
+                  :alt="getUserName(message.sender)"
+                  class="w-6 h-6 rounded-full object-cover cursor-pointer hover:opacity-80"
+                  @click="showUserMenu(message.sender)"
+                  :title="getUserName(message.sender)"
+                />
+                <div
+                  v-else
+                  class="w-6 h-6 bg-[#C24D45] rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80"
+                  @click="showUserMenu(message.sender)"
+                  :title="getUserName(message.sender)"
+                >
+                  {{ getUserName(message.sender).charAt(0).toUpperCase() }}
+                </div>
+                <!-- 用户名 -->
+                <span class="text-xs text-gray-500">{{ getUserName(message.sender) }}</span>
               </div>
               <div
                 class="p-3 rounded-lg break-words"
@@ -241,6 +259,72 @@ const formatMessageTime = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 检查当前用户是否是群组管理员
+const isGroupAdmin = computed(() => {
+  return props.group?.creator_id === currentUserId.value
+})
+
+// 显示用户菜单（禁言选项）
+const showUserMenu = (user) => {
+  if (!isGroupAdmin.value || !user) return
+
+  // 显示禁言菜单
+  const userName = getUserName(user)
+  const confirmed = window.confirm(`是否禁言用户 ${userName}？`)
+
+  if (confirmed) {
+    muteUser(user.id, userName)
+  }
+}
+
+// 禁言用户
+const muteUser = async (userId, userName) => {
+  try {
+    const response = await groupAPI.muteUser(props.group.id, userId, {
+      reason: '管理员禁言'
+    })
+
+    if (response.data?.success) {
+      message.success(`已禁言用户 ${userName}`)
+    }
+  } catch (error) {
+    console.error('Failed to mute user:', error)
+    message.error(error.response?.data?.error?.message || '禁言失败')
+  }
+}
+
+// 撤回消息
+const deleteMessage = async (messageId) => {
+  try {
+    const response = await groupAPI.deleteMessage(props.group.id, messageId, {
+      reason: '管理员撤回'
+    })
+
+    if (response.data?.success) {
+      // 更新本地消息列表
+      const messageIndex = groupMessages.value.findIndex(m => m.id === messageId)
+      if (messageIndex !== -1) {
+        groupMessages.value[messageIndex].content = '[消息已被撤回]'
+        groupMessages.value[messageIndex].is_deleted = true
+      }
+      message.success('消息已撤回')
+    }
+  } catch (error) {
+    console.error('Failed to delete message:', error)
+    message.error(error.response?.data?.error?.message || '撤回失败')
+  }
+}
+
+// 显示消息菜单（撤回选项）
+const showMessageMenu = (message) => {
+  if (!isGroupAdmin.value) return
+
+  const confirmed = window.confirm('是否撤回此消息？')
+  if (confirmed) {
+    deleteMessage(message.id)
+  }
 }
 
 // Watch for group changes

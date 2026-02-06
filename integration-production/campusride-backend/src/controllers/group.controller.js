@@ -447,6 +447,147 @@ export const getGroupsValidation = [
   query('search').optional().isString().isLength({ max: 100 }).withMessage('搜索词最多100个字符')
 ];
 
+  // 禁言用户
+  async muteUser(req, res) {
+    try {
+      const { groupId, userId } = req.params;
+      const adminId = req.user.id;
+      const { reason } = req.body;
+
+      // 检查是否是管理员
+      const adminCheck = await groupService.isGroupAdmin(groupId, adminId);
+      if (!adminCheck.success || !adminCheck.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'NOT_ADMIN',
+            message: '只有群组管理员可以禁言用户'
+          }
+        });
+      }
+
+      const result = await groupService.muteUser(groupId, userId, adminId, reason);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MUTE_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error('❌ Mute user error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '禁言用户失败'
+        }
+      });
+    }
+  }
+
+  // 取消禁言用户
+  async unmuteUser(req, res) {
+    try {
+      const { groupId, userId } = req.params;
+      const adminId = req.user.id;
+
+      // 检查是否是管理员
+      const adminCheck = await groupService.isGroupAdmin(groupId, adminId);
+      if (!adminCheck.success || !adminCheck.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'NOT_ADMIN',
+            message: '只有群组管理员可以取消禁言'
+          }
+        });
+      }
+
+      const result = await groupService.unmuteUser(groupId, userId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'UNMUTE_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: result.data
+      });
+    } catch (error) {
+      console.error('❌ Unmute user error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '取消禁言失败'
+        }
+      });
+    }
+  }
+
+  // 撤回消息
+  async deleteMessage(req, res) {
+    try {
+      const { groupId, messageId } = req.params;
+      const deletedByUserId = req.user.id;
+      const { reason } = req.body;
+
+      // 检查是否是管理员
+      const adminCheck = await groupService.isGroupAdmin(groupId, deletedByUserId);
+      if (!adminCheck.success || !adminCheck.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'NOT_ADMIN',
+            message: '只有群组管理员可以撤回消息'
+          }
+        });
+      }
+
+      const result = await groupService.deleteMessage(messageId, deletedByUserId, reason);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'DELETE_MESSAGE_FAILED',
+            message: result.error
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: result.message
+      });
+    } catch (error) {
+      console.error('❌ Delete message error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '撤回消息失败'
+        }
+      });
+    }
+  }
+}
+
 export const groupIdValidation = [
   param('groupId').isUUID().withMessage('小组ID必须是有效的UUID')
 ];

@@ -67,6 +67,27 @@ router.post('/:groupId/messages',
   asyncHandler(groupController.sendGroupMessage.bind(groupController))
 );
 
+// 禁言用户 (需要注册用户)
+router.post('/:groupId/mute/:userId',
+  requireRegisteredUser,
+  groupIdValidation,
+  asyncHandler(groupController.muteUser.bind(groupController))
+);
+
+// 取消禁言用户 (需要注册用户)
+router.delete('/:groupId/mute/:userId',
+  requireRegisteredUser,
+  groupIdValidation,
+  asyncHandler(groupController.unmuteUser.bind(groupController))
+);
+
+// 撤回消息 (需要注册用户)
+router.delete('/:groupId/messages/:messageId',
+  requireRegisteredUser,
+  groupIdValidation,
+  asyncHandler(groupController.deleteMessage.bind(groupController))
+);
+
 // 删除小组 (需要注册用户) - 必须放在最后
 router.delete('/:groupId',
   requireRegisteredUser,

@@ -505,7 +505,14 @@ export const groupAPI = {
   getGroupMessages: (groupId, params = {}) => api.get(`/groups/${groupId}/messages`, { params }),
   sendGroupMessage: (groupId, data) => api.post(`/groups/${groupId}/messages`, data),
   deleteGroupMessage: (groupId, messageId) => api.delete(`/groups/${groupId}/messages/${messageId}`),
-  markMessagesAsRead: (groupId) => api.put(`/groups/${groupId}/messages/read`)
+  markMessagesAsRead: (groupId) => api.put(`/groups/${groupId}/messages/read`),
+
+  // 禁言相关
+  muteUser: (groupId, userId, data) => api.post(`/groups/${groupId}/mute/${userId}`, data),
+  unmuteUser: (groupId, userId) => api.delete(`/groups/${groupId}/mute/${userId}`),
+
+  // 撤回消息
+  deleteMessage: (groupId, messageId, data) => api.delete(`/groups/${groupId}/messages/${messageId}`, { data })
 };
 
 // ================================================
