@@ -201,14 +201,9 @@
 
                 <!-- Info tags and action buttons -->
                 <div class="flex items-center justify-between gap-2">
-                  <!-- Points and status tags -->
+                  <!-- Status tags -->
                   <div class="flex items-center gap-1 flex-shrink-0">
-                    <span v-if="activity.entry_fee && activity.entry_fee > 0" class="text-xs text-orange-600 font-medium whitespace-nowrap">
-                      💰 ${{ activity.entry_fee }}
-                    </span>
-                    <span v-if="activity.reward_points && activity.reward_points > 0" class="text-xs text-green-600 font-medium whitespace-nowrap">
-                      ⭐ +{{ activity.reward_points }}pts
-                    </span>
+                    <span v-if="activity.entry_fee && activity.entry_fee > 0" class="text-xs text-orange-600">💰</span>
                     <a-tag v-if="activity.status === 'completed'" color="gray" class="text-xs !m-0">Done</a-tag>
                     <a-tag v-else-if="activity.isOwner" color="blue" class="text-xs !m-0">Mine</a-tag>
                     <a-tag v-else-if="activity.isRegistered" color="green" class="text-xs !m-0">Joined</a-tag>
