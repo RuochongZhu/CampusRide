@@ -12,6 +12,7 @@ export const useMessageStore = defineStore('message', () => {
   const unreadCount = ref(0)
   const socketConnected = ref(false)
   const customSelectedThread = ref(null) // For system messages and other special threads
+  const seenMessageIds = ref(new Set())
 
   // Getters
   const selectedThread = computed(() => {
@@ -31,6 +32,22 @@ export const useMessageStore = defineStore('message', () => {
   )
 
   const hasUnreadMessages = computed(() => unreadCount.value > 0)
+
+
+  const rememberMessageId = (messageId) => {
+    if (!messageId) return false
+    if (seenMessageIds.value.has(messageId)) return true
+
+    seenMessageIds.value.add(messageId)
+    if (seenMessageIds.value.size > 1000) {
+      const oldest = seenMessageIds.value.values().next().value
+      if (oldest) {
+        seenMessageIds.value.delete(oldest)
+      }
+    }
+
+    return false
+  }
 
   // Actions
   const loadMessageThreads = async (forceRefresh = false) => {
@@ -88,6 +105,7 @@ export const useMessageStore = defineStore('message', () => {
 
         // Update thread messages
         threadMessages.value[threadId] = messages
+        messages.forEach(msg => rememberMessageId(msg?.id))
 
         // Cache in localStorage
         const cacheKey = `threadMessages_${threadId}`
@@ -154,7 +172,8 @@ export const useMessageStore = defineStore('message', () => {
           threadMessages.value[threadId] = []
         }
         const exists = threadMessages.value[threadId].some(msg => msg.id === newMessage.id)
-        if (!exists) {
+        const alreadySeen = rememberMessageId(newMessage.id)
+        if (!exists && !alreadySeen) {
           threadMessages.value[threadId].push(newMessage)
         }
 
@@ -239,6 +258,10 @@ export const useMessageStore = defineStore('message', () => {
   const addNewMessage = (message) => {
     const threadId = message.thread_id
 
+    if (rememberMessageId(message.id)) {
+      return
+    }
+
     if (threadMessages.value[threadId]?.some(msg => msg.id === message.id)) {
       return
     }
@@ -304,6 +327,7 @@ export const useMessageStore = defineStore('message', () => {
           const age = Date.now() - parseInt(cachedTimestamp)
           if (age < 5 * 60 * 1000) {
             threadMessages.value[selectedThreadIdCache] = JSON.parse(cachedMessages)
+            threadMessages.value[selectedThreadIdCache].forEach(msg => rememberMessageId(msg?.id))
             selectedThreadId.value = selectedThreadIdCache
           }
         }
@@ -315,6 +339,7 @@ export const useMessageStore = defineStore('message', () => {
 
   const clearCache = () => {
     try {
+      seenMessageIds.value = new Set()
       const keys = Object.keys(localStorage)
       keys.forEach(key => {
         if (key.startsWith('messageThreads') || key.startsWith('threadMessages_') || key === 'selectedThreadId') {

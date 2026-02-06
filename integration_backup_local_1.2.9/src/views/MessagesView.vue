@@ -116,11 +116,6 @@
                           />
                           <span v-else>{{ getThreadInitial(thread) }}</span>
                         </div>
-                        <!-- Online status indicator -->
-                        <div
-                          v-if="isUserOnline(thread.other_user?.id)"
-                          class="absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 border-2 border-white rounded-full"
-                        ></div>
                       </div>
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between">
@@ -758,13 +753,6 @@ const isSameDay = (date1, date2) => {
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
 }
-
-// Check if user is online
-const isUserOnline = (userId) => {
-  if (!userId) return false
-  return onlineUsers.value.has(String(userId))
-}
-
 // Error states (local to component)
 const threadsError = ref(null)
 const messagesError = ref(null)
