@@ -12,7 +12,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const PORT = Number.parseInt(process.env.PORT || '', 10) || 3001;
-const BIND_HOST = process.env.BIND_HOST || '127.0.0.1';
+const BIND_HOST = process.env.BIND_HOST || '0.0.0.0';
 
 // 启动服务器
 async function startServer() {
