@@ -1511,8 +1511,14 @@ const openGroupChat = (group) => {
 
 // Navigate to system group chat (Carpooling or Marketplace)
 const openSystemGroupChat = (groupType) => {
+  // Use real UUIDs for system groups
+  const systemGroupIds = {
+    carpooling: '00000000-0000-0000-0000-000000000001',
+    marketplace: '00000000-0000-0000-0000-000000000002'
+  }
+
   selectedGroup.value = {
-    id: `system-${groupType}`,
+    id: systemGroupIds[groupType],
     name: groupType === 'carpooling' ? 'Carpooling' : 'Marketplace',
     type: groupType,
     isSystemGroup: true
