@@ -1300,9 +1300,16 @@ const handleThoughtPosted = () => {
 const toggleVisibility = async () => {
   try {
     let location = null
+
+    // 只有当要变为可见时才需要获取位置
     if (!isVisible.value) {
-      // 要变为可见，获取位置
-      location = await getCurrentLocation()
+      try {
+        location = await getCurrentLocation()
+      } catch (locError) {
+        console.warn('Failed to get location:', locError.message)
+        // 位置获取失败时使用默认位置或null，不阻止操作
+        message.warning('Location unavailable, using default')
+      }
     }
 
     const response = await visibilityAPI.updateVisibility({
@@ -1314,9 +1321,12 @@ const toggleVisibility = async () => {
       isVisible.value = !isVisible.value
       message.success(isVisible.value ? 'You are now visible on the map' : 'You are now invisible')
       fetchVisibleUsers()
+    } else {
+      message.error(response.data.error?.message || 'Failed to update visibility')
     }
   } catch (error) {
-    message.error('Failed to toggle visibility')
+    console.error('Toggle visibility error:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to toggle visibility')
   }
 }
 
