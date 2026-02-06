@@ -3,13 +3,11 @@ import socketManager from '../config/socket.js';
 import crypto from 'crypto';
 
 class MessageService {
-  isMissingCanSendMessageFunction(error) {
+  isMissingRpcFunction(error, functionName) {
     if (!error) return false;
 
-    if (error.code === 'PGRST202') return true;
-
     const errorText = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
-    return errorText.includes('can_user_send_message');
+    return error.code === 'PGRST202' && errorText.includes(functionName.toLowerCase());
   }
 
   // Send a new message (now with reply restriction logic)
@@ -577,6 +575,89 @@ class MessageService {
     }
   }
 
+  async createReplyWithoutRpc(threadId, userId, content, replyToId = null) {
+    // Fallback path when reply RPC is unavailable in PostgREST schema cache.
+    const { data: firstMessage, error: firstMessageError } = await supabaseAdmin
+      .from('messages')
+      .select('activity_id, context_type, context_id, subject')
+      .eq('thread_id', threadId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (firstMessageError) throw firstMessageError;
+    if (!firstMessage) throw new Error('Thread not found');
+
+    const { data: receiverParticipant, error: receiverError } = await supabaseAdmin
+      .from('message_participants')
+      .select('user_id')
+      .eq('thread_id', threadId)
+      .eq('status', 'active')
+      .neq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (receiverError) throw receiverError;
+    if (!receiverParticipant?.user_id) {
+      throw new Error('No recipient found for thread reply');
+    }
+
+    const payload = {
+      activity_id: firstMessage.activity_id || null,
+      sender_id: userId,
+      receiver_id: receiverParticipant.user_id,
+      subject: `Re: ${firstMessage.subject || 'Message'}`,
+      content,
+      message_type: 'general',
+      context_type: firstMessage.context_type || 'general',
+      context_id: firstMessage.context_id || null,
+      thread_id: threadId
+    };
+
+    if (replyToId) {
+      payload.reply_to = replyToId;
+    }
+
+    const { data: insertedMessage, error: insertError } = await supabaseAdmin
+      .from('messages')
+      .insert(payload)
+      .select('id')
+      .single();
+
+    if (insertError) throw insertError;
+
+    await supabaseAdmin
+      .from('message_participants')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('thread_id', threadId)
+      .eq('user_id', userId);
+
+    try {
+      await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: receiverParticipant.user_id,
+          type: 'message_reply',
+          title: `回复: ${firstMessage.subject || 'Message'}`,
+          content: '您收到了一条消息回复',
+          data: {
+            message_id: insertedMessage.id,
+            thread_id: threadId,
+            activity_id: firstMessage.activity_id,
+            context_type: firstMessage.context_type,
+            context_id: firstMessage.context_id,
+            sender_id: userId
+          },
+          priority: 'medium'
+        });
+    } catch (notifError) {
+      console.error('Error creating reply notification:', notifError);
+    }
+
+    return insertedMessage.id;
+  }
+
   // Reply to a message thread
   async replyToThread(userId, threadId, content, replyToId = null) {
     try {
@@ -602,7 +683,7 @@ class MessageService {
 
       let finalCanSend = canSend;
       if (canSendError) {
-        if (this.isMissingCanSendMessageFunction(canSendError)) {
+        if (this.isMissingRpcFunction(canSendError, 'can_user_send_message')) {
           console.warn('⚠️ can_user_send_message RPC unavailable, using service fallback logic');
           finalCanSend = await this.checkCanSendMessage(threadId, userId);
         } else {
@@ -614,8 +695,8 @@ class MessageService {
         throw new Error('REPLY_REQUIRED: You must wait for the recipient to reply before sending more messages');
       }
 
-      // Use the database function to create reply
-      const { data: messageId, error: replyError } = await supabaseAdmin
+      // Use the database function to create reply; fallback to service logic if RPC is missing
+      const { data: rpcMessageId, error: replyError } = await supabaseAdmin
         .rpc('reply_to_universal_message_thread', {
           thread_id_param: threadId,
           sender_id_param: userId,
@@ -623,7 +704,19 @@ class MessageService {
           reply_to_param: replyToId
         });
 
-      if (replyError) throw replyError;
+      const messageId = replyError
+        ? (this.isMissingRpcFunction(replyError, 'reply_to_universal_message_thread')
+          ? await this.createReplyWithoutRpc(threadId, userId, content, replyToId)
+          : null)
+        : rpcMessageId;
+
+      if (replyError && !messageId) {
+        throw replyError;
+      }
+
+      if (replyError && messageId) {
+        console.warn('⚠️ reply_to_universal_message_thread RPC unavailable, using service fallback logic');
+      }
 
       // Get the created message with user details
       const enrichedMessage = await this.getMessageWithUserDetails(messageId);
