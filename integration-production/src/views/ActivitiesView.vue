@@ -60,7 +60,7 @@
             :key="group.id"
             class="bg-white rounded-lg shadow-sm p-4 md:p-6 hover:shadow-md transition-all cursor-pointer"
             :class="selectedGroupId === group.id ? 'ring-2 ring-[#C24D45]' : ''"
-            @click="goToGroupDetail(group.id)"
+            @click="selectGroup(group)"
           >
             <div class="flex items-center justify-between mb-2 md:mb-4">
               <h3 class="text-base md:text-lg font-medium text-[#333333] truncate">{{ group.name }}</h3>
@@ -1233,6 +1233,12 @@ const enterGroup = (group) => {
   selectedGroupId.value = selectedGroupId.value === group.id ? null : group.id
   fetchThoughts()
   fetchMapThoughts()
+}
+
+// Select group to filter activities
+const selectGroup = (group) => {
+  selectedGroupId.value = selectedGroupId.value === group.id ? null : group.id
+  loadActivities()
 }
 
 // Navigate to group detail page
