@@ -52,72 +52,6 @@
           </div>
         </div>
 
-        <!-- System Groups Row (Carpooling & Marketplace) -->
-        <div class="grid grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
-          <!-- System Group: Carpooling -->
-          <div
-            class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-sm p-3 md:p-6 hover:shadow-md transition-all cursor-pointer border-2 border-blue-200"
-            @click="goToSystemGroup('carpooling')"
-          >
-            <div class="flex items-center justify-between mb-2 md:mb-4">
-              <div class="flex items-center space-x-2 md:space-x-3">
-                <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
-                  <CarOutlined class="text-sm md:text-base" />
-                </div>
-                <h3 class="text-sm md:text-lg font-medium text-[#333333]">Carpooling</h3>
-              </div>
-              <a-tag color="blue" class="text-xs hidden sm:inline">System</a-tag>
-            </div>
-            <p class="text-xs md:text-sm text-[#666666] mb-2 md:mb-4 line-clamp-2 hidden sm:block">Find and share rides with fellow students.</p>
-            <div class="flex items-center justify-between text-xs md:text-sm">
-              <div class="flex items-center text-gray-500">
-                <TeamOutlined class="mr-1" />
-                <span>{{ systemGroupStats.carpooling?.memberCount || 0 }}</span>
-              </div>
-              <a-button
-                type="primary"
-                size="small"
-                class="!rounded-button bg-blue-500 border-none hover:bg-blue-600 whitespace-nowrap text-xs h-7"
-                @click.stop="openSystemGroupChat('carpooling')"
-              >
-                <MessageOutlined />
-                <span class="hidden md:inline ml-1">Chat</span>
-              </a-button>
-            </div>
-          </div>
-
-          <!-- System Group: Marketplace -->
-          <div
-            class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-sm p-3 md:p-6 hover:shadow-md transition-all cursor-pointer border-2 border-green-200"
-            @click="goToSystemGroup('marketplace')"
-          >
-            <div class="flex items-center justify-between mb-2 md:mb-4">
-              <div class="flex items-center space-x-2 md:space-x-3">
-                <div class="w-8 h-8 md:w-10 md:h-10 bg-green-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
-                  <ShopOutlined class="text-sm md:text-base" />
-                </div>
-                <h3 class="text-sm md:text-lg font-medium text-[#333333]">Marketplace</h3>
-              </div>
-              <a-tag color="green" class="text-xs hidden sm:inline">System</a-tag>
-            </div>
-            <p class="text-xs md:text-sm text-[#666666] mb-2 md:mb-4 line-clamp-2 hidden sm:block">Buy and sell items with other students.</p>
-            <div class="flex items-center justify-between text-xs md:text-sm">
-              <div class="flex items-center text-gray-500">
-                <TeamOutlined class="mr-1" />
-                <span>{{ systemGroupStats.marketplace?.memberCount || 0 }}</span>
-              </div>
-              <a-button
-                type="primary"
-                size="small"
-                class="!rounded-button bg-green-500 border-none hover:bg-green-600 whitespace-nowrap text-xs h-7"
-                @click.stop="openSystemGroupChat('marketplace')"
-              >
-                <MessageOutlined />
-                <span class="hidden md:inline ml-1">Chat</span>
-              </a-button>
-            </div>
-          </div>
-        </div>
 
         <!-- Regular Groups Grid -->
         <div v-if="myGroups.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
@@ -734,12 +668,6 @@
         :activity="selectedActivityForChat"
       />
 
-      <!-- System Group Chat Modal -->
-      <GroupChatModal
-        v-if="showSystemGroupChatModal"
-        v-model:visible="showSystemGroupChatModal"
-        :group="selectedSystemGroup"
-      />
     </div>
   </div>
 </template>
@@ -837,13 +765,6 @@ const selectedActivityForCheckin = ref(null)
 const showActivityChatModal = ref(false)
 const selectedActivityForChat = ref(null)
 
-// System groups state
-const systemGroupStats = ref({
-  carpooling: { memberCount: 0, activityCount: 0 },
-  marketplace: { memberCount: 0, activityCount: 0 }
-})
-const showSystemGroupChatModal = ref(false)
-const selectedSystemGroup = ref(null)
 
 // Google Maps instances
 let smallMap = null
@@ -1259,25 +1180,6 @@ const shareActivity = (activity) => {
 const joinActivity = (activity) => {
   alert(`Joined "${activity.title}"! The organizer will be notified.`)
   activity.participants++
-}
-
-// System group methods
-const goToSystemGroup = (groupType) => {
-  if (groupType === 'carpooling') {
-    router.push('/rideshare')
-  } else if (groupType === 'marketplace') {
-    router.push('/marketplace')
-  }
-}
-
-const openSystemGroupChat = (groupType) => {
-  selectedSystemGroup.value = {
-    id: `system-${groupType}`,
-    name: groupType === 'carpooling' ? 'Carpooling' : 'Marketplace',
-    type: groupType,
-    isSystemGroup: true
-  }
-  showSystemGroupChatModal.value = true
 }
 
 // === Groups API Methods ===

@@ -155,6 +155,49 @@
                 <p class="text-xs md:text-sm text-gray-400 mt-2">Join activities or groups to start group chatting</p>
               </div>
               <div v-else>
+                <!-- System Groups (Carpooling & Marketplace) -->
+                <div class="mb-4">
+                  <div class="px-3 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase bg-gray-50">
+                    System Groups
+                  </div>
+                  <!-- Carpooling -->
+                  <div
+                    class="p-3 md:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                    @click="openSystemGroupChat('carpooling')"
+                  >
+                    <div class="flex items-center space-x-2 md:space-x-3">
+                      <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                        <CarOutlined class="text-sm md:text-base" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h3 class="font-medium text-gray-900 truncate text-sm md:text-base">Carpooling</h3>
+                        <p class="text-xs md:text-sm text-gray-500 truncate">Find and share rides</p>
+                        <div class="flex items-center space-x-2 mt-1">
+                          <a-tag color="blue" size="small" class="text-xs">System</a-tag>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Marketplace -->
+                  <div
+                    class="p-3 md:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                    @click="openSystemGroupChat('marketplace')"
+                  >
+                    <div class="flex items-center space-x-2 md:space-x-3">
+                      <div class="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-full flex items-center justify-center text-white">
+                        <ShopOutlined class="text-sm md:text-base" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h3 class="font-medium text-gray-900 truncate text-sm md:text-base">Marketplace</h3>
+                        <p class="text-xs md:text-sm text-gray-500 truncate">Buy and sell items</p>
+                        <div class="flex items-center space-x-2 mt-1">
+                          <a-tag color="green" size="small" class="text-xs">System</a-tag>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- My Activities -->
                 <div v-if="myActivities.length > 0" class="mb-4">
                   <div class="px-3 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase bg-gray-50">
@@ -539,7 +582,9 @@ import {
   CheckOutlined,
   SmileOutlined,
   TeamOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  CarOutlined,
+  ShopOutlined
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useMessageStore } from '@/stores/message'
@@ -1461,6 +1506,17 @@ const openActivityChat = (activity) => {
 // Navigate to group chat - open modal directly
 const openGroupChat = (group) => {
   selectedGroup.value = group
+  showGroupChatModal.value = true
+}
+
+// Navigate to system group chat (Carpooling or Marketplace)
+const openSystemGroupChat = (groupType) => {
+  selectedGroup.value = {
+    id: `system-${groupType}`,
+    name: groupType === 'carpooling' ? 'Carpooling' : 'Marketplace',
+    type: groupType,
+    isSystemGroup: true
+  }
   showGroupChatModal.value = true
 }
 

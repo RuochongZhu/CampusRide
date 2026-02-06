@@ -3,6 +3,15 @@ import socketManager from '../config/socket.js';
 import crypto from 'crypto';
 
 class MessageService {
+  isMissingCanSendMessageFunction(error) {
+    if (!error) return false;
+
+    if (error.code === 'PGRST202') return true;
+
+    const errorText = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+    return errorText.includes('can_user_send_message');
+  }
+
   // Send a new message (now with reply restriction logic)
   async sendMessage(messageData) {
     try {
@@ -591,9 +600,17 @@ class MessageService {
           user_id_param: userId
         });
 
-      if (canSendError) throw canSendError;
+      let finalCanSend = canSend;
+      if (canSendError) {
+        if (this.isMissingCanSendMessageFunction(canSendError)) {
+          console.warn('⚠️ can_user_send_message RPC unavailable, using service fallback logic');
+          finalCanSend = await this.checkCanSendMessage(threadId, userId);
+        } else {
+          throw canSendError;
+        }
+      }
 
-      if (!canSend) {
+      if (!finalCanSend) {
         throw new Error('REPLY_REQUIRED: You must wait for the recipient to reply before sending more messages');
       }
 
