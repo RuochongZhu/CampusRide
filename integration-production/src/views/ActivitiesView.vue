@@ -197,22 +197,6 @@
                     <ClockCircleOutlined class="mr-1" />
                     <span>{{ activity.expiresIn }}</span>
                   </div>
-                  <div class="flex items-center">
-                    <TeamOutlined class="mr-1" />
-                    <span>{{ activity.participants }}</span>
-                  </div>
-                </div>
-
-                <!-- Progress bar -->
-                <div class="flex items-center text-xs mb-2 md:mb-3">
-                  <div class="flex-1 bg-gray-200 rounded-full h-1.5">
-                    <div
-                      class="h-1.5 rounded-full transition-all"
-                      :class="activity.timeProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'"
-                      :style="{ width: Math.min(activity.timeProgress, 100) + '%' }"
-                    ></div>
-                  </div>
-                  <span class="ml-2">{{ Math.min(Math.round(activity.timeProgress), 100) }}%</span>
                 </div>
 
                 <!-- Info tags and action buttons -->
