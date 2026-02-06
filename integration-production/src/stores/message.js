@@ -149,11 +149,14 @@ export const useMessageStore = defineStore('message', () => {
       if (response.data?.success) {
         const newMessage = response.data.data
 
-        // Add the new message to the thread
+        // Add the new message to the thread (dedupe with socket echo)
         if (!threadMessages.value[threadId]) {
           threadMessages.value[threadId] = []
         }
-        threadMessages.value[threadId].push(newMessage)
+        const exists = threadMessages.value[threadId].some(msg => msg.id === newMessage.id)
+        if (!exists) {
+          threadMessages.value[threadId].push(newMessage)
+        }
 
         // Update the thread's last message in the sidebar
         const threadIndex = messageThreads.value.findIndex(t => t.thread_id === threadId)
@@ -235,6 +238,10 @@ export const useMessageStore = defineStore('message', () => {
 
   const addNewMessage = (message) => {
     const threadId = message.thread_id
+
+    if (threadMessages.value[threadId]?.some(msg => msg.id === message.id)) {
+      return
+    }
 
     // Add message to thread if we have it loaded
     if (threadMessages.value[threadId]) {

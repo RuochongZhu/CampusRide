@@ -635,22 +635,9 @@ class MessageService {
         throw new Error('Access denied: User is not a participant in this thread');
       }
 
-      // Check if user can send message (reply restriction)
-      const { data: canSend, error: canSendError } = await supabaseAdmin
-        .rpc('can_user_send_message', {
-          thread_id_param: threadId,
-          user_id_param: userId
-        });
-
-      let finalCanSend = canSend;
-      if (canSendError) {
-        if (this.isMissingRpcFunction(canSendError, 'can_user_send_message')) {
-          console.warn('⚠️ can_user_send_message RPC unavailable, using service fallback logic');
-          finalCanSend = await this.checkCanSendMessage(threadId, userId);
-        } else {
-          throw canSendError;
-        }
-      }
+      // Apply business rule in service layer:
+      // after recipient replies once, both sides can freely message unless blocked.
+      const finalCanSend = await this.checkCanSendMessage(threadId, userId);
 
       if (!finalCanSend) {
         throw new Error('REPLY_REQUIRED: You must wait for the recipient to reply before sending more messages');
