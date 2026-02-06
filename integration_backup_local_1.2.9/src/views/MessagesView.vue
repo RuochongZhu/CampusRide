@@ -332,10 +332,6 @@
                         />
                         <span v-else>{{ selectedThread ? getThreadInitial(selectedThread) : '' }}</span>
                       </div>
-                      <div
-                        v-if="!isSystemMessagesThread && isUserOnline(selectedThread?.other_user?.id)"
-                        class="absolute bottom-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-green-500 border-2 border-white rounded-full"
-                      ></div>
                     </div>
                     <div class="min-w-0">
                       <h3 class="font-medium text-gray-900 text-sm md:text-base truncate">
@@ -343,9 +339,7 @@
                       </h3>
                       <p class="text-xs md:text-sm text-gray-600 truncate">
                         <span v-if="isSystemMessagesThread">Announcements</span>
-                        <span v-else>
-                          {{ isUserOnline(selectedThread?.other_user?.id) ? 'Online' : 'Offline' }}
-                        </span>
+                        <span v-else>Direct message</span>
                       </p>
                     </div>
                   </div>
@@ -461,13 +455,6 @@
                           >
                             {{ formatMessageTime(message.created_at) }}
                           </span>
-                          <!-- Read receipts (double check) -->
-                          <span v-if="message.sender_id === currentUserId" class="text-xs">
-                            <CheckOutlined v-if="!message.is_read" class="text-white/70" />
-                            <span v-else class="text-white">
-                              <CheckOutlined /><CheckOutlined class="-ml-1" />
-                            </span>
-                          </span>
                         </div>
                         <!-- Emoji reaction button (on hover) - hide for system messages and on mobile -->
                         <div
@@ -565,7 +552,7 @@
                     :rows="1"
                     :maxlength="1000"
                     :auto-size="{ minRows: 1, maxRows: 3 }"
-                    @keydown.enter.exact="handleEnterKey"
+                    @keydown.enter.exact.prevent="sendReply"
                     @input="handleTyping"
                     class="flex-1 text-sm md:text-base"
                   />
@@ -579,11 +566,7 @@
                   >
                     <SendOutlined />
                   </a-button>
-                </div>
-                <div class="text-xs text-gray-500 mt-1 md:mt-2 hidden md:block">
-                  Press Ctrl+Enter or Cmd+Enter to send
-                </div>
-              </div>
+                </div>              </div>
             </div>
           </div>
         </div>
@@ -624,7 +607,6 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   SearchOutlined,
-  CheckOutlined,
   SmileOutlined,
   TeamOutlined,
   ClockCircleOutlined,
@@ -1123,16 +1105,6 @@ const loadSystemMessages = async () => {
     systemMessagesUnreadCount.value = 0
   }
 }
-
-// Handle Enter key events
-const handleEnterKey = (event) => {
-  // Only send on Ctrl+Enter or Cmd+Enter
-  if (event.ctrlKey || event.metaKey) {
-    event.preventDefault()
-    sendReply()
-  }
-}
-
 // Send reply
 const sendReply = async () => {
   if (!replyMessage.value.trim() || !selectedThreadId.value) return
