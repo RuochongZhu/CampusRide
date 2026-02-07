@@ -428,24 +428,6 @@ class GroupController {
       });
     }
   }
-}
-
-// 验证规则
-export const createGroupValidation = [
-  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('小组名称必须是1-100个字符'),
-  body('description').optional().isString().isLength({ max: 1000 }).withMessage('描述最多1000个字符'),
-  body('cover_image').optional().custom((value) => {
-    // 允许空字符串或有效的URL
-    if (!value || value.trim() === '') return true;
-    return /^https?:\/\/.+/.test(value);
-  }).withMessage('封面图片必须是有效的URL或留空')
-];
-
-export const getGroupsValidation = [
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit必须是1-100之间的整数'),
-  query('offset').optional().isInt({ min: 0 }).withMessage('offset必须是非负整数'),
-  query('search').optional().isString().isLength({ max: 100 }).withMessage('搜索词最多100个字符')
-];
 
   // 禁言用户
   async muteUser(req, res) {
@@ -587,6 +569,23 @@ export const getGroupsValidation = [
     }
   }
 }
+
+// 验证规则
+export const createGroupValidation = [
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('小组名称必须是1-100个字符'),
+  body('description').optional().isString().isLength({ max: 1000 }).withMessage('描述最多1000个字符'),
+  body('cover_image').optional().custom((value) => {
+    // 允许空字符串或有效的URL
+    if (!value || value.trim() === '') return true;
+    return /^https?:\/\/.+/.test(value);
+  }).withMessage('封面图片必须是有效的URL或留空')
+];
+
+export const getGroupsValidation = [
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit必须是1-100之间的整数'),
+  query('offset').optional().isInt({ min: 0 }).withMessage('offset必须是非负整数'),
+  query('search').optional().isString().isLength({ max: 100 }).withMessage('搜索词最多100个字符')
+];
 
 export const groupIdValidation = [
   param('groupId').isUUID().withMessage('小组ID必须是有效的UUID')
