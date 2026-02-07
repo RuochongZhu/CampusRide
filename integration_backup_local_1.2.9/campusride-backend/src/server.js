@@ -31,9 +31,11 @@ async function startServer() {
       process.exit(1);
     }
 
-    // 验证数据库连接
-    console.log('🔍 Validating database connection...');
-    await validateDatabase();
+    // 验证数据库连接（非阻塞启动，避免平台健康检查超时）
+    console.log('🔍 Scheduling database validation...');
+    validateDatabase().catch((error) => {
+      console.error('❌ Background database validation failed:', error);
+    });
 
     // 在开发环境下可选择初始化数据库
     if (process.env.NODE_ENV === 'development' && process.env.INIT_DATABASE === 'true') {
