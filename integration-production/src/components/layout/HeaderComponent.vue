@@ -200,7 +200,7 @@ import UserSidebar from '@/components/user/UserSidebar.vue';
 import { useAuthStore } from '@/stores/auth';
 
 // Admin emails allowed to access admin panel
-const ADMIN_EMAILS = ['rz469@university.edu'];
+const ADMIN_EMAILS = ['rz469@cornell.edu'];
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -210,7 +210,7 @@ const userEmail = ref('');
 
 // Check if current user is an admin
 const isAdmin = computed(() => {
-  return ADMIN_EMAILS.includes(userEmail.value);
+  return ADMIN_EMAILS.includes((userEmail.value || '').toLowerCase());
 });
 
 const defaultAvatar = "/Profile_Photo.jpg";
