@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="thought"
-    class="absolute z-50 bg-white rounded-lg shadow-xl p-4 max-w-xs pointer-events-none"
+    class="fixed z-50 bg-white rounded-2xl shadow-xl border border-[#f3d6d3] p-4 max-w-xs pointer-events-none chat-bubble"
     :style="{
       left: position.x + 10 + 'px',
       top: position.y + 10 + 'px',
@@ -57,3 +57,21 @@ const formatTime = (time) => {
   return dayjs(time).fromNow()
 }
 </script>
+
+
+<style scoped>
+.chat-bubble {
+  animation: bubbleIn 0.16s ease-out;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translate(-6px, -50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%) scale(1);
+  }
+}
+</style>

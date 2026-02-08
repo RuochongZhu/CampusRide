@@ -24,6 +24,8 @@
           :thoughts="mapThoughts"
           :users="visibleUsers"
           :activities="activityStore.nearbyActivities"
+          :my-location="myLocation"
+          :highlight-target="highlightTarget"
           @marker-hover="handleMarkerHover"
           @marker-click="handleMarkerClick"
         />
@@ -99,6 +101,8 @@ const myGroups = ref([])
 const thoughts = ref([])
 const mapThoughts = ref([])
 const visibleUsers = ref([])
+const myLocation = ref(null)
+const highlightTarget = ref(null)
 const hoveredThought = ref(null)
 const bubblePosition = ref({ x: 0, y: 0 })
 const showCreateModal = ref(false)
@@ -115,6 +119,32 @@ const activityStore = useActivityStore()
 const nearbyActivityCount = computed(() => {
   return activityStore.nearbyActivities.length
 })
+
+const getActivityCoordinates = (activity) => {
+  const raw = activity?.location_coordinates || activity?.locationCoordinates || activity?.coordinates
+  if (!raw) return null
+
+  const lat = Number(raw.lat)
+  const lng = Number(raw.lng)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+const setMapHighlightTarget = (activity, coordinates = null) => {
+  const targetCoordinates = coordinates || getActivityCoordinates(activity)
+  if (!targetCoordinates) return
+
+  highlightTarget.value = {
+    id: activity?.id || null,
+    coordinates: targetCoordinates,
+    title: activity?.title || '',
+    ts: Date.now()
+  }
+}
 
 // 切换小组
 const handleSelectGroup = (groupId) => {
@@ -141,6 +171,7 @@ const toggleVisibility = async () => {
 
     if (response.data.success) {
       isVisible.value = !isVisible.value
+      myLocation.value = isVisible.value ? response.data.data.visibility?.current_location || location : null
       message.success(isVisible.value ? '您已出现在地图上' : '您已隐身')
       fetchVisibleUsers()
     }
@@ -228,8 +259,8 @@ const handleMarkerHover = (thought, event) => {
   if (thought) {
     hoveredThought.value = thought
     bubblePosition.value = {
-      x: event.clientX,
-      y: event.clientY
+      x: event?.clientX ?? bubblePosition.value.x,
+      y: event?.clientY ?? bubblePosition.value.y
     }
   } else {
     hoveredThought.value = null
@@ -249,9 +280,11 @@ const handleGroupCreated = () => {
 }
 
 // 想法发布成功
-const handleThoughtPosted = () => {
+const handleThoughtPosted = (activity) => {
   fetchThoughts()
   fetchMapThoughts()
+  activityStore.fetchActivities()
+  setMapHighlightTarget(activity)
   message.success('想法发布成功！')
 }
 
@@ -273,11 +306,13 @@ const handleDeleteThought = async (thoughtId) => {
 const handleActivityCreated = (activity) => {
   message.success('活动创建成功！')
   activityStore.fetchActivities()
+  setMapHighlightTarget(activity)
 }
 
 const handleActivityUpdated = (activity) => {
   message.success('活动更新成功！')
   activityStore.fetchActivities()
+  setMapHighlightTarget(activity)
 }
 
 const handleActivityJoined = (activity) => {
@@ -291,9 +326,13 @@ const handleActivityLeft = (activity) => {
 }
 
 const handleActivityLocationHighlight = (coordinates) => {
-  // 通知地图组件高亮特定位置
-  // 这需要在MapCanvas组件中实现相应的方法
-  console.log('Highlighting activity location:', coordinates)
+  if (!coordinates) {
+    highlightTarget.value = null
+    return
+  }
+
+  const targetCoordinates = coordinates.coordinates || coordinates
+  setMapHighlightTarget(coordinates.activity || null, targetCoordinates)
 }
 
 // 获取地图边界变化（需要在MapCanvas中触发）
@@ -313,6 +352,7 @@ onMounted(async () => {
   try {
     const response = await visibilityAPI.getMyVisibility()
     isVisible.value = response.data.data.visibility.is_visible
+    myLocation.value = response.data.data.visibility.current_location || null
   } catch (error) {
     console.error('获取可见性状态失败:', error)
   }

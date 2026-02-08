@@ -84,7 +84,18 @@
             </div>
           </div>
           <div class="activity-meta">
-            <span class="activity-organizer">{{ getOrganizerName(activity) }}</span>
+            <div class="activity-organizer-wrap">
+              <a-tooltip :title="getOrganizerBubbleText(activity)">
+                <a-avatar
+                  :src="activity.organizer?.avatar_url"
+                  :size="24"
+                  class="activity-organizer-avatar"
+                >
+                  {{ getOrganizerInitial(activity) }}
+                </a-avatar>
+              </a-tooltip>
+              <span class="activity-organizer">{{ getOrganizerName(activity) }}</span>
+            </div>
             <span class="activity-time">{{ formatTime(activity.start_time) }}</span>
           </div>
         </div>
@@ -146,6 +157,8 @@ import {
   Button as AButton,
   Tag as ATag,
   Spin as ASpin,
+  Avatar as AAvatar,
+  Tooltip as ATooltip,
   message
 } from 'ant-design-vue'
 import { EnvironmentOutlined, UserOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
@@ -322,6 +335,18 @@ const getOrganizerName = (activity) => {
   return 'Unknown'
 }
 
+const getOrganizerInitial = (activity) => {
+  const firstName = activity.organizer?.first_name || ''
+  const lastName = activity.organizer?.last_name || ''
+  return (firstName[0] || lastName[0] || '?').toUpperCase()
+}
+
+const getOrganizerBubbleText = (activity) => {
+  const name = getOrganizerName(activity)
+  const description = activity.description ? `\n${activity.description.slice(0, 60)}${activity.description.length > 60 ? '...' : ''}` : ''
+  return `${name} 发布了活动：${activity.title}${description}`
+}
+
 const formatTime = (timeString) => {
   const date = new Date(timeString)
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -360,6 +385,16 @@ onMounted(() => {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.activity-organizer-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-organizer-avatar {
+  border: 2px solid #f97316;
 }
 
 .loading-container {

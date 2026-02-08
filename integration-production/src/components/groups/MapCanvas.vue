@@ -99,6 +99,10 @@ const props = defineProps({
   myLocation: {
     type: Object,
     default: null
+  },
+  highlightTarget: {
+    type: Object,
+    default: null
   }
 })
 
@@ -116,16 +120,21 @@ let userMarkers = []
 let activityMarkers = []
 let myLocationMarker = null
 let infoWindow = null
+let isInfoWindowPinned = false
+let activityMarkerIndex = new Map()
 
 // 获取 API Key
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 // Create avatar marker icon
-const createAvatarMarkerIcon = (avatarUrl, isCurrentUser = false) => {
-  const size = isCurrentUser ? 48 : 40
-  const borderColor = isCurrentUser ? '#10B981' : '#3B82F6' // green for current user, blue for others
+const createAvatarMarkerIcon = (avatarUrl, options = {}) => {
+  const {
+    isCurrentUser = false,
+    borderColor = isCurrentUser ? '#10B981' : '#3B82F6',
+    glowColor = isCurrentUser ? 'rgba(16, 185, 129, 0.4)' : 'transparent',
+    size = isCurrentUser ? 48 : 40
+  } = options
   const borderWidth = isCurrentUser ? 4 : 3
-  const glowColor = isCurrentUser ? 'rgba(16, 185, 129, 0.4)' : 'transparent'
 
   return {
     url: `data:image/svg+xml,${encodeURIComponent(`
@@ -154,6 +163,23 @@ const createAvatarMarkerIcon = (avatarUrl, isCurrentUser = false) => {
     scaledSize: new google.maps.Size(size + 8, size + 16),
     anchor: new google.maps.Point((size + 8) / 2, size + 12)
   }
+}
+
+const normalizeCoordinates = (coords) => {
+  if (!coords) return null
+
+  const lat = Number(coords.lat)
+  const lng = Number(coords.lng)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+const getActivityCoordinates = (activity) => {
+  return normalizeCoordinates(activity.location_coordinates || activity.locationCoordinates || activity.coordinates)
 }
 
 // Create simple avatar marker for fallback
@@ -217,12 +243,25 @@ const initMap = async () => {
 
     // 创建 InfoWindow
     infoWindow = new google.maps.InfoWindow()
+    infoWindow.addListener('closeclick', () => {
+      isInfoWindowPinned = false
+    })
+
+    map.addListener('click', () => {
+      isInfoWindowPinned = false
+      infoWindow.close()
+      emit('marker-hover', null, null)
+    })
 
     // 渲染标记
     renderThoughtMarkers()
     renderUserMarkers()
     renderActivityMarkers()
     renderMyLocationMarker()
+
+    if (props.highlightTarget) {
+      focusHighlightedTarget()
+    }
 
     // 如果有标记，自动调整视图
     fitMapToMarkers()
@@ -244,7 +283,8 @@ const renderThoughtMarkers = () => {
   thoughtMarkers = []
 
   props.thoughts.forEach(thought => {
-    if (!thought.location || !thought.location.lat || !thought.location.lng) {
+    const thoughtLocation = normalizeCoordinates(thought.location)
+    if (!thoughtLocation) {
       return
     }
 
@@ -253,25 +293,19 @@ const renderThoughtMarkers = () => {
     const isCurrentUser = thought.user?.id === authStore.userId
 
     const marker = new google.maps.Marker({
-      position: {
-        lat: thought.location.lat,
-        lng: thought.location.lng
-      },
+      position: thoughtLocation,
       map: map,
       title: thought.content.substring(0, 50),
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 14,
-        fillColor: '#C24D45',
-        fillOpacity: 1,
-        strokeColor: 'white',
-        strokeWeight: 3
-      },
+      icon: createAvatarMarkerIcon(avatarUrl, {
+        isCurrentUser,
+        borderColor: isCurrentUser ? '#10B981' : '#C24D45'
+      }),
       animation: google.maps.Animation.DROP
     })
 
     // 点击事件
     marker.addListener('click', () => {
+      isInfoWindowPinned = true
       const content = `
         <div style="max-width: 280px; padding: 12px;">
           <div style="display: flex; align-items: center; margin-bottom: 12px;">
@@ -311,9 +345,18 @@ const renderThoughtMarkers = () => {
     })
 
     // 悬停效果
-    marker.addListener('mouseover', () => {
+    marker.addListener('mouseover', (e) => {
       marker.setAnimation(google.maps.Animation.BOUNCE)
       setTimeout(() => marker.setAnimation(null), 750)
+      if (!isInfoWindowPinned) {
+        emit('marker-hover', thought, e?.domEvent || e)
+      }
+    })
+
+    marker.addListener('mouseout', () => {
+      if (!isInfoWindowPinned) {
+        emit('marker-hover', null, null)
+      }
     })
 
     thoughtMarkers.push(marker)
@@ -329,12 +372,15 @@ const renderUserMarkers = () => {
   userMarkers = []
 
   props.users.forEach(user => {
-    if (!user.location || !user.location.lat || !user.location.lng) {
+    const userLocation = normalizeCoordinates(user.location)
+    if (!userLocation) {
       return
     }
 
+    const userId = user.id || user.user_id
+
     // Skip current user (they have a separate marker)
-    if (user.id === authStore.userId) {
+    if (userId && userId === authStore.userId) {
       return
     }
 
@@ -342,17 +388,60 @@ const renderUserMarkers = () => {
 
     // Create avatar-based marker for users
     const marker = new google.maps.Marker({
-      position: {
-        lat: user.location.lat,
-        lng: user.location.lng
-      },
+      position: userLocation,
       map: map,
-      title: user.name || `${user.first_name} ${user.last_name}`,
-      icon: createAvatarMarkerIcon(avatarUrl, false)
+      title: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+      icon: createAvatarMarkerIcon(avatarUrl)
+    })
+
+    // 悬停气泡 - 显示用户最新想法（对话气泡效果）
+    marker.__activityId = markerActivityId
+    marker.__infoContent = content
+
+    if (markerActivityId) {
+      activityMarkerIndex.set(markerActivityId, marker)
+    }
+
+    marker.addListener('mouseover', () => {
+      if (isInfoWindowPinned) return
+
+      const displayName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'
+      const thoughtText = user.latest_thought || ''
+      const thoughtTime = user.latest_thought_time
+        ? new Date(user.latest_thought_time).toLocaleString('en-US')
+        : ''
+
+      const hoverContent = `
+        <div style="max-width: 260px; padding: 10px 12px;">
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <img src="${avatarUrl}"
+                 style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; border: 2px solid #3B82F6; object-fit: cover;"
+                 onerror="this.src='https://via.placeholder.com/36'" />
+            <div>
+              <div style="font-weight: 600; color: #333; font-size: 13px;">${displayName}</div>
+              ${thoughtTime ? `<div style="font-size: 11px; color: #888;">${thoughtTime}</div>` : ''}
+            </div>
+          </div>
+          ${thoughtText
+            ? `<div style="color: #333; line-height: 1.5; font-size: 12px; background: #f3f4f6; padding: 8px 10px; border-radius: 10px;">${thoughtText}</div>`
+            : `<div style="font-size: 12px; color: #666;">No recent thought</div>`
+          }
+        </div>
+      `
+
+      infoWindow.setContent(hoverContent)
+      infoWindow.open(map, marker)
+    })
+
+    marker.addListener('mouseout', () => {
+      if (isInfoWindowPinned) return
+      infoWindow.close()
     })
 
     // 点击事件 - 显示用户信息和聊天按钮
     marker.addListener('click', () => {
+      isInfoWindowPinned = true
+
       const displayName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'
       const content = `
         <div style="max-width: 240px; padding: 12px;">
@@ -370,7 +459,7 @@ const renderUserMarkers = () => {
               }
             </div>
           </div>
-          <button onclick="window.dispatchEvent(new CustomEvent('chat-with-user', {detail: {userId: '${user.id}', userName: '${displayName}'}}));"
+          <button onclick="window.dispatchEvent(new CustomEvent('chat-with-user', {detail: {userId: '${userId}', userName: '${displayName}'}}));"
                   style="margin-top: 12px; width: 100%; padding: 10px 16px; background: #3B82F6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
             💬 Start Chat
           </button>
@@ -400,14 +489,16 @@ const renderMyLocationMarker = () => {
   let currentUserAvatar = authStore.user?.avatar_url || 'https://via.placeholder.com/40'
 
   if (!myLoc) {
-    const currentUser = props.users.find(u => u.id === authStore.userId)
+    const currentUser = props.users.find(u => (u.id || u.user_id) === authStore.userId)
     if (currentUser && currentUser.location) {
       myLoc = currentUser.location
       currentUserAvatar = currentUser.avatar || currentUser.avatar_url || currentUserAvatar
     }
   }
 
-  if (!myLoc || !myLoc.lat || !myLoc.lng) {
+  myLoc = normalizeCoordinates(myLoc)
+
+  if (!myLoc) {
     return
   }
 
@@ -419,7 +510,7 @@ const renderMyLocationMarker = () => {
     },
     map: map,
     title: 'My Location',
-    icon: createAvatarMarkerIcon(currentUserAvatar, true),
+    icon: createAvatarMarkerIcon(currentUserAvatar, { isCurrentUser: true }),
     zIndex: 1000 // Ensure it's on top
   })
 
@@ -465,99 +556,153 @@ const renderActivityMarkers = () => {
   // 清除旧标记
   activityMarkers.forEach(marker => marker.setMap(null))
   activityMarkers = []
+  activityMarkerIndex.clear()
 
   props.activities.forEach(activity => {
-    if (!activity.location_coordinates || !activity.location_coordinates.lat || !activity.location_coordinates.lng) {
+    const activityLocation = getActivityCoordinates(activity)
+    if (!activityLocation) {
       return
     }
 
+    const organizerAvatar = activity.organizer?.avatar_url
+    const markerActivityId = activity.id || null
     const marker = new google.maps.Marker({
-      position: {
-        lat: activity.location_coordinates.lat,
-        lng: activity.location_coordinates.lng
-      },
+      position: activityLocation,
       map: map,
       title: activity.title,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 14,
-        fillColor: '#f97316', // orange-500
-        fillOpacity: 1,
-        strokeColor: 'white',
-        strokeWeight: 2
-      },
+      icon: organizerAvatar
+        ? createAvatarMarkerIcon(organizerAvatar, { borderColor: '#f97316', size: 42 })
+        : {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 14,
+            fillColor: '#f97316',
+            fillOpacity: 1,
+            strokeColor: 'white',
+            strokeWeight: 2
+          },
       animation: google.maps.Animation.DROP
     })
 
-    // 点击事件
-    marker.addListener('click', () => {
-      const startTime = new Date(activity.start_time)
-      const endTime = new Date(activity.end_time)
-      const now = new Date()
+    const startTime = new Date(activity.start_time)
+    const endTime = new Date(activity.end_time)
+    const now = new Date()
 
-      let statusColor = '#10b981' // green
-      let statusText = 'Upcoming'
+    let statusColor = '#10b981'
+    let statusText = 'Upcoming'
 
-      if (now > startTime && now < endTime) {
-        statusColor = '#3b82f6' // blue
-        statusText = 'In Progress'
-      } else if (now > endTime) {
-        statusColor = '#6b7280' // gray
-        statusText = 'Ended'
-      }
+    if (now > startTime && now < endTime) {
+      statusColor = '#3b82f6'
+      statusText = 'In Progress'
+    } else if (now > endTime) {
+      statusColor = '#6b7280'
+      statusText = 'Ended'
+    }
 
-      const content = `
-        <div style="max-width: 300px; padding: 12px;">
-          <div style="display: flex; align-items: center; margin-bottom: 12px;">
-            <div style="width: 8px; height: 8px; background-color: ${statusColor}; border-radius: 50%; margin-right: 8px;"></div>
-            <div style="font-weight: 600; color: #333; font-size: 16px;">${activity.title}</div>
+    const organizerName = activity.organizer
+      ? `${activity.organizer.first_name || ''} ${activity.organizer.last_name || ''}`.trim()
+      : 'Organizer'
+
+    const content = `
+      <div style="max-width: 320px; padding: 12px;">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          ${organizerAvatar
+            ? `<img src="${organizerAvatar}" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; border: 2px solid #f97316; object-fit: cover;" onerror="this.src='https://via.placeholder.com/40'" />`
+            : `<div style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; background: #fed7aa; color: #9a3412; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">ACT</div>`
+          }
+          <div style="min-width: 0;">
+            <div style="font-weight: 600; color: #333; font-size: 15px; line-height: 1.4;">${activity.title}</div>
+            <div style="font-size: 12px; color: #666;">by ${organizerName}</div>
           </div>
+        </div>
 
-          <div style="margin-bottom: 8px;">
-            <span style="display: inline-block; background-color: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 8px;">
-              ${activity.category}
-            </span>
-            <span style="color: ${statusColor}; font-weight: 500; font-size: 12px;">${statusText}</span>
+        <div style="margin-bottom: 8px;">
+          <span style="display: inline-block; background-color: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 8px;">
+            ${activity.category}
+          </span>
+          <span style="color: ${statusColor}; font-weight: 500; font-size: 12px;">${statusText}</span>
+        </div>
+
+        <div style="color: #555; line-height: 1.5; margin-bottom: 8px; font-size: 13px;">
+          ${activity.description?.substring(0, 100)}${activity.description?.length > 100 ? '...' : ''}
+        </div>
+
+        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+          <div style="margin-bottom: 4px;">
+            🕒 ${startTime.toLocaleDateString('en-US')} ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
           </div>
-
-          <div style="color: #555; line-height: 1.5; margin-bottom: 8px; font-size: 14px;">
-            ${activity.description?.substring(0, 100)}${activity.description?.length > 100 ? '...' : ''}
+          <div style="margin-bottom: 4px;">
+            📍 ${activity.location || 'Unknown location'}
           </div>
-
-          <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-            <div style="margin-bottom: 4px;">
-              🕒 ${startTime.toLocaleDateString('en-US')} ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-            </div>
-            <div style="margin-bottom: 4px;">
-              📍 ${activity.location}
-            </div>
-            ${activity.current_participants !== undefined ?
-              `<div>👥 ${activity.current_participants || 0}${activity.max_participants ? `/${activity.max_participants}` : ''} participants</div>` :
-              ''
-            }
-          </div>
-
-          ${activity.reward_points > 0 ?
-            `<div style="background-color: #fef3cd; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #92400e;">
-              🏆 Reward: ${activity.reward_points} points
-            </div>` :
-            ''
+          ${activity.current_participants !== undefined
+            ? `<div>👥 ${activity.current_participants || 0}${activity.max_participants ? `/${activity.max_participants}` : ''} participants</div>`
+            : ''
           }
         </div>
-      `
+
+        ${activity.reward_points > 0
+          ? `<div style="background-color: #fef3cd; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #92400e;">🏆 Reward: ${activity.reward_points} points</div>`
+          : ''
+        }
+      </div>
+    `
+
+    marker.addListener('mouseover', () => {
+      if (isInfoWindowPinned) return
+      infoWindow.setContent(content)
+      infoWindow.open(map, marker)
+    })
+
+    marker.addListener('mouseout', () => {
+      if (isInfoWindowPinned) return
+      infoWindow.close()
+    })
+
+    marker.addListener('click', () => {
+      isInfoWindowPinned = true
       infoWindow.setContent(content)
       infoWindow.open(map, marker)
       emit('marker-click', activity)
     })
 
-    // 悬停效果
-    marker.addListener('mouseover', () => {
-      marker.setAnimation(google.maps.Animation.BOUNCE)
-      setTimeout(() => marker.setAnimation(null), 750)
-    })
-
     activityMarkers.push(marker)
   })
+}
+
+const focusHighlightedTarget = () => {
+  if (!map || !props.highlightTarget) return
+
+  const targetCoordinates = normalizeCoordinates(props.highlightTarget.coordinates)
+  if (!targetCoordinates) return
+
+  map.panTo(targetCoordinates)
+  if (map.getZoom() < 16) {
+    map.setZoom(16)
+  }
+
+  let targetMarker = null
+  if (props.highlightTarget.id) {
+    targetMarker = activityMarkerIndex.get(props.highlightTarget.id) || null
+  }
+
+  if (!targetMarker) {
+    targetMarker = activityMarkers.find((marker) => {
+      const position = marker.getPosition()
+      if (!position) return false
+      return Math.abs(position.lat() - targetCoordinates.lat) < 0.00001 &&
+             Math.abs(position.lng() - targetCoordinates.lng) < 0.00001
+    }) || null
+  }
+
+  if (!targetMarker) return
+
+  targetMarker.setAnimation(google.maps.Animation.BOUNCE)
+  setTimeout(() => targetMarker.setAnimation(null), 900)
+
+  if (targetMarker.__infoContent) {
+    isInfoWindowPinned = false
+    infoWindow.setContent(targetMarker.__infoContent)
+    infoWindow.open(map, targetMarker)
+  }
 }
 
 // 调整地图视图以显示所有标记
@@ -636,6 +781,9 @@ watch(
     if (map) {
       renderActivityMarkers()
       fitMapToMarkers()
+      if (props.highlightTarget) {
+        focusHighlightedTarget()
+      }
     }
   },
   { deep: true }
@@ -647,6 +795,16 @@ watch(
     if (map) {
       renderMyLocationMarker()
       fitMapToMarkers()
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.highlightTarget,
+  () => {
+    if (map && props.highlightTarget) {
+      focusHighlightedTarget()
     }
   },
   { deep: true }

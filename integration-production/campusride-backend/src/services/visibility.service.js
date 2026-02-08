@@ -77,7 +77,8 @@ class VisibilityService {
             id,
             first_name,
             last_name,
-            
+            avatar_url,
+            email,
             university
           )
         `)
@@ -111,8 +112,13 @@ class VisibilityService {
             .single();
 
           return {
+            id: userVis.user_id,
             user_id: userVis.user_id,
+            first_name: userVis.user?.first_name || '',
+            last_name: userVis.user?.last_name || '',
             name: `${userVis.user?.first_name || ''} ${userVis.user?.last_name || ''}`.trim(),
+            avatar_url: userVis.user?.avatar_url || null,
+            email: userVis.user?.email || null,
             university: userVis.user?.university,
             location: userVis.current_location,
             has_thought: !!latestThought,

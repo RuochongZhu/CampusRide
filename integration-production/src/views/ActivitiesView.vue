@@ -157,7 +157,7 @@
             </div>
             <div v-else class="space-y-4 md:space-y-6">
               <div
-                v-for="activity in filteredActivities"
+                v-for="activity in paginatedActivities"
                 :key="activity.id"
                 class="bg-[#FAFAFA] rounded-lg p-3 md:p-4 hover:shadow-md transition-all duration-300 cursor-pointer"
                 @mouseenter="highlightRadarDot(activity.id)"
@@ -209,96 +209,21 @@
                     <a-tag v-else-if="activity.isRegistered" color="green" class="text-xs !m-0">Joined</a-tag>
                   </div>
 
-                  <!-- Action buttons - inline row -->
+                  <!-- Action buttons - role-based -->
                   <div class="flex items-center gap-1 flex-shrink-0">
                     <a-button
+                      v-for="action in getActivityActions(activity)"
+                      :key="`${activity.id}-${action.key}`"
                       size="small"
-                      class="!rounded-button text-xs h-7 w-7 p-0 flex items-center justify-center"
-                      @click.stop="() => $router.push(`/activities/${activity.id}`)"
+                      :type="action.type"
+                      :class="action.className"
+                      :disabled="action.disabled"
+                      :loading="action.loading"
+                      @click.stop="handleActivityAction(action.key, activity)"
                     >
-                      <EyeOutlined />
+                      <component :is="action.icon" v-if="action.icon" />
+                      <span v-if="action.label" class="hidden sm:inline ml-1">{{ action.label }}</span>
                     </a-button>
-                    <a-button
-                      size="small"
-                      class="!rounded-button text-xs h-7 w-7 p-0 hidden sm:flex items-center justify-center"
-                      @click.stop="shareActivity(activity)"
-                    >
-                      <ShareAltOutlined />
-                    </a-button>
-
-                    <!-- Owner actions -->
-                    <template v-if="activity.isOwner">
-                      <a-button
-                        size="small"
-                        class="!rounded-button text-xs h-7 w-7 p-0 hidden sm:flex items-center justify-center"
-                        @click.stop="editActivity(activity)"
-                      >
-                        <EditOutlined />
-                      </a-button>
-                      <a-button
-                        size="small"
-                        class="!rounded-button text-xs h-7 w-7 p-0 flex items-center justify-center"
-                        @click.stop="showParticipants(activity)"
-                      >
-                        <TeamOutlined />
-                      </a-button>
-                      <a-button
-                        v-if="activity.status === 'ongoing'"
-                        type="primary"
-                        size="small"
-                        class="!rounded-button bg-[#52C41A] border-none hover:bg-[#45A117] text-xs h-7 w-7 p-0 flex items-center justify-center"
-                        @click.stop="generateCheckinCode(activity)"
-                      >
-                        <QrcodeOutlined />
-                      </a-button>
-                    </template>
-
-                    <!-- Participant actions -->
-                    <template v-else>
-                      <a-button
-                        v-if="activity.isRegistered"
-                        size="small"
-                        class="!rounded-button bg-[#FA8C16] border-none hover:bg-[#D46B08] text-white text-xs h-7 w-7 p-0 flex items-center justify-center"
-                        @click.stop="openActivityChat(activity)"
-                      >
-                        <MessageOutlined />
-                      </a-button>
-
-                      <template v-if="activity.status !== 'completed'">
-                        <a-button
-                          v-if="!activity.isRegistered"
-                          type="primary"
-                          size="small"
-                          class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] text-xs h-7 px-2 flex items-center"
-                          @click.stop="registerForActivity(activity)"
-                          :disabled="activity.max_participants && activity.current_participants >= activity.max_participants"
-                          :loading="activity.registering"
-                        >
-                          <UserAddOutlined v-if="!activity.registering" />
-                          <span class="hidden sm:inline ml-1">Join</span>
-                        </a-button>
-
-                        <a-button
-                          v-else
-                          size="small"
-                          class="!rounded-button bg-gray-500 border-none hover:bg-gray-600 text-white text-xs h-7 w-7 p-0 hidden sm:flex items-center justify-center"
-                          @click.stop="cancelRegistration(activity)"
-                          :loading="activity.cancelling"
-                        >
-                          <UserDeleteOutlined v-if="!activity.cancelling" />
-                        </a-button>
-
-                        <a-button
-                          v-if="canCheckin(activity)"
-                          type="primary"
-                          size="small"
-                          class="!rounded-button bg-[#FA8C16] border-none hover:bg-[#D46B08] text-xs h-7 w-7 p-0 flex items-center justify-center"
-                          @click.stop="openActivityCheckinModal(activity)"
-                        >
-                          <CheckCircleOutlined />
-                        </a-button>
-                      </template>
-                    </template>
                   </div>
                 </div>
               </div>
@@ -306,7 +231,13 @@
 
             <!-- Pagination -->
             <div class="mt-4 md:mt-6 flex justify-center">
-              <a-pagination v-model:current="currentPage" :total="totalPages" size="small" :simple="true" />
+              <a-pagination
+                v-model:current="currentPage"
+                :total="paginationTotal"
+                :page-size="PAGE_SIZE"
+                size="small"
+                :simple="true"
+              />
             </div>
           </div>
         </div>
@@ -652,7 +583,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   BellOutlined,
@@ -686,6 +617,11 @@ import ActivityChatModal from '@/components/activities/ActivityChatModal.vue'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import { useActivityFeed } from '@/composables/useActivityFeed'
+import { useGroupsHub } from '@/composables/useGroupsHub'
+import { useActivityMap } from '@/composables/useActivityMap'
+import { useActivityCheckin } from '@/composables/useActivityCheckin'
+import { useActivityParticipation } from '@/composables/useActivityParticipation'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -704,62 +640,68 @@ const feedFilter = ref('all')
 const distanceFilter = ref(1000)
 const sortOption = ref('newest')
 const currentPage = ref(1)
-const activeRadarDot = ref(null)
-const isMapExpanded = ref(false)
-const hoveredDot = ref(null)
-
-// Groups related state
-const myGroups = ref([])
-const allGroups = ref([])
-const selectedGroupId = ref(null)
-const showCreateGroupModal = ref(false)
-const showPostThoughtModal = ref(false)
-const showBrowseGroupsModal = ref(false)
-const showGroupChatModal = ref(false)
-const selectedGroupForChat = ref(null)
-
-// Visibility state
-const isVisible = ref(true)
-
-// Thoughts state
-const thoughts = ref([])
-const mapThoughts = ref([])
-const visibleUsers = ref([])
-
-// Activity functionality state
-const showCheckinModal = ref(false)
-const showParticipantsModal = ref(false)
-const showCheckinCodeModal = ref(false)
-const selectedActivity = ref(null)
-const checkinForm = ref({
-  location: null,
-  checking: false
-})
-const participantsList = ref([])
-
-// New checkin modal state
-const showActivityCheckinModal = ref(false)
-const selectedActivityForCheckin = ref(null)
-
-// Activity chat modal state
-const showActivityChatModal = ref(false)
-const selectedActivityForChat = ref(null)
-
-
-// Google Maps instances
-let smallMap = null
-let largeMap = null
-let thoughtMarkers = []
-let userMarkers = []
-
-// Filter options
-const feedFilters = ['all', 'groups', 'urgent']
 
 // Activities data
 const activities = ref([])
 const activitiesLoading = ref(false)
 const activitiesError = ref(null)
 const participatedActivityIds = ref(new Set())
+
+const {
+  myGroups,
+  allGroups,
+  selectedGroupId,
+  showCreateGroupModal,
+  showPostThoughtModal,
+  showBrowseGroupsModal,
+  showGroupChatModal,
+  selectedGroupForChat,
+  fetchMyGroups,
+  fetchAllGroups,
+  joinGroupHandler,
+  leaveGroupHandler,
+  deleteGroupHandler,
+  selectGroup,
+  handleGroupCreated,
+  isGroupJoined,
+  openGroupChat
+} = useGroupsHub({
+  groupAPI,
+  onGroupChanged: async () => {
+    await fetchThoughts()
+    await fetchMapThoughts()
+    await fetchVisibleUsers()
+  },
+  loadActivities: () => loadActivities()
+})
+
+const {
+  isVisible,
+  thoughts,
+  mapThoughts,
+  visibleUsers,
+  activeRadarDot,
+  isMapExpanded,
+  hoveredDot,
+  fetchThoughts,
+  fetchMapThoughts,
+  fetchVisibleUsers,
+  toggleVisibility,
+  getCurrentLocation,
+  initGoogleMaps,
+  toggleMapExpand,
+  showDotInfo,
+  hideDotInfo,
+  highlightRadarDot,
+  resetRadarDot,
+  loadMyVisibility
+} = useActivityMap({
+  thoughtAPI,
+  visibilityAPI,
+  message,
+  selectedGroupId,
+  handleUserMessage: (user) => handleUserMessage(user)
+})
 
 const CATEGORY_LABELS = {
   academic: 'Academic',
@@ -1068,71 +1010,7 @@ const loadActivities = async () => {
   }
 }
 
-// Computed properties
-const filteredActivities = computed(() => {
-  let filtered = [...activities.value]
-
-  if (feedFilter.value === 'groups') {
-    filtered = filtered.filter(activity =>
-      activity.isOwner || participatedActivityIds.value.has(activity.id)
-    )
-  } else if (feedFilter.value === 'urgent') {
-    const now = Date.now()
-    filtered = filtered.filter(activity => {
-      if (!activity.start_time) return false
-      const startTime = new Date(activity.start_time).getTime()
-      return startTime > now && (startTime - now) <= 2 * 60 * 60 * 1000 // within 2 hours
-    })
-  }
-
-  if (sortOption.value === 'newest') {
-    filtered.sort((a, b) => new Date(b.start_time || b.created_at || 0) - new Date(a.start_time || a.created_at || 0))
-  } else if (sortOption.value === 'closest') {
-    filtered.sort((a, b) => {
-      const aTime = new Date(a.start_time || 0).getTime()
-      const bTime = new Date(b.start_time || 0).getTime()
-      return aTime - bTime
-    })
-  }
-
-  return filtered
-})
-
-const totalPages = computed(() => {
-  return Math.ceil(filteredActivities.value.length / 10) || 1
-})
-
-// Methods
-const joinGroup = (group) => {
-  alert(`Joined ${group.name}! You'll receive notifications about group activities.`)
-}
-
-const highlightRadarDot = (activityId) => {
-  activeRadarDot.value = activityId
-}
-
-const resetRadarDot = () => {
-  activeRadarDot.value = null
-}
-
-const toggleMapExpand = () => {
-  isMapExpanded.value = !isMapExpanded.value
-  if (isMapExpanded.value) {
-    // 等待 modal 渲染后初始化大地图
-    nextTick(() => {
-      initLargeMap()
-    })
-  }
-}
-
-const showDotInfo = (dot) => {
-  hoveredDot.value = dot
-}
-
-const hideDotInfo = () => {
-  hoveredDot.value = null
-}
-
+// UI helpers (view-only interactions)
 const focusActivity = (activityId) => {
   if (activityId) {
     const element = document.querySelector(`[data-activity-id="${activityId}"]`)
@@ -1162,134 +1040,6 @@ const joinActivity = (activity) => {
   activity.participants++
 }
 
-// === Groups API Methods ===
-const fetchMyGroups = async () => {
-  try {
-    const response = await groupAPI.getMyGroups()
-    myGroups.value = response.data.data.groups || []
-  } catch (error) {
-    console.error('Failed to fetch my groups:', error)
-    message.error('Failed to fetch groups list')
-  }
-}
-
-const fetchAllGroups = async () => {
-  try {
-    const response = await groupAPI.getGroups()
-    allGroups.value = response.data.data.groups || []
-  } catch (error) {
-    console.error('Failed to fetch all groups:', error)
-  }
-}
-
-const joinGroupHandler = async (groupId) => {
-  try {
-    const response = await groupAPI.joinGroup(groupId)
-    if (response.data.success) {
-      message.success('Group joined successfully!')
-      await fetchMyGroups()
-      await fetchAllGroups()
-    }
-  } catch (error) {
-    message.error(error.response?.data?.error?.message || 'Failed to join group')
-  }
-}
-
-const leaveGroupHandler = async (groupId) => {
-  try {
-    const response = await groupAPI.leaveGroup(groupId)
-    if (response.data.success) {
-      message.success('Left the group')
-      if (selectedGroupId.value === groupId) {
-        selectedGroupId.value = null
-      }
-      await fetchMyGroups()
-      await fetchThoughts()
-      await fetchMapThoughts()
-    }
-  } catch (error) {
-    message.error(error.response?.data?.error?.message || 'Failed to leave group')
-  }
-}
-
-const deleteGroupHandler = async (groupId) => {
-  try {
-    const response = await groupAPI.deleteGroup(groupId)
-    if (response.data.success) {
-      message.success('Group deleted successfully')
-      if (selectedGroupId.value === groupId) {
-        selectedGroupId.value = null
-      }
-      await fetchMyGroups()
-      await fetchAllGroups()
-      await fetchThoughts()
-      await fetchMapThoughts()
-    }
-  } catch (error) {
-    message.error(error.response?.data?.error?.message || 'Failed to delete group')
-  }
-}
-
-const enterGroup = (group) => {
-  selectedGroupId.value = selectedGroupId.value === group.id ? null : group.id
-  fetchThoughts()
-  fetchMapThoughts()
-}
-
-// Select group to filter activities
-const selectGroup = (group) => {
-  selectedGroupId.value = selectedGroupId.value === group.id ? null : group.id
-  loadActivities()
-}
-
-// Navigate to group detail page
-const goToGroupDetail = (groupId) => {
-  router.push(`/groups/${groupId}`)
-}
-
-const handleGroupCreated = () => {
-  fetchMyGroups()
-  fetchAllGroups()
-  message.success('Group created successfully!')
-}
-
-const isGroupJoined = (groupId) => {
-  return myGroups.value.some(g => g.id === groupId)
-}
-
-// Open group chat modal
-const openGroupChat = (group) => {
-  selectedGroupForChat.value = group
-  showGroupChatModal.value = true
-}
-
-// === Thoughts API Methods ===
-const fetchThoughts = async () => {
-  try {
-    const params = {}
-    if (selectedGroupId.value) {
-      params.group_id = selectedGroupId.value
-    }
-    const response = await thoughtAPI.getThoughts(params)
-    thoughts.value = response.data.data.thoughts || []
-  } catch (error) {
-    console.error('Failed to fetch thoughts:', error)
-  }
-}
-
-const fetchMapThoughts = async () => {
-  try {
-    const params = {}
-    if (selectedGroupId.value) {
-      params.group_id = selectedGroupId.value
-    }
-    const response = await thoughtAPI.getMapThoughts(params)
-    mapThoughts.value = response.data.data.thoughts || []
-    updateMapMarkers()
-  } catch (error) {
-    console.error('Failed to fetch map thoughts:', error)
-  }
-}
 
 const handleThoughtPosted = () => {
   fetchThoughts()
@@ -1297,665 +1047,63 @@ const handleThoughtPosted = () => {
   message.success('Activity posted successfully!')
 }
 
-// === Visibility API Methods ===
-const toggleVisibility = async () => {
-  try {
-    let location = null
-
-    // 只有当要变为可见时才需要获取位置
-    if (!isVisible.value) {
-      try {
-        location = await getCurrentLocation()
-      } catch (locError) {
-        console.warn('Failed to get location:', locError.message)
-        // 位置获取失败时使用默认位置或null，不阻止操作
-        message.warning('Location unavailable, using default')
-      }
-    }
-
-    const response = await visibilityAPI.updateVisibility({
-      is_visible: !isVisible.value,
-      current_location: location
-    })
-
-    if (response.data.success) {
-      isVisible.value = !isVisible.value
-      message.success(isVisible.value ? 'You are now visible on the map' : 'You are now invisible')
-      fetchVisibleUsers()
-    } else {
-      message.error(response.data.error?.message || 'Failed to update visibility')
-    }
-  } catch (error) {
-    console.error('Toggle visibility error:', error)
-    message.error(error.response?.data?.error?.message || 'Failed to toggle visibility')
-  }
-}
-
-const getCurrentLocation = () => {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Browser does not support geolocation'))
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          address: `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`
-        })
-      },
-      (error) => {
-        let message = 'Failed to get location'
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            message = 'User denied the location permission request'
-            break
-          case error.POSITION_UNAVAILABLE:
-            message = 'Location information is unavailable'
-            break
-          case error.TIMEOUT:
-            message = 'Location request timed out'
-            break
-        }
-        reject(new Error(message))
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      }
-    )
-  })
-}
-
-const fetchVisibleUsers = async () => {
-  try {
-    const params = {}
-    if (selectedGroupId.value) {
-      params.group_id = selectedGroupId.value
-    }
-    const response = await visibilityAPI.getMapUsers(params)
-    visibleUsers.value = response.data.data.users || []
-    updateMapMarkers()
-  } catch (error) {
-    console.error('Failed to fetch visible users:', error)
-  }
-}
-
-// === Google Maps Methods ===
-const initGoogleMaps = async () => {
-  try {
-    // Wait for Google Maps API to load
-    if (!window.google) {
-      // If not loaded yet, wait a bit
-      await new Promise((resolve) => {
-        const checkGoogle = setInterval(() => {
-          if (window.google) {
-            clearInterval(checkGoogle)
-            resolve()
-          }
-        }, 100)
-      })
-    }
-
-    // Initialize small map
-    const smallMapElement = document.getElementById('small-map')
-    if (smallMapElement && window.google) {
-      smallMap = new window.google.maps.Map(smallMapElement, {
-        center: { lat: 42.4534, lng: -76.4735 }, // Your University
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false
-      })
-    }
-
-    updateMapMarkers()
-  } catch (error) {
-    console.error('Google Maps loading failed:', error)
-    message.error('Map loading failed')
-  }
-}
-
-const initLargeMap = async () => {
-  try {
-    if (!window.google) return
-
-    const largeMapElement = document.getElementById('large-map')
-    if (largeMapElement && !largeMap) {
-      largeMap = new window.google.maps.Map(largeMapElement, {
-        center: { lat: 42.4534, lng: -76.4735 },
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false
-      })
-      updateLargeMapMarkers()
-    }
-  } catch (error) {
-    console.error('Large map initialization failed:', error)
-  }
-}
-
-const updateMapMarkers = () => {
-  if (!smallMap || !window.google) {
-    console.log('⚠️ Map not initialized or Google API not loaded')
-    return
-  }
-
-  console.log('🗺️ Updating map markers:', {
-    thoughts: mapThoughts.value.length,
-    users: visibleUsers.value.length
-  })
-
-  // Clear old markers
-  thoughtMarkers.forEach(marker => marker.setMap(null))
-  userMarkers.forEach(marker => marker.setMap(null))
-  thoughtMarkers = []
-  userMarkers = []
-
-  // Add thought markers (with user avatar)
-  mapThoughts.value.forEach(thought => {
-    console.log('📍 Adding thought marker:', thought)
-    if (thought.location && thought.location.lat && thought.location.lng) {
-      // Truncate overly long content
-      const maxLength = 100
-      const displayContent = thought.content.length > maxLength
-        ? thought.content.substring(0, maxLength) + '...'
-        : thought.content
-
-      // Create marker with avatar if available
-      const avatarUrl = thought.user?.avatar_url
-      let markerIcon
-
-      if (avatarUrl) {
-        markerIcon = {
-          url: avatarUrl,
-          scaledSize: new window.google.maps.Size(36, 36),
-          anchor: new window.google.maps.Point(18, 18),
-          origin: new window.google.maps.Point(0, 0)
-        }
-      } else {
-        markerIcon = {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: '#EF4444',
-          fillOpacity: 0.8,
-          strokeWeight: 2,
-          strokeColor: '#FFF',
-          scale: 12
-        }
-      }
-
-      const marker = new window.google.maps.Marker({
-        position: { lat: thought.location.lat, lng: thought.location.lng },
-        map: smallMap,
-        title: thought.content,
-        icon: markerIcon
-      })
-
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="padding: 8px; max-width: 200px;">
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
-                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
-                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
-            <span style="font-weight: bold; color: #333;">${thought.user?.first_name || 'User'}</span>
-          </div>
-          <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
-          <div style="margin-top: 8px;">
-            <button onclick="window.openMessageChat && window.openMessageChat('${thought.user?.id}')"
-                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-              Send Message
-            </button>
-          </div>
-        </div>`
-      })
-
-      // Show on mouse hover
-      marker.addListener('mouseover', () => {
-        infoWindow.open(smallMap, marker)
-      })
-
-      // Hide on mouse leave
-      marker.addListener('mouseout', () => {
-        infoWindow.close()
-      })
-
-      // Click to open chat
-      marker.addListener('click', () => {
-        if (thought.user?.id) {
-          handleUserMessage({ id: thought.user.id, name: thought.user.first_name })
-        }
-      })
-
-      thoughtMarkers.push(marker)
-    }
-  })
-
-  // Add user markers (with avatar)
-  visibleUsers.value.forEach(user => {
-    if (user.current_location && user.current_location.lat && user.current_location.lng) {
-      const avatarUrl = user.avatar_url
-      let markerIcon
-
-      if (avatarUrl) {
-        markerIcon = {
-          url: avatarUrl,
-          scaledSize: new window.google.maps.Size(36, 36),
-          anchor: new window.google.maps.Point(18, 18),
-          origin: new window.google.maps.Point(0, 0)
-        }
-      } else {
-        markerIcon = {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: '#3B82F6',
-          fillOpacity: 0.8,
-          strokeWeight: 2,
-          strokeColor: '#FFF',
-          scale: 12
-        }
-      }
-
-      const marker = new window.google.maps.Marker({
-        position: { lat: user.current_location.lat, lng: user.current_location.lng },
-        map: smallMap,
-        title: user.first_name,
-        icon: markerIcon
-      })
-
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="padding: 8px;">
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
-                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
-                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
-            <span style="font-weight: bold; color: #333;">${user.first_name || 'User'}</span>
-          </div>
-          <div style="margin-top: 8px;">
-            <button onclick="window.openMessageChat && window.openMessageChat('${user.id}')"
-                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-              Send Message
-            </button>
-          </div>
-        </div>`
-      })
-
-      // Show on mouse hover
-      marker.addListener('mouseover', () => {
-        infoWindow.open(smallMap, marker)
-      })
-
-      // Hide on mouse leave
-      marker.addListener('mouseout', () => {
-        infoWindow.close()
-      })
-
-      // Click to open chat
-      marker.addListener('click', () => {
-        if (user.id) {
-          handleUserMessage({ id: user.id, name: user.first_name })
-        }
-      })
-
-      userMarkers.push(marker)
-    }
-  })
-}
-
-const updateLargeMapMarkers = () => {
-  if (!largeMap || !window.google) return
-
-  // Copy small map markers to large map with avatars
-  mapThoughts.value.forEach(thought => {
-    if (thought.location && thought.location.lat && thought.location.lng) {
-      // Truncate overly long content
-      const maxLength = 100
-      const displayContent = thought.content.length > maxLength
-        ? thought.content.substring(0, maxLength) + '...'
-        : thought.content
-
-      const avatarUrl = thought.user?.avatar_url
-      let markerIcon
-
-      if (avatarUrl) {
-        markerIcon = {
-          url: avatarUrl,
-          scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20),
-          origin: new window.google.maps.Point(0, 0)
-        }
-      } else {
-        markerIcon = {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: '#EF4444',
-          fillOpacity: 0.8,
-          strokeWeight: 2,
-          strokeColor: '#FFF',
-          scale: 12
-        }
-      }
-
-      const marker = new window.google.maps.Marker({
-        position: { lat: thought.location.lat, lng: thought.location.lng },
-        map: largeMap,
-        title: thought.content,
-        icon: markerIcon
-      })
-
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="padding: 8px; max-width: 200px;">
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
-                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
-                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
-            <span style="font-weight: bold; color: #333;">${thought.user?.first_name || 'User'}</span>
-          </div>
-          <div style="font-size: 14px; color: #666; line-height: 1.4;">${displayContent}</div>
-          <div style="margin-top: 8px;">
-            <button onclick="window.openMessageChat && window.openMessageChat('${thought.user?.id}')"
-                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-              Send Message
-            </button>
-          </div>
-        </div>`
-      })
-
-      marker.addListener('mouseover', () => {
-        infoWindow.open(largeMap, marker)
-      })
-
-      marker.addListener('mouseout', () => {
-        infoWindow.close()
-      })
-
-      marker.addListener('click', () => {
-        if (thought.user?.id) {
-          handleUserMessage({ id: thought.user.id, name: thought.user.first_name })
-        }
-      })
-    }
-  })
-
-  visibleUsers.value.forEach(user => {
-    if (user.current_location && user.current_location.lat && user.current_location.lng) {
-      const avatarUrl = user.avatar_url
-      let markerIcon
-
-      if (avatarUrl) {
-        markerIcon = {
-          url: avatarUrl,
-          scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20),
-          origin: new window.google.maps.Point(0, 0)
-        }
-      } else {
-        markerIcon = {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: '#3B82F6',
-          fillOpacity: 0.8,
-          strokeWeight: 2,
-          strokeColor: '#FFF',
-          scale: 12
-        }
-      }
-
-      const marker = new window.google.maps.Marker({
-        position: { lat: user.current_location.lat, lng: user.current_location.lng },
-        map: largeMap,
-        title: user.first_name,
-        icon: markerIcon
-      })
-
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="padding: 8px;">
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <img src="${avatarUrl || 'https://via.placeholder.com/32?text=U'}"
-                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; object-fit: cover;"
-                 onerror="this.src='https://via.placeholder.com/32?text=U'" />
-            <span style="font-weight: bold; color: #333;">${user.first_name || 'User'}</span>
-          </div>
-          <div style="margin-top: 8px;">
-            <button onclick="window.openMessageChat && window.openMessageChat('${user.id}')"
-                    style="background: #C24D45; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-              Send Message
-            </button>
-          </div>
-        </div>`
-      })
-
-      marker.addListener('mouseover', () => {
-        infoWindow.open(largeMap, marker)
-      })
-
-      marker.addListener('mouseout', () => {
-        infoWindow.close()
-      })
-
-      marker.addListener('click', () => {
-        if (user.id) {
-          handleUserMessage({ id: user.id, name: user.first_name })
-        }
-      })
-    }
-  })
-}
-
-// === Activity API Methods ===
-const registerForActivity = async (activity) => {
-  try {
-    activity.registering = true
-    const response = await activitiesAPI.joinActivity(activity.id)
-
-    if (response.data?.success) {
-      const payload = response.data.data || {}
-      activity.isRegistered = true
-      activity.current_participants = (activity.current_participants || 0) + 1
-      activity.participants = activity.current_participants
-      activity.user_participation = payload.participation || null
-      activity.user_checked_in = false
-      participatedActivityIds.value = new Set([
-        ...participatedActivityIds.value,
-        activity.id
-      ])
-
-      const joinPoints = activity.reward_points || 0
-      if (joinPoints > 0) {
-        message.success(`Successfully joined "${activity.title}"! You'll earn ${joinPoints} points when you check in.`)
-      } else {
-        message.success(`Successfully joined "${activity.title}"!`)
-      }
-
-      await fetchUserPoints()
-    }
-  } catch (error) {
-    message.error(error.response?.data?.error?.message || 'Failed to join activity')
-  } finally {
-    activity.registering = false
-  }
-}
-
-const cancelRegistration = async (activity) => {
-  try {
-    activity.cancelling = true
-    const response = await activitiesAPI.leaveActivity(activity.id)
-
-    if (response.data?.success) {
-      activity.isRegistered = false
-      activity.current_participants = Math.max((activity.current_participants || 1) - 1, 0)
-      activity.participants = activity.current_participants
-      activity.user_participation = null
-      activity.user_checked_in = false
-      participatedActivityIds.value = new Set(
-        [...participatedActivityIds.value].filter(id => id !== activity.id)
-      )
-      message.success(`Registration cancelled for "${activity.title}"`)
-      await fetchUserPoints()
-    }
-  } catch (error) {
-    message.error(error.response?.data?.error?.message || 'Failed to cancel registration')
-  } finally {
-    activity.cancelling = false
-  }
-}
-
-// Enhanced points integration
-const awardPointsForActivity = async (action, points, activityTitle) => {
-  try {
-    const pointsData = {
-      action: action,
-      points: points,
-      description: `${action === 'join' ? 'Joined' : action === 'checkin' ? 'Checked into' : 'Completed'} activity: ${activityTitle}`,
-      category: 'activity',
-      metadata: {
-        activity_title: activityTitle,
-        action: action
-      }
-    }
-
-    const response = await pointsAPI.awardPoints(pointsData)
-
-    if (response.data.success) {
-      console.log(`Successfully awarded ${points} points for ${action}`)
-      return response.data
-    }
-  } catch (error) {
-    console.error('Failed to award points:', error)
-    // Don't show error to user - points failure shouldn't block main action
-  }
-}
-
-// User points state
-const userPoints = ref({
-  current_balance: 0,
-  total_earned: 0,
-  total_spent: 0
+// Domain wiring: participation + check-in
+const {
+  userPoints,
+  fetchUserPoints,
+  registerForActivity,
+  cancelRegistration,
+  awardPointsForActivity
+} = useActivityParticipation({
+  activitiesAPI,
+  pointsAPI,
+  message,
+  participatedActivityIds
 })
-
-const fetchUserPoints = async () => {
-  try {
-    const response = await pointsAPI.getMyPoints()
-    if (response.data?.success) {
-      const payload = response.data.data || {}
-      userPoints.value = {
-        current_balance: payload.current_balance ?? payload.points ?? 0,
-        total_earned: payload.total_earned ?? payload.points ?? 0,
-        total_spent: payload.total_spent ?? 0
-      }
-    }
-  } catch (error) {
-    console.error('Failed to fetch user points:', error)
-  }
-}
 
 const editActivity = (activity) => {
   // Navigate to edit activity page or show edit modal
   message.info('Edit functionality will be implemented in next phase')
 }
 
-const showParticipants = async (activity) => {
-  try {
-    selectedActivity.value = activity
+const {
+  showCheckinModal,
+  showParticipantsModal,
+  showCheckinCodeModal,
+  selectedActivity,
+  checkinForm,
+  participantsList,
+  showActivityCheckinModal,
+  selectedActivityForCheckin,
+  showActivityChatModal,
+  selectedActivityForChat,
+  showParticipants,
+  openActivityChat,
+  generateCheckinCode,
+  canCheckin,
+  openActivityCheckinModal,
+  handleActivityCheckinSuccess,
+  submitCheckin,
+  copyCheckinCode,
+  getParticipantStatusColor,
+  getParticipantStatusText,
+  formatJoinDate
+} = useActivityCheckin({
+  activities,
+  activitiesAPI,
+  message,
+  fetchUserPoints: () => fetchUserPoints(),
+  getCurrentLocation,
+  getPublicNameFromRaw,
+  defaultAvatar: DEFAULT_ACTIVITY_AVATAR
+})
 
-    const response = await activitiesAPI.getActivityParticipants(activity.id)
-    if (response.data?.success) {
-      const payload = response.data.data || {}
-      participantsList.value = (payload.participants || []).map(mapParticipant)
-      showParticipantsModal.value = true
-    }
-  } catch (error) {
-    console.error('Failed to load participants list:', error)
-    message.error(error.response?.data?.error?.message || 'Failed to load participants list')
-  }
-}
-
-// Participant mapper
-const mapParticipant = (participant) => {
-  const fullName = participant.user
-    ? getPublicNameFromRaw(participant.user.first_name, participant.user.last_name, participant.user.email, 'Participant')
-    : ''
-
-  return {
-    id: participant.id,
-    user_id: participant.user_id,
-    name: fullName || 'Participant',
-    email: participant.user?.email || 'N/A',
-    avatar: participant.user?.avatar_url || DEFAULT_ACTIVITY_AVATAR,
-    joined_at: participant.registration_time,
-    status: participant.attendance_status || 'registered'
-  }
-}
-
-const legacyGenerateMockParticipants = () => {
-  return []
-  const mockUsers = [
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@university.edu',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20friendly%20smile&width=40&height=40&seq=1&orientation=squarish',
-      joined_at: '2025-10-20T10:30:00Z',
-      status: 'registered'
-    },
-    {
-      id: 2,
-      name: 'Emily Davis',
-      email: 'emily.davis@university.edu',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20glasses&width=40&height=40&seq=2&orientation=squarish',
-      joined_at: '2025-10-20T11:15:00Z',
-      status: 'checked_in'
-    },
-    {
-      id: 3,
-      name: 'Michael Johnson',
-      email: 'michael.j@university.edu',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20male%20student%20with%20beard&width=40&height=40&seq=3&orientation=squarish',
-      joined_at: '2025-10-20T12:00:00Z',
-      status: 'registered'
-    },
-    {
-      id: 4,
-      name: 'Sarah Wilson',
-      email: 'sarah.wilson@university.edu',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20female%20student%20with%20curly%20hair&width=40&height=40&seq=4&orientation=squarish',
-      joined_at: '2025-10-20T13:30:00Z',
-      status: 'checked_in'
-    },
-    {
-      id: 5,
-      name: 'David Chen',
-      email: 'david.chen@university.edu',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20asian%20male%20student&width=40&height=40&seq=5&orientation=squarish',
-      joined_at: '2025-10-20T14:00:00Z',
-      status: 'registered'
-    },
-    {
-      id: 6,
-      name: 'Lisa Rodriguez',
-      email: 'lisa.rodriguez@university.edu',
-      avatar: 'https://readdy.ai/api/search-image?query=professional%20headshot%20of%20young%20latina%20female%20student&width=40&height=40&seq=6&orientation=squarish',
-      joined_at: '2025-10-20T14:30:00Z',
-      status: 'registered'
-    }
-  ]
-
-  return mockUsers.slice(0, count).map((user, index) => ({
-    ...user,
-    // Randomly assign some as checked in for ongoing activities
-    status: activityId === 3 && index < 2 ? 'checked_in' : 'registered'
-  }))
-}
-
-// Remove participant (for activity owners)
+// Participants management
 const removeParticipant = async (participant) => {
   try {
-    // In real implementation:
-    // const response = await activitiesAPI.removeParticipant(selectedActivity.value.id, participant.id)
-
-    // Mock implementation:
     participantsList.value = participantsList.value.filter(p => p.id !== participant.id)
     selectedActivity.value.current_participants--
 
-    // Update the activity in the main list
     const activityIndex = activities.value.findIndex(a => a.id === selectedActivity.value.id)
     if (activityIndex !== -1) {
       activities.value[activityIndex].current_participants--
@@ -1967,13 +1115,10 @@ const removeParticipant = async (participant) => {
   }
 }
 
-// Send message to participant
 const messageParticipant = (participant) => {
   message.info(`Opening chat with ${participant.name}...`)
-  // In real implementation, this would open a chat/messaging interface
 }
 
-// Handle user message from ClickableAvatar
 const handleUserMessage = (user) => {
   router.push({
     path: '/messages',
@@ -1981,107 +1126,11 @@ const handleUserMessage = (user) => {
   })
 }
 
-// Open activity chat modal
-const openActivityChat = (activity) => {
-  selectedActivityForChat.value = activity
-  showActivityChatModal.value = true
-}
-
-// Get participant status color
-const getParticipantStatusColor = (status) => {
-  switch (status) {
-    case 'checked_in':
-      return 'green'
-    case 'registered':
-      return 'blue'
-    case 'cancelled':
-      return 'red'
-    default:
-      return 'default'
-  }
-}
-
-// Get participant status text
-const getParticipantStatusText = (status) => {
-  switch (status) {
-    case 'checked_in':
-      return 'Checked In'
-    case 'registered':
-      return 'Registered'
-    case 'cancelled':
-      return 'Cancelled'
-    default:
-      return 'Unknown'
-  }
-}
-
-// Format join date
-const formatJoinDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const generateCheckinCode = async (activity) => {
-  try {
-    const response = await activitiesAPI.generateCheckinCode(activity.id)
-
-    if (response.data?.success) {
-      const payload = response.data.data || {}
-      activity.checkin_code = payload.checkinCode
-      activity.code_expires_at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-      activity.status = activity.status === 'published' ? 'ongoing' : activity.status
-
-      selectedActivity.value = activity
-      showCheckinCodeModal.value = true
-      message.success('Check-in code generated successfully!')
-
-      // Update the activity in the main list
-      const activityIndex = activities.value.findIndex(a => a.id === activity.id)
-      if (activityIndex !== -1) {
-        activities.value[activityIndex].checkin_code = activity.checkin_code
-        activities.value[activityIndex].code_expires_at = activity.code_expires_at
-        activities.value[activityIndex].status = 'ongoing'
-      }
-    }
-  } catch (error) {
-    console.error('Failed to generate check-in code:', error)
-    message.error(error.response?.data?.error?.message || 'Failed to generate check-in code')
-  }
-}
-
-// Check if code is expired
 const isCodeExpired = (expiresAt) => {
   if (!expiresAt) return false
   return new Date() > new Date(expiresAt)
 }
 
-// Enhanced code validation
-const validateCheckinCode = (inputCode, activity) => {
-  if (!inputCode || inputCode.length === 0) {
-    return { valid: false, message: 'Please enter a check-in code' }
-  }
-
-  if (!activity.checkin_code) {
-    return { valid: false, message: 'No check-in code has been generated for this activity' }
-  }
-
-  if (inputCode.toUpperCase() !== activity.checkin_code.toUpperCase()) {
-    return { valid: false, message: 'Invalid check-in code. Please try again.' }
-  }
-
-  if (isCodeExpired(activity.code_expires_at)) {
-    return { valid: false, message: 'Check-in code has expired. Please ask the organizer for a new code.' }
-  }
-
-  return { valid: true, message: 'Code is valid' }
-}
-
-// Format expiration time for display
 const formatExpirationTime = (expiresAt) => {
   if (!expiresAt) return 'No expiration'
 
@@ -2096,202 +1145,49 @@ const formatExpirationTime = (expiresAt) => {
 
   if (hours > 0) {
     return `Expires in ${hours}h ${minutes}m`
-  } else {
-    return `Expires in ${minutes}m`
   }
+  return `Expires in ${minutes}m`
 }
-
-const openCheckinModal = (activity) => {
-  selectedActivity.value = activity
-  checkinForm.value = {
-    location: null,
-    checking: false
+// Feed orchestration
+const {
+  PAGE_SIZE,
+  filteredActivities,
+  paginationTotal,
+  paginatedActivities,
+  getActivityActions,
+  handleActivityAction
+} = useActivityFeed({
+  feedFilter,
+  sortOption,
+  currentPage,
+  activities,
+  participatedActivityIds,
+  handlers: {
+    router,
+    shareActivity: (activity) => shareActivity(activity),
+    editActivity: (activity) => editActivity(activity),
+    showParticipants: (activity) => showParticipants(activity),
+    generateCheckinCode: (activity) => generateCheckinCode(activity),
+    openActivityChat: (activity) => openActivityChat(activity),
+    registerForActivity: (activity) => registerForActivity(activity),
+    cancelRegistration: (activity) => cancelRegistration(activity),
+    openActivityCheckinModal: (activity) => openActivityCheckinModal(activity),
+    canCheckin: (activity) => canCheckin(activity)
   }
-  showCheckinModal.value = true
-}
+})
 
-// New check-in methods
-const canCheckin = (activity) => {
-  // 检查活动状态是否允许Check In（In Progress中）
-  if (activity.status !== 'ongoing') return false
 
-  // 检查用户是否已经参加活动
-  if (!activity.isRegistered) return false
 
-  // 检查是否已经Check In
-  if (activity.user_checked_in) return false
-  if (activity.user_participation?.checked_in) return false
-
-  // 检查活动是否启用Check In功能（如果字段存在的话）
-  // 如果字段不存在（数据库迁移未执行），则默认允许Check In
-  if (activity.checkin_enabled !== undefined && !activity.checkin_enabled) return false
-
-  return true
-}
-
-const openActivityCheckinModal = (activity) => {
-  selectedActivityForCheckin.value = activity
-  showActivityCheckinModal.value = true
-}
-
-const handleActivityCheckinSuccess = (data) => {
-  // 更新活动状态
-  const activity = activities.value.find(a => a.id === data.activityId)
-  if (activity && activity.user_participation) {
-    activity.user_participation.checked_in = true
-    activity.user_participation.checkin_time = data.result.checkinTime
-    activity.user_checked_in = true
-  }
-
-  message.success('Check In成功！')
-  showActivityCheckinModal.value = false
-
-  // 刷新用户积分
-  fetchUserPoints()
-}
-
-const submitCheckin = async () => {
-  try {
-    if (!selectedActivity.value) return
-    const activity = selectedActivity.value
-
-    checkinForm.value.checking = true
-
-    // 1. 验证Activity Time
-    const now = new Date()
-    const startTime = new Date(activity.start_time)
-    const endTime = new Date(activity.end_time)
-
-    if (now < startTime) {
-      message.error(`活动还未开始。开始时间：${formatDateTime(activity.start_time)}`)
-      checkinForm.value.checking = false
-      return
-    }
-
-    if (now > endTime) {
-      message.error('活动已结束，无法Check In')
-      checkinForm.value.checking = false
-      return
-    }
-
-    // 2. 获取当前位置
-    message.loading('正在获取您的位置...', 0)
-    let currentLocation
-    try {
-      currentLocation = await getCurrentLocation()
-      checkinForm.value.location = currentLocation
-      message.destroy()
-    } catch (locationError) {
-      message.destroy()
-      message.error(locationError.message || '获取位置失败，无法完成Check In')
-      console.error('Location error:', locationError)
-      checkinForm.value.checking = false
-      return
-    }
-
-    // 3. 验证位置距离
-    if (activity.location_verification && activity.locationCoordinates) {
-      const distance = calculateDistance(
-        currentLocation.lat,
-        currentLocation.lng,
-        activity.locationCoordinates.lat,
-        activity.locationCoordinates.lng
-      )
-
-      const maxDistance = activity.max_checkin_distance || 100
-      if (distance > maxDistance) {
-        message.error(`您距离Activity Location太远了。当前距离：${Math.round(distance)}米，要求距离：${maxDistance}meters of the activity location`)
-        checkinForm.value.checking = false
-        return
-      }
-    }
-
-    // 4. 提交Check In
-    const payload = {
-      location: currentLocation
-    }
-
-    const response = await activitiesAPI.checkinActivity(activity.id, payload)
-
-    if (response.data?.success) {
-      const data = response.data.data || {}
-      activity.user_checked_in = true
-      if (activity.user_participation) {
-        activity.user_participation.attendance_status = 'attended'
-        activity.user_participation.checkin_time = new Date().toISOString()
-      } else {
-        activity.user_participation = {
-          attendance_status: 'attended',
-          checkin_time: new Date().toISOString()
-        }
-      }
-
-      showCheckinModal.value = false
-      updateActivityAfterCheckin(activity.id, activity.user_participation)
-
-      const earned = data.pointsEarned ?? activity.reward_points ?? 0
-      if (earned > 0) {
-        message.success(`Check In成功！您获得了 ${earned} 积分 🎉`)
-      } else {
-        message.success('Check In成功！')
-      }
-
-      await fetchUserPoints()
-    }
-
-  } catch (error) {
-    message.error(error.response?.data?.error?.message || 'Check In失败')
-    console.error('Checkin error:', error)
-  } finally {
-    checkinForm.value.checking = false
-  }
-}
-
-// Helper function to calculate distance between two coordinates (Haversine formula)
-const calculateDistance = (lat1, lng1, lat2, lng2) => {
-  const R = 6371000 // Earth's radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng/2) * Math.sin(dLng/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c // Distance in meters
-}
-
-// Helper function to update activity status after successful checkin
-const updateActivityAfterCheckin = (activityId, participation = null) => {
-  const activityIndex = activities.value.findIndex(a => a.id === activityId)
-  if (activityIndex !== -1) {
-    const activity = activities.value[activityIndex]
-    activity.user_checked_in = true
-    if (participation) {
-      activity.user_participation = participation
-    }
-
-    if (activity.isOwner && activity.status === 'published') {
-      activity.status = 'ongoing'
-    }
-  }
-}
-
-const copyCheckinCode = () => {
-  if (selectedActivity.value?.checkin_code) {
-    navigator.clipboard.writeText(selectedActivity.value.checkin_code)
-      .then(() => {
-        message.success('Check-in code copied to clipboard!')
-      })
-      .catch(() => {
-        message.error('Failed to copy check-in code')
-      })
-  }
-}
-
-// Watch for group selection changes
+// Lifecycle and reactive wiring
 watch(selectedGroupId, () => {
+  currentPage.value = 1
   fetchThoughts()
   fetchMapThoughts()
   fetchVisibleUsers()
+})
+
+watch([feedFilter, sortOption, distanceFilter], () => {
+  currentPage.value = 1
 })
 
 // Initialize on mount
@@ -2305,14 +1201,7 @@ onMounted(async () => {
   await fetchVisibleUsers()
   await fetchUserPoints() // Initialize user points
   await initGoogleMaps()
-
-  // 获取我的可见性状态
-  try {
-    const response = await visibilityAPI.getMyVisibility()
-    isVisible.value = response.data.data.visibility.is_visible
-  } catch (error) {
-    console.error('获取可见性状态失败:', error)
-  }
+  await loadMyVisibility()
 })
 
 </script>
