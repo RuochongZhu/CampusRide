@@ -677,6 +677,7 @@ import {
 } from '@ant-design/icons-vue'
 import { Modal as AModal, Select as ASelect, SelectOption as ASelectOption, Tag as ATag, RadioGroup as ARadioGroup, RadioButton as ARadioButton, Slider as ASlider, Button as AButton, Pagination as APagination } from 'ant-design-vue'
 import { groupAPI, thoughtAPI, visibilityAPI, activitiesAPI, pointsAPI } from '@/utils/api'
+import { getPublicNameFromRaw } from '@/utils/publicName'
 import CreateGroupModal from '@/components/groups/CreateGroupModal.vue'
 import PostThoughtModal from '@/components/groups/PostThoughtModal.vue'
 import GroupChatModal from '@/components/groups/GroupChatModal.vue'
@@ -851,7 +852,7 @@ const formatTimeUntil = (startTime, endTime) => {
 const formatActivity = (raw) => {
   const categoryKey = raw?.category || 'academic'
   const organizerName = raw?.organizer
-    ? `${raw.organizer.first_name || ''} ${raw.organizer.last_name || ''}`.trim()
+    ? getPublicNameFromRaw(raw.organizer.first_name, raw.organizer.last_name, raw.organizer.email, 'Campus Organizer')
     : ''
 
   // Calculate time progress: from created_at to start_time
@@ -882,7 +883,7 @@ const formatActivity = (raw) => {
     user: {
       id: raw.organizer_id || raw.organizer?.id,
       email: raw.organizer?.email,
-      name: organizerName || raw.organizer?.email || 'Campus Organizer',
+      name: organizerName || 'Campus Organizer',
       avatar: raw.organizer?.avatar_url || DEFAULT_ACTIVITY_AVATAR,
       avatar_url: raw.organizer?.avatar_url || DEFAULT_ACTIVITY_AVATAR
     },
@@ -1870,13 +1871,13 @@ const showParticipants = async (activity) => {
 // Participant mapper
 const mapParticipant = (participant) => {
   const fullName = participant.user
-    ? `${participant.user.first_name || ''} ${participant.user.last_name || ''}`.trim()
+    ? getPublicNameFromRaw(participant.user.first_name, participant.user.last_name, participant.user.email, 'Participant')
     : ''
 
   return {
     id: participant.id,
     user_id: participant.user_id,
-    name: fullName || participant.user?.email || 'Participant',
+    name: fullName || 'Participant',
     email: participant.user?.email || 'N/A',
     avatar: participant.user?.avatar_url || DEFAULT_ACTIVITY_AVATAR,
     joined_at: participant.registration_time,

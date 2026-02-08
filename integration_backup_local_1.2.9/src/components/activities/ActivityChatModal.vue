@@ -216,6 +216,7 @@ import {
   NotificationOutlined
 } from '@ant-design/icons-vue'
 import { activityChatAPI, userAPI, announcementsAPI } from '@/utils/api'
+import { getPublicUserName } from '@/utils/publicName'
 import { useAuthStore } from '@/stores/auth'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
 
@@ -436,9 +437,7 @@ const handleCancel = () => {
 }
 
 const getUserName = (user) => {
-  if (!user) return 'Unknown User'
-  const { first_name, last_name } = user
-  return `${first_name || ''} ${last_name || ''}`.trim() || user.email || 'Unknown User'
+  return getPublicUserName(user, 'Unknown User')
 }
 
 const formatMessageTime = (dateString) => {

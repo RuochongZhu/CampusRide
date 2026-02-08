@@ -393,7 +393,7 @@
                           : 'bg-gray-200 text-gray-900'"
                       >
                         <div class="text-xs md:text-sm font-medium mb-1" v-if="message.sender_id !== currentUserId">
-                          {{ message.sender_first_name }} {{ message.sender_last_name }}
+                          {{ getMessageSenderName(message) }}
                         </div>
                         <!-- Message content -->
                         <div class="text-sm md:text-base mb-1 md:mb-2 whitespace-pre-wrap">{{ message.content }}</div>
@@ -567,6 +567,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useMessageStore } from '@/stores/message'
 import { io } from 'socket.io-client'
 import { messagesAPI, userProfileAPI, activitiesAPI, groupAPI } from '@/utils/api'
+import { getPublicNameFromRaw, sanitizePublicDisplayName } from '@/utils/publicName'
 import ActivityChatModal from '@/components/activities/ActivityChatModal.vue'
 import GroupChatModal from '@/components/groups/GroupChatModal.vue'
 
@@ -910,30 +911,19 @@ const getThreadName = (thread) => {
 
   const otherUser = thread.other_user
   if (otherUser) {
-    const firstName = otherUser.first_name || ''
-    const lastName = otherUser.last_name || ''
-    const name = `${firstName} ${lastName}`.trim()
-    if (name) return name
+    return getPublicNameFromRaw(otherUser.first_name, otherUser.last_name, otherUser.email, 'Unknown user')
   }
 
   const fallbackFirst = thread.organizer_first_name || thread.sender_first_name || ''
   const fallbackLast = thread.organizer_last_name || thread.sender_last_name || ''
-  const fallbackName = `${fallbackFirst} ${fallbackLast}`.trim()
-  if (fallbackName) return fallbackName
-
-  return 'Unknown user'
+  const fallbackEmail = thread.organizer_email || thread.sender_email || thread.receiver_email || ''
+  return getPublicNameFromRaw(fallbackFirst, fallbackLast, fallbackEmail, 'Unknown user')
 }
 
 const getThreadInitial = (thread) => {
   if (!thread) return 'U'
-  const otherUser = thread.other_user
-  if (otherUser) {
-    return getInitial(otherUser.first_name, otherUser.last_name)
-  }
-  return getInitial(
-    thread.organizer_first_name || thread.sender_first_name,
-    thread.organizer_last_name || thread.sender_last_name
-  )
+  const publicName = getThreadName(thread)
+  return publicName ? publicName.charAt(0).toUpperCase() : 'U'
 }
 
 const getThreadSubject = (thread) => {
@@ -944,6 +934,10 @@ const getThreadSubject = (thread) => {
 const getThreadPreview = (thread) => {
   if (!thread) return 'No recent messages'
   return thread.last_message || thread.activity_title || thread.subject || 'No recent messages'
+}
+
+const getMessageSenderName = (message) => {
+  return getPublicNameFromRaw(message?.sender_first_name, message?.sender_last_name, message?.sender_email, 'Unknown user')
 }
 
 // Select a thread
@@ -1136,10 +1130,8 @@ const resetNewConversationState = () => {
 const pendingUserName = computed(() => {
   const profile = pendingUserProfile.value
   if (!profile) return 'this user'
-  const firstName = profile.first_name || ''
-  const lastName = profile.last_name || ''
-  const fullName = `${firstName} ${lastName}`.trim()
-  return fullName || profile.nickname || profile.email || 'this user'
+  const name = getPublicNameFromRaw(profile.first_name, profile.last_name, profile.email, 'this user')
+  return name || profile.nickname || 'this user'
 })
 
 const lastRouteIdentifier = ref(null)
@@ -1184,8 +1176,8 @@ const prepareNewConversationByEmail = async (userEmail) => {
 
   pendingUserProfile.value = {
     email: userEmail,
-    first_name: userEmail.split('@')[0].split('.')[0] || 'User',
-    last_name: userEmail.split('@')[0].split('.')[1] || '',
+    first_name: (userEmail.split('@')[0] || 'User').split(/[._-]/)[0] || 'User',
+    last_name: '',
   }
   pendingUserLoading.value = false
 }
@@ -1240,7 +1232,7 @@ const handleQueryThreadSelection = async () => {
       other_user: {
         id: targetUserId || null,
         email: targetUserEmail || null,
-        first_name: targetUserName?.split(' ')[0] || (targetUserEmail ? targetUserEmail.split('@')[0] : 'User'),
+        first_name: targetUserName?.split(' ')[0] || (targetUserEmail ? (targetUserEmail.split('@')[0] || 'User').split(/[._-]/)[0] : 'User'),
         last_name: targetUserName?.split(' ').slice(1).join(' ') || '',
         avatar_url: null
       },

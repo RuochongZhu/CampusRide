@@ -479,6 +479,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons-vue'
 import { activitiesAPI } from '@/utils/api'
+import { getPublicNameFromRaw, sanitizePublicDisplayName } from '@/utils/publicName'
 import { useAuthStore } from '@/stores/auth'
 import ActivityCheckinModal from '@/components/activities/ActivityCheckinModal.vue'
 import ContactOrganizerModal from '@/components/activities/ContactOrganizerModal.vue'
@@ -798,12 +799,12 @@ const deleteComment = async (commentId) => {
 // Comment utility functions
 const getCommentUserName = (comment) => {
   if (!comment.user) return 'Unknown User'
-  return comment.user.name || comment.user.email || 'Unknown User'
+  return sanitizePublicDisplayName(comment.user.name, comment.user.email, 'Unknown User')
 }
 
 const getCommentUserInitial = (comment) => {
   if (!comment.user) return 'U'
-  const name = comment.user.name || comment.user.email || 'Unknown'
+  const name = sanitizePublicDisplayName(comment.user.name, comment.user.email, 'Unknown')
   return name.charAt(0).toUpperCase()
 }
 
@@ -987,12 +988,16 @@ const getStatusName = (status) => {
 
 const getOrganizerName = () => {
   if (!activity.value?.organizer) return 'Unknown'
-  return activity.value.organizer.name || activity.value.organizer.email || 'Unknown'
+  const organizer = activity.value.organizer
+  if (organizer.name) {
+    return sanitizePublicDisplayName(organizer.name, organizer.email, 'Unknown')
+  }
+  return getPublicNameFromRaw(organizer.first_name, organizer.last_name, organizer.email, 'Unknown')
 }
 
 const getOrganizerInitial = () => {
   if (!activity.value?.organizer) return 'O'
-  const name = activity.value.organizer.name || activity.value.organizer.email || 'Organizer'
+  const name = getOrganizerName()
   return name.charAt(0).toUpperCase()
 }
 
