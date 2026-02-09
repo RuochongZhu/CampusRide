@@ -144,7 +144,7 @@
               <div v-if="groupChatsLoading" class="py-8 md:py-12 flex justify-center">
                 <a-spin />
               </div>
-              <div v-else-if="myActivities.length === 0 && myGroups.length === 0" class="py-8 md:py-12 text-center text-gray-500">
+              <div v-else-if="!hasGroupChatContent" class="py-8 md:py-12 text-center text-gray-500">
                 <TeamOutlined class="text-3xl md:text-4xl mb-3 md:mb-4" />
                 <p class="text-sm md:text-base">No group chats</p>
                 <p class="text-xs md:text-sm text-gray-400 mt-2">Join activities or groups to start group chatting</p>
@@ -187,6 +187,60 @@
                         <p class="text-xs md:text-sm text-gray-500 truncate">Buy and sell items</p>
                         <div class="flex items-center space-x-2 mt-1">
                           <a-tag color="green" size="small" class="text-xs">System</a-tag>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- My Rides -->
+                <div v-if="myUpcomingRides.length > 0 || dueRideMessagePrompts.length > 0" class="mb-4">
+                  <div class="px-3 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase bg-gray-50 flex items-center justify-between">
+                    <span>My Rides</span>
+                    <span v-if="unreadRidePromptCount > 0" class="text-[10px] bg-[#C24D45] text-white rounded-full px-2 py-0.5">
+                      {{ unreadRidePromptCount }} new
+                    </span>
+                  </div>
+
+                  <div
+                    v-for="ride in myUpcomingRides"
+                    :key="`ride-${ride.id}-${ride.role}`"
+                    class="p-3 md:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                    @click="openRideFromMessagePrompt(ride)"
+                  >
+                    <div class="flex items-center space-x-2 md:space-x-3">
+                      <div class="w-10 h-10 md:w-12 md:h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white">
+                        <CarOutlined class="text-sm md:text-base" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h3 class="font-medium text-gray-900 truncate text-sm md:text-base">{{ ride.title }}</h3>
+                        <p class="text-xs md:text-sm text-gray-500 truncate">{{ getRideRoleText(ride.role) }} • {{ formatRideDeparture(ride.departure_time) }}</p>
+                        <div class="flex items-center space-x-2 mt-1">
+                          <a-tag color="purple" size="small" class="text-xs">Ride</a-tag>
+                          <ClockCircleOutlined class="text-gray-400 text-xs" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    v-for="prompt in dueRideMessagePrompts"
+                    :key="`ride-prompt-${prompt.id}`"
+                    class="p-3 md:p-4 border-b border-gray-100 hover:bg-amber-50 cursor-pointer transition-colors"
+                    @click="openRideFromMessagePrompt(null, prompt)"
+                  >
+                    <div class="flex items-center space-x-2 md:space-x-3">
+                      <div class="w-10 h-10 md:w-12 md:h-12 bg-amber-500 rounded-full flex items-center justify-center text-white">
+                        ⭐
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                          <h3 class="font-medium text-gray-900 truncate text-sm md:text-base">{{ prompt.title || 'Ride reminder' }}</h3>
+                          <a-tag v-if="!prompt.is_read" color="gold" size="small" class="text-xs !m-0">New</a-tag>
+                        </div>
+                        <p class="text-xs md:text-sm text-gray-600 mt-1">{{ prompt.content }}</p>
+                        <div class="flex items-center space-x-2 mt-1">
+                          <a-tag color="gold" size="small" class="text-xs">5-star rating</a-tag>
                         </div>
                       </div>
                     </div>
@@ -467,6 +521,34 @@
 
               <!-- Reply input -->
               <div class="p-3 md:p-4 border-t border-gray-200">
+                <div
+                  v-if="isSystemMessagesThread && activeRideRatingPrompt"
+                  class="mb-3 p-3 md:p-4 border border-amber-200 bg-amber-50 rounded-lg"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm md:text-base font-medium text-gray-900">Quick Rate</p>
+                      <p class="text-xs md:text-sm text-gray-600 mt-1">{{ activeRideRatingPrompt.content }}</p>
+                    </div>
+                    <a-button size="small" type="text" @click="clearRideRatingPrompt">Close</a-button>
+                  </div>
+
+                  <div class="mt-3 flex items-center gap-3">
+                    <a-rate
+                      v-model:value="rideRatingForm.score"
+                      :count="5"
+                      :disabled="rideRatingForm.submitting"
+                      @change="handleInlineRateChange"
+                    />
+                    <span class="text-xs text-gray-500">{{ rideRatingForm.score || 0 }}/5</span>
+                  </div>
+
+                  <p class="mt-2 text-xs text-gray-500">
+                    Tap stars to submit instantly.
+                    <span v-if="rideRatingForm.submitting">Submitting...</span>
+                  </p>
+                </div>
+
                 <!-- Awaiting reply banner (hide for system messages) -->
                 <div
                   v-if="replyStatus.awaiting_reply && !isMessagingBlocked && !isSystemMessagesThread"
@@ -566,7 +648,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useMessageStore } from '@/stores/message'
 import { io } from 'socket.io-client'
-import { messagesAPI, userProfileAPI, activitiesAPI, groupAPI } from '@/utils/api'
+import { messagesAPI, userProfileAPI, activitiesAPI, groupAPI, notificationsAPI, carpoolingAPI, ratingAPI } from '@/utils/api'
 import { getPublicNameFromRaw, sanitizePublicDisplayName } from '@/utils/publicName'
 import ActivityChatModal from '@/components/activities/ActivityChatModal.vue'
 import GroupChatModal from '@/components/groups/GroupChatModal.vue'
@@ -639,6 +721,13 @@ const chatType = ref('direct')
 const myActivities = ref([])
 const myGroups = ref([])
 const groupChatsLoading = ref(false)
+const myUpcomingRides = ref([])
+const rideMessagePrompts = ref([])
+const ridePromptsLoading = ref(false)
+const activeRideRatingPrompt = ref(null)
+const rideRatingForm = ref({ score: 0, submitting: false })
+const nowTick = ref(Date.now())
+const ridePromptTimer = ref(null)
 
 // System messages state
 const systemMessagesUnreadCount = ref(0)
@@ -674,6 +763,72 @@ const filteredThreads = computed(() => {
     return name.includes(query) || subject.includes(query) || preview.includes(query)
   })
 })
+
+
+const parseNotificationData = (payload) => {
+  if (!payload) return {}
+  if (typeof payload === 'string') {
+    try {
+      return JSON.parse(payload)
+    } catch {
+      return {}
+    }
+  }
+  return payload
+}
+
+const isRidePromptDue = (prompt) => {
+  if (!prompt) return false
+  if (prompt.type !== 'ride_rating_reminder') return true
+
+  const metadata = parseNotificationData(prompt.data)
+  const showAfter = metadata.showAfter
+  if (!showAfter) return true
+  const showAfterTime = new Date(showAfter).getTime()
+  if (Number.isNaN(showAfterTime)) return true
+  return nowTick.value >= showAfterTime
+}
+
+const dueRideMessagePrompts = computed(() => {
+  return rideMessagePrompts.value.filter(isRidePromptDue)
+})
+
+const unreadRidePromptCount = computed(() => {
+  return dueRideMessagePrompts.value.filter(prompt => !prompt.is_read).length
+})
+
+const hasGroupChatContent = computed(() => {
+  return myActivities.value.length > 0 ||
+    myGroups.value.length > 0 ||
+    myUpcomingRides.value.length > 0 ||
+    dueRideMessagePrompts.value.length > 0
+})
+
+const activeRideRatingPromptData = computed(() => {
+  if (!activeRideRatingPrompt.value) return {}
+  return parseNotificationData(activeRideRatingPrompt.value.data)
+})
+
+const syncSystemThreadMessages = () => {
+  messageStore.threadMessages['system-messages'] = [...systemMessages.value]
+}
+
+const appendInlineSystemFeedback = (content) => {
+  const localMessage = {
+    id: `local-system-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    sender_id: currentUserId.value,
+    content,
+    created_at: new Date().toISOString(),
+    is_read: true,
+    message_type: 'system_feedback'
+  }
+
+  systemMessages.value.push(localMessage)
+  systemMessagesPreview.value = content
+  lastSystemMessageTime.value = new Date(localMessage.created_at)
+  syncSystemThreadMessages()
+  nextTick(() => scrollToBottom())
+}
 
 // Group messages by date
 const groupedMessages = computed(() => {
@@ -889,6 +1044,24 @@ const formatTimeAgo = (dateString) => {
   return `${diffInWeeks}w ago`
 }
 
+
+const formatRideDeparture = (dateString) => {
+  if (!dateString) return 'Time TBD'
+  const rideTime = new Date(dateString)
+  if (Number.isNaN(rideTime.getTime())) return 'Time TBD'
+
+  const diffMs = rideTime.getTime() - nowTick.value
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+
+  if (diffMinutes < 0) return 'Started'
+  if (diffMinutes < 60) return `In ${diffMinutes}m`
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `In ${diffHours}h`
+
+  return rideTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 const formatMessageTime = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
@@ -985,6 +1158,7 @@ const closeThread = () => {
   messagesError.value = null
   otherUserTyping.value = false
   resetNewConversationState()
+  clearRideRatingPrompt()
 }
 
 // System Messages Thread Handler
@@ -1063,7 +1237,7 @@ const sendReply = async () => {
         const newMessage = response.data.data
         systemMessages.value.push(newMessage)
         // Update store's threadMessages to trigger reactivity
-        messageStore.threadMessages['system-messages'] = [...systemMessages.value]
+        syncSystemThreadMessages()
       }
     } else if (selectedThread.value?.is_new_conversation) {
       // New conversation with stranger - send first message
@@ -1449,6 +1623,186 @@ const loadGroupChats = async () => {
   }
 }
 
+
+const loadRideMessagePrompts = async () => {
+  try {
+    ridePromptsLoading.value = true
+
+    const [myRidesResponse, myBookingsResponse, notificationsResponse] = await Promise.all([
+      carpoolingAPI.getMyRides({ status: 'active', limit: 8 }),
+      carpoolingAPI.getMyBookings({ status: 'confirmed', limit: 8 }),
+      notificationsAPI.getNotifications({ limit: 60 })
+    ])
+
+    const now = Date.now()
+    const drivingRides = (myRidesResponse.data?.data?.rides || [])
+      .filter(ride => new Date(ride.departure_time).getTime() >= now)
+      .map(ride => ({
+        id: ride.id,
+        title: ride.title,
+        departure_time: ride.departure_time,
+        departure_location: ride.departure_location,
+        destination_location: ride.destination_location,
+        role: 'driver'
+      }))
+
+    const passengerRides = (myBookingsResponse.data?.data?.bookings || [])
+      .map(booking => booking.ride)
+      .filter(ride => ride && new Date(ride.departure_time).getTime() >= now)
+      .map(ride => ({
+        id: ride.id,
+        title: ride.title,
+        departure_time: ride.departure_time,
+        departure_location: ride.departure_location,
+        destination_location: ride.destination_location,
+        role: 'passenger'
+      }))
+
+    const mergedRides = [...drivingRides, ...passengerRides]
+      .sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time))
+
+    const uniqueRides = []
+    const rideKeySet = new Set()
+    for (const ride of mergedRides) {
+      const key = `${ride.id}-${ride.role}`
+      if (!rideKeySet.has(key)) {
+        rideKeySet.add(key)
+        uniqueRides.push(ride)
+      }
+    }
+
+    myUpcomingRides.value = uniqueRides.slice(0, 6)
+
+    const notifications = notificationsResponse.data?.data?.notifications || []
+    const rideTypes = new Set(['ride_new_booking', 'ride_booking_confirmed', 'ride_rating_reminder'])
+    rideMessagePrompts.value = notifications.filter(item => rideTypes.has(item.type))
+  } catch (error) {
+    console.error('Failed to load ride prompts:', error)
+    myUpcomingRides.value = []
+    rideMessagePrompts.value = []
+  } finally {
+    ridePromptsLoading.value = false
+  }
+}
+
+const openRideFromMessagePrompt = async (ride, prompt = null) => {
+  if (prompt?.id && !prompt.is_read) {
+    try {
+      await notificationsAPI.markAsRead(prompt.id)
+      prompt.is_read = true
+    } catch (error) {
+      console.warn('Failed to mark ride prompt as read:', error)
+    }
+  }
+
+  if (prompt?.type === 'ride_rating_reminder') {
+    await selectSystemMessagesThread()
+    activeRideRatingPrompt.value = prompt
+    rideRatingForm.value = { score: 0, submitting: false }
+    return
+  }
+
+  activeRideRatingPrompt.value = null
+
+  const promptData = parseNotificationData(prompt?.data)
+  const query = {
+    from: 'messages',
+    rideId: ride?.id || promptData.rideId || ''
+  }
+
+  if (promptData.rateeId) query.rateeId = promptData.rateeId
+  if (promptData.roleOfRater) query.roleOfRater = promptData.roleOfRater
+
+  await router.push({ path: '/rideshare', query })
+}
+
+const clearRideRatingPrompt = () => {
+  activeRideRatingPrompt.value = null
+  rideRatingForm.value = { score: 0, submitting: false }
+}
+
+const archiveRidePrompt = async (prompt) => {
+  if (!prompt?.id) return
+
+  try {
+    await notificationsAPI.deleteNotification(prompt.id)
+  } catch (deleteError) {
+    try {
+      await notificationsAPI.markAsRead(prompt.id)
+    } catch (readError) {
+      console.warn('Failed to archive ride prompt:', readError)
+    }
+  }
+
+  rideMessagePrompts.value = rideMessagePrompts.value.filter(item => item.id !== prompt.id)
+}
+
+const handleInlineRateChange = async (score) => {
+  if (!score || rideRatingForm.value.submitting) return
+  rideRatingForm.value.score = score
+  await submitRideRatingInline(score)
+}
+
+const submitRideRatingInline = async (scoreOverride = null) => {
+  if (!activeRideRatingPrompt.value || rideRatingForm.value.submitting) return
+
+  const selectedScore = Number(scoreOverride || rideRatingForm.value.score)
+  if (!selectedScore) {
+    message.warning('Please select a star rating first')
+    return
+  }
+
+  const promptData = activeRideRatingPromptData.value
+  const tripId = promptData.rideId
+  const rateeId = promptData.rateeId
+  const roleOfRater = promptData.roleOfRater
+
+  if (!tripId || !rateeId || !roleOfRater) {
+    message.error('This reminder is missing rating data')
+    return
+  }
+
+  const currentPrompt = activeRideRatingPrompt.value
+
+  try {
+    rideRatingForm.value.submitting = true
+
+    const canRateResponse = await ratingAPI.canRate({ tripId, rateeId })
+    if (canRateResponse.data?.success && canRateResponse.data?.data?.canRate === false) {
+      const reason = canRateResponse.data?.data?.reason || 'You already rated this ride'
+      message.info(reason)
+      await archiveRidePrompt(currentPrompt)
+      appendInlineSystemFeedback(`Rating reminder archived: ${reason}`)
+      clearRideRatingPrompt()
+      return
+    }
+
+    await ratingAPI.createRating({
+      tripId,
+      rateeId,
+      roleOfRater,
+      score: selectedScore,
+      comment: ''
+    })
+
+    message.success('Thanks! Your rating has been submitted')
+    await archiveRidePrompt(currentPrompt)
+    appendInlineSystemFeedback(`Rating submitted: ${selectedScore}/5 stars.`)
+
+    clearRideRatingPrompt()
+  } catch (error) {
+    console.error('Failed to submit ride rating:', error)
+    rideRatingForm.value.score = 0
+    message.error(error.response?.data?.error?.message || 'Failed to submit rating')
+  } finally {
+    rideRatingForm.value.submitting = false
+  }
+}
+
+const getRideRoleText = (role) => {
+  return role === 'driver' ? 'Driver' : 'Passenger'
+}
+
 // Navigate to activity chat - open modal directly
 const openActivityChat = (activity) => {
   selectedActivity.value = activity
@@ -1479,6 +1833,12 @@ const openSystemGroupChat = (groupType) => {
 }
 
 // Watch for thread selection to check block status
+watch(chatType, (nextType) => {
+  if (nextType === 'group') {
+    loadRideMessagePrompts()
+  }
+})
+
 watch(selectedThreadId, async (newThreadId) => {
   if (newThreadId) {
     await checkBlockStatus()
@@ -1531,9 +1891,14 @@ onMounted(async () => {
   try {
     await messageStore.initialize()
     await loadGroupChats()
+    await loadRideMessagePrompts()
     await loadSystemMessages() // Load system messages on mount
     handleQueryThreadSelection()
     initializeSocket()
+
+    ridePromptTimer.value = setInterval(() => {
+      nowTick.value = Date.now()
+    }, 60 * 1000)
   } catch (error) {
     console.error('Failed to initialize messages view:', error)
     threadsError.value = error.response?.data?.error?.message || 'Failed to load messages'
@@ -1545,6 +1910,9 @@ onUnmounted(() => {
   cleanupSocket()
   if (typingTimeout.value) {
     clearTimeout(typingTimeout.value)
+  }
+  if (ridePromptTimer.value) {
+    clearInterval(ridePromptTimer.value)
   }
 })
 </script>

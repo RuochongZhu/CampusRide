@@ -1,5 +1,8 @@
 import { supabaseAdmin } from '../config/database.js';
 import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
+import notificationService from '../services/notification.service.js';
+
+const RIDE_RATING_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
 
 // 创建拼车行程
 export const createRide = async (req, res, next) => {
@@ -511,6 +514,38 @@ export const bookRide = async (req, res, next) => {
         .eq('id', rideId);
     }
 
+    const passengerName = [req.user?.first_name, req.user?.last_name].filter(Boolean).join(' ') || 'A rider';
+
+    // 给司机一个消息式提示：有人报名了 Ride
+    await notificationService.sendNotification({
+      userId: ride.driver_id,
+      type: 'ride_new_booking',
+      title: 'Your ride has a new booking',
+      content: `${passengerName} booked ${seatsBooked} seat(s) on "${ride.title}".`,
+      data: {
+        rideId,
+        bookingId: booking.id,
+        passengerId: userId,
+        trigger: 'ride_booking'
+      },
+      priority: 'high'
+    });
+
+    // 给乘客一个确认提示，方便在消息页看到最近行程
+    await notificationService.sendNotification({
+      userId,
+      type: 'ride_booking_confirmed',
+      title: 'Ride booking confirmed',
+      content: `You are confirmed for "${ride.title}".`,
+      data: {
+        rideId,
+        bookingId: booking.id,
+        driverId: ride.driver_id,
+        trigger: 'ride_booking_confirmed'
+      },
+      priority: 'medium'
+    });
+
     res.status(201).json({
       success: true,
       data: { booking },
@@ -686,7 +721,7 @@ export const completeRide = async (req, res, next) => {
     // 检查权限
     const { data: ride, error: fetchError } = await supabaseAdmin
       .from('rides')
-      .select('driver_id, status')
+      .select('driver_id, status, title, departure_time, driver:users!driver_id(first_name, last_name)')
       .eq('id', rideId)
       .single();
 
@@ -715,12 +750,74 @@ export const completeRide = async (req, res, next) => {
       throw new AppError('Failed to complete ride', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    const { data: activeBookings } = await supabaseAdmin
+      .from('ride_bookings')
+      .select(`
+        id,
+        passenger_id,
+        passenger:users!passenger_id(first_name, last_name)
+      `)
+      .eq('ride_id', rideId)
+      .neq('status', 'cancelled');
+
     // 更新预订状态
     await supabaseAdmin
       .from('ride_bookings')
       .update({ status: 'completed' })
       .eq('ride_id', rideId)
       .neq('status', 'cancelled');
+
+    const reminderAt = new Date(Date.now() + RIDE_RATING_REMINDER_DELAY_MS).toISOString();
+    const driverName = [ride.driver?.first_name, ride.driver?.last_name].filter(Boolean).join(' ') || 'Driver';
+
+    // 先给乘客发送完成提示 + 延时评分提醒
+    for (const booking of (activeBookings || [])) {
+      const passengerName = [booking.passenger?.first_name, booking.passenger?.last_name].filter(Boolean).join(' ') || 'Passenger';
+
+      await notificationService.sendNotification({
+        userId: booking.passenger_id,
+        type: 'ride_completed',
+        title: 'Ride completed',
+        content: `Your ride "${ride.title}" has been completed.`,
+        data: {
+          rideId,
+          bookingId: booking.id,
+          trigger: 'ride_completed'
+        },
+        priority: 'medium'
+      });
+
+      await notificationService.sendNotification({
+        userId: booking.passenger_id,
+        type: 'ride_rating_reminder',
+        title: 'Rate your ride in 5-star system',
+        content: `Please rate ${driverName} for "${ride.title}". Your rating goes into the 5-star trust score.`,
+        data: {
+          rideId,
+          rateeId: ride.driver_id,
+          roleOfRater: 'passenger',
+          showAfter: reminderAt,
+          trigger: 'ride_rating_reminder'
+        },
+        priority: 'high'
+      });
+
+      // 给司机发每位乘客的评分提醒（同样延时）
+      await notificationService.sendNotification({
+        userId: ride.driver_id,
+        type: 'ride_rating_reminder',
+        title: 'Rate your passenger in 5-star system',
+        content: `Please rate ${passengerName} for "${ride.title}". This impacts the 5-star trust score.`,
+        data: {
+          rideId,
+          rateeId: booking.passenger_id,
+          roleOfRater: 'driver',
+          showAfter: reminderAt,
+          trigger: 'ride_rating_reminder'
+        },
+        priority: 'high'
+      });
+    }
 
     res.json({
       success: true,

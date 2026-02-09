@@ -83,36 +83,6 @@
         </a-select>
       </a-form-item>
 
-      <!-- Activity Category -->
-      <a-form-item label="Activity Category" required>
-        <a-select
-          v-model:value="formData.category"
-          placeholder="Select activity category"
-        >
-          <a-select-option value="academic">Academic</a-select-option>
-          <a-select-option value="sports">Sports</a-select-option>
-          <a-select-option value="social">Social</a-select-option>
-          <a-select-option value="volunteer">Volunteer</a-select-option>
-          <a-select-option value="career">Career</a-select-option>
-          <a-select-option value="cultural">Cultural</a-select-option>
-          <a-select-option value="technology">Technology</a-select-option>
-        </a-select>
-      </a-form-item>
-
-      <!-- Activity Type -->
-      <a-form-item label="Activity Type" required>
-        <a-select
-          v-model:value="formData.type"
-          placeholder="Select activity type"
-        >
-          <a-select-option value="individual">Individual</a-select-option>
-          <a-select-option value="team">Team</a-select-option>
-          <a-select-option value="competition">Competition</a-select-option>
-          <a-select-option value="workshop">Workshop</a-select-option>
-          <a-select-option value="seminar">Seminar</a-select-option>
-        </a-select>
-      </a-form-item>
-
       <!-- Location Selection -->
       <a-form-item label="Activity Location" required>
         <a-radio-group v-model:value="locationInputMode" class="mb-3">
@@ -173,31 +143,15 @@
         </div>
       </a-form-item>
 
-      <!-- Participant Limit -->
-      <a-row :gutter="16">
-        <a-col :span="12">
-          <a-form-item label="Max Participants">
-            <a-input-number
-              v-model:value="formData.max_participants"
-              :min="1"
-              :max="1000"
-              placeholder="Participant limit (optional)"
-              style="width: 100%"
-            />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label="Reward Points">
-            <a-input-number
-              v-model:value="formData.reward_points"
-              :min="0"
-              :max="1000"
-              placeholder="Earned after check-in"
-              style="width: 100%"
-            />
-          </a-form-item>
-        </a-col>
-      </a-row>
+      <a-form-item label="Reward Points">
+        <a-input-number
+          v-model:value="formData.reward_points"
+          :min="0"
+          :max="1000"
+          placeholder="Earned after check-in"
+          style="width: 100%"
+        />
+      </a-form-item>
 
       <!-- Location Verification -->
       <a-form-item>
@@ -250,13 +204,10 @@ const formData = ref({
   title: '',
   content: '',
   group_id: null,
-  category: 'social',
-  type: 'team',
   location: null,
   location_address: '',
   start_time: null,
   end_time: null,
-  max_participants: null,
   reward_points: 10,
   location_verification: true
 })
@@ -268,14 +219,11 @@ watch(() => props.open, (newVal) => {
       title: '',
       content: '',
       group_id: props.defaultGroup || null,
-      category: 'social',
-      type: 'team',
-      location: null,
+              location: null,
       location_address: '',
       start_time: null,
       end_time: null,
-      max_participants: null,
-      reward_points: 10,
+          reward_points: 10,
       location_verification: true
     }
     locationInputMode.value = 'current'
@@ -378,10 +326,6 @@ const handlePost = async () => {
     updateManualLocation()
   }
 
-  if (!formData.value.category) {
-    message.error('Please select activity category')
-    return
-  }
 
   posting.value = true
   try {
@@ -389,8 +333,8 @@ const handlePost = async () => {
     const activityData = {
       title: formData.value.title.trim(),
       description: formData.value.content.trim(),
-      category: formData.value.category,
-      type: formData.value.type,
+      category: 'social',
+      type: 'team',
       startTime: dayjs(formData.value.start_time).toISOString(),
       endTime: dayjs(formData.value.end_time).toISOString(),
       location: formData.value.location?.address || formData.value.location_address || '',
@@ -401,7 +345,6 @@ const handlePost = async () => {
             lng: parseFloat(formData.value.location.lng)
           }
         : null,
-      maxParticipants: formData.value.max_participants || null,
       rewardPoints: formData.value.reward_points || 0,
       locationVerification: formData.value.location_verification,
       status: 'published',

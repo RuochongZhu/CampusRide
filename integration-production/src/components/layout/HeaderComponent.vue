@@ -183,7 +183,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   SettingOutlined,
@@ -198,9 +198,8 @@ import {
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
 import UserSidebar from '@/components/user/UserSidebar.vue';
 import { useAuthStore } from '@/stores/auth';
+import { adminAPI } from '@/utils/api';
 
-// Admin emails allowed to access admin panel
-const ADMIN_EMAILS = ['rz469@cornell.edu'];
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -208,14 +207,27 @@ const isUserSidebarOpen = ref(false);
 const isMobileMenuOpen = ref(false);
 const userEmail = ref('');
 
-// Check if current user is an admin
-const isAdmin = computed(() => {
-  return ADMIN_EMAILS.includes((userEmail.value || '').toLowerCase());
-});
+const isAdmin = ref(false);
 
 const defaultAvatar = "/Profile_Photo.jpg";
 const userAvatar = ref(defaultAvatar);
 const userName = ref("Guest");
+
+const checkAdminAccess = async () => {
+  const token = localStorage.getItem('userToken');
+  if (!token) {
+    isAdmin.value = false;
+    return;
+  }
+
+  try {
+    await adminAPI.checkAdmin();
+    isAdmin.value = true;
+  } catch (error) {
+    // 401/403 means current user is not an admin.
+    isAdmin.value = false;
+  }
+};
 
 // Load user data from localStorage
 const loadUserData = () => {
@@ -228,12 +240,16 @@ const loadUserData = () => {
       userEmail.value = user.email || '';
       // Load avatar_url
       userAvatar.value = user.avatar_url || defaultAvatar;
+      checkAdminAccess();
+    } else {
+      isAdmin.value = false;
     }
   } catch (error) {
     console.error('Error loading user data:', error);
     userName.value = 'User';
     userEmail.value = '';
     userAvatar.value = defaultAvatar;
+    isAdmin.value = false;
   }
 };
 
@@ -278,6 +294,7 @@ onUnmounted(() => {
 const logout = async () => {
   // Use auth store's logout to properly clear all tokens
   await authStore.logout();
+  isAdmin.value = false;
   isUserSidebarOpen.value = false;
   router.push("/login");
 };

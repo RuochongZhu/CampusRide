@@ -6,35 +6,35 @@
       <div class="mb-4 md:mb-8">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 md:mb-6">
           <h2 class="text-xl md:text-2xl font-bold text-[#333333]">Campus Groups</h2>
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="group-action-row flex flex-wrap items-center gap-2">
             <a-button
               type="default"
               size="small"
-              class="!rounded-button text-xs md:text-sm h-8 flex items-center"
+              class="group-action-btn text-xs md:text-sm h-9 flex items-center"
               @click="showBrowseGroupsModal = true"
             >
-              <TeamOutlined /> <span class="hidden sm:inline ml-1">Browse</span>
+              <TeamOutlined /> <span class="ml-1">Add Group</span>
             </a-button>
             <a-button
               type="default"
               size="small"
-              class="!rounded-button text-xs md:text-sm h-8 flex items-center"
+              class="group-action-btn text-xs md:text-sm h-9 flex items-center"
               @click="showCreateGroupModal = true"
             >
-              <PlusOutlined /> <span class="hidden sm:inline ml-1">Create</span>
+              <PlusOutlined /> <span class="ml-1">Create Group</span>
             </a-button>
             <a-button
               type="primary"
               size="small"
-              class="!rounded-button bg-[#C24D45] border-none hover:bg-[#A93C35] text-xs md:text-sm h-8 flex items-center"
+              class="group-action-btn group-action-btn-primary text-xs md:text-sm h-9 flex items-center"
               @click="showPostThoughtModal = true"
             >
-              <EditOutlined /> <span class="hidden sm:inline ml-1">Post Activity</span>
+              <EditOutlined /> <span class="ml-1">Post Activity</span>
             </a-button>
             <a-button
               type="default"
               size="small"
-              class="!rounded-button text-xs md:text-sm h-8 hidden sm:flex items-center"
+              class="group-action-btn text-xs md:text-sm h-9 hidden sm:flex items-center"
               @click="() => $router.push('/activities/history')"
             >
               <HistoryOutlined class="mr-1" /> History
@@ -42,12 +42,12 @@
             <a-button
               :type="isVisible ? 'default' : 'dashed'"
               size="small"
-              class="!rounded-button text-xs md:text-sm h-8 flex items-center"
+              class="group-action-btn text-xs md:text-sm h-9 flex items-center"
               @click="toggleVisibility"
             >
               <EyeOutlined v-if="isVisible" />
               <EyeInvisibleOutlined v-else />
-              <span class="hidden sm:inline ml-1">{{ isVisible ? 'Visible' : 'Invisible' }}</span>
+              <span class="ml-1">{{ isVisible ? 'Visible' : 'Invisible' }}</span>
             </a-button>
           </div>
         </div>
@@ -128,7 +128,6 @@
                 <a-radio-group v-model:value="feedFilter" button-style="solid" size="small">
                   <a-radio-button value="all">All</a-radio-button>
                   <a-radio-button value="groups">My Groups</a-radio-button>
-                  <a-radio-button value="urgent">Urgent</a-radio-button>
                 </a-radio-group>
               </div>
               <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -1251,6 +1250,42 @@ input[type="range"]::-moz-range-thumb {
 /* Animation classes */
 .hover\:-translate-y-1:hover {
   transform: translateY(-0.25rem);
+}
+
+
+.group-action-row {
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(194, 77, 69, 0.15);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px rgba(31, 41, 55, 0.08);
+}
+
+.group-action-btn {
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.group-action-btn:hover {
+  color: #1f2937;
+  border-color: #9ca3af;
+  background: #f8fafc;
+}
+
+.group-action-btn-primary {
+  background: linear-gradient(135deg, #c24d45 0%, #a93c35 100%) !important;
+  border-color: #a93c35 !important;
+  color: #fff !important;
+  box-shadow: 0 6px 16px rgba(194, 77, 69, 0.35);
+}
+
+.group-action-btn-primary:hover {
+  background: linear-gradient(135deg, #b2463f 0%, #96352f 100%) !important;
 }
 
 .radar-modal .ant-modal-body {

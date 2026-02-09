@@ -200,7 +200,6 @@
                       />
                     </div>
                     <div class="flex-1 min-w-0">
-                      <h3 class="font-bold text-sm mb-1 truncate">{{ ride.title }}</h3>
                       <p class="text-xs text-gray-600 truncate">{{ ride.departure_location }}</p>
                       <p class="text-xs text-gray-500">→ {{ ride.destination_location }}</p>
                       <div class="flex items-center justify-between mt-2">
@@ -233,7 +232,6 @@
                       </div>
                     </div>
                     <div class="md:w-2/4">
-                      <h3 class="font-bold text-lg mb-2">{{ ride.title }}</h3>
                       <div class="flex items-start mb-3">
                         <div class="mr-3 mt-1">
                           <div class="w-2 h-2 rounded-full bg-green-500"></div>
@@ -244,7 +242,6 @@
                           <p class="font-medium">{{ ride.departure_location }}</p>
                           <p class="text-sm text-gray-500 mb-6">{{ formatDateTime(ride.departure_time) }}</p>
                           <p class="font-medium">{{ ride.destination_location }}</p>
-                          <p class="text-sm text-gray-500">{{ ride.arrival_time ? 'Est. arrival: ' + formatDateTime(ride.arrival_time) : '' }}</p>
                         </div>
                       </div>
                       <div class="flex flex-wrap gap-2">
