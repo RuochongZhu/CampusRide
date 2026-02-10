@@ -7,11 +7,13 @@ import systemMessageService from '../services/system-message.service.js';
 export const getSystemMessages = async (req, res) => {
   try {
     const userId = req.user.id;
+    const isGuest = req.user?.isGuest || req.user?.role === 'guest';
     const { limit = 100, offset = 0 } = req.query;
 
     const result = await systemMessageService.getSystemMessages(userId, {
       limit: parseInt(limit),
-      offset: parseInt(offset)
+      offset: parseInt(offset),
+      isGuest: isGuest
     });
 
     res.json(result);
@@ -30,6 +32,17 @@ export const getSystemMessages = async (req, res) => {
  */
 export const sendSystemMessage = async (req, res) => {
   try {
+    // Check if user is guest
+    if (req.user?.isGuest || req.user?.role === 'guest') {
+      return res.status(403).json({
+        success: false,
+        error: { 
+          message: 'Guest users cannot send system messages', 
+          code: 'GUEST_NOT_ALLOWED' 
+        }
+      });
+    }
+
     const userId = req.user.id;
     const userRole = req.user.role || 'user';
     const { content, message_type } = req.body;
@@ -38,6 +51,17 @@ export const sendSystemMessage = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: { message: 'Message content is required', code: 'INVALID_INPUT' }
+      });
+    }
+
+    // Ensure only admin can send announcement type messages
+    if (message_type === 'announcement' && userRole !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: { 
+          message: 'Only administrators can send announcements', 
+          code: 'ADMIN_ONLY' 
+        }
       });
     }
 
@@ -84,8 +108,9 @@ export const markSystemMessagesAsRead = async (req, res) => {
 export const getSystemMessagesUnreadCount = async (req, res) => {
   try {
     const userId = req.user.id;
+    const isGuest = req.user?.isGuest || req.user?.role === 'guest';
 
-    const result = await systemMessageService.getSystemMessagesUnreadCount(userId);
+    const result = await systemMessageService.getSystemMessagesUnreadCount(userId, isGuest);
 
     res.json(result);
   } catch (error) {

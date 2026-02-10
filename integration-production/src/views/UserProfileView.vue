@@ -489,6 +489,13 @@ const filteredCoupons = computed(() => {
 // Methods
 const fetchProfileData = async () => {
   try {
+    // Check if user is guest
+    if (authStore.isGuest || authStore.user?.role === 'guest') {
+      router.push('/')
+      message.warning('Guest users cannot access profiles')
+      return
+    }
+
     loading.value = true
     error.value = null
 

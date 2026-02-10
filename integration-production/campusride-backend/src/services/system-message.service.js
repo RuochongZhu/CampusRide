@@ -3,10 +3,10 @@ import { supabase } from '../config/database.js';
 /**
  * Get all system messages with sender info
  */
-export const getSystemMessages = async (userId, { limit = 100, offset = 0 } = {}) => {
+export const getSystemMessages = async (userId, { limit = 100, offset = 0, isGuest = false } = {}) => {
   try {
-    // Get messages with sender info
-    const { data: messages, error } = await supabase
+    // Build query
+    let query = supabase
       .from('system_messages')
       .select(`
         id,
@@ -26,7 +26,16 @@ export const getSystemMessages = async (userId, { limit = 100, offset = 0 } = {}
           role
         )
       `)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    // Guest users can only see public announcements (admin announcements)
+    if (isGuest) {
+      query = query
+        .eq('sender_type', 'admin')
+        .eq('message_type', 'announcement');
+    }
+
+    const { data: messages, error } = await query
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
@@ -73,7 +82,13 @@ export const getSystemMessages = async (userId, { limit = 100, offset = 0 } = {}
  */
 export const sendSystemMessage = async (userId, userRole, { content, message_type = 'general' }) => {
   try {
-    const isAdmin = userRole === 'admin';
+    // Additional security check: ensure user is not guest and is admin
+    const isAdmin = userRole === 'admin' && userRole !== 'guest';
+    
+    // Ensure only admin can send announcement type
+    if (message_type === 'announcement' && !isAdmin) {
+      throw new Error('Only administrators can send announcements');
+    }
 
     const { data: message, error } = await supabase
       .from('system_messages')
@@ -173,20 +188,55 @@ export const markSystemMessagesAsRead = async (userId, messageIds = null) => {
 /**
  * Get unread count for system messages
  */
-export const getSystemMessagesUnreadCount = async (userId) => {
+export const getSystemMessagesUnreadCount = async (userId, isGuest = false) => {
   try {
-    // Count total messages
-    const { count: totalCount, error: totalError } = await supabase
+    // Build query for total messages
+    let query = supabase
       .from('system_messages')
       .select('*', { count: 'exact', head: true });
 
+    // Guest users can only see public announcements
+    if (isGuest) {
+      query = query
+        .eq('sender_type', 'admin')
+        .eq('message_type', 'announcement');
+    }
+
+    const { count: totalCount, error: totalError } = await query;
+
     if (totalError) throw totalError;
 
-    // Count read messages for this user
-    const { count: readCount, error: readError } = await supabase
+    // Count read messages for this user (only count reads for messages they can see)
+    let readQuery = supabase
       .from('system_message_reads')
-      .select('*', { count: 'exact', head: true })
+      .select('message_id', { count: 'exact', head: true })
       .eq('user_id', userId);
+
+    // If guest, only count reads for announcement messages
+    if (isGuest) {
+      // Get announcement message IDs first
+      const { data: announcementMessages } = await supabase
+        .from('system_messages')
+        .select('id')
+        .eq('sender_type', 'admin')
+        .eq('message_type', 'announcement');
+
+      const announcementIds = (announcementMessages || []).map(m => m.id);
+      
+      if (announcementIds.length > 0) {
+        readQuery = readQuery.in('message_id', announcementIds);
+      } else {
+        // No announcement messages, so no reads
+        return {
+          success: true,
+          data: {
+            unread_count: totalCount || 0
+          }
+        };
+      }
+    }
+
+    const { count: readCount, error: readError } = await readQuery;
 
     if (readError) throw readError;
 

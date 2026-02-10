@@ -260,8 +260,16 @@ const guestLogin = async () => {
   try {
     const { data } = await authAPI.guestLogin()
     if (data?.success) {
+      // Store in localStorage
       localStorage.setItem('userToken', data.data.token)
+      localStorage.setItem('refreshToken', data.data.refresh_token || '')
       localStorage.setItem('userData', JSON.stringify(data.data.user))
+      
+      // Update authStore immediately
+      authStore.token = data.data.token
+      authStore.refreshToken = data.data.refresh_token || ''
+      authStore.user = data.data.user
+      
       errorMessage.value = ''
       const redirect = router.currentRoute.value.query.redirect || '/home'
       setTimeout(() => router.push(redirect), 500)

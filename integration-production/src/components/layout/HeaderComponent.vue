@@ -178,7 +178,9 @@
     </a-drawer>
 
     <!-- User Sidebar -->
-    <UserSidebar :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
+    <UserSidebar v-if="!isGuestUser" :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
+    <!-- Guest Sidebar -->
+    <GuestSidebar v-if="isGuestUser" :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
   </header>
 </template>
 
@@ -197,6 +199,7 @@ import {
 } from "@ant-design/icons-vue";
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
 import UserSidebar from '@/components/user/UserSidebar.vue';
+import GuestSidebar from '@/components/user/GuestSidebar.vue';
 import { useAuthStore } from '@/stores/auth';
 
 // Admin emails allowed to access admin panel
@@ -207,6 +210,27 @@ const authStore = useAuthStore();
 const isUserSidebarOpen = ref(false);
 const isMobileMenuOpen = ref(false);
 const userEmail = ref('');
+
+// Check if current user is guest (check both authStore and localStorage as fallback)
+const isGuestUser = computed(() => {
+  // First check authStore
+  if (authStore.isGuest || authStore.user?.role === 'guest') {
+    return true;
+  }
+  
+  // Fallback: check localStorage directly (for cases where authStore hasn't updated yet)
+  try {
+    const storedUser = localStorage.getItem('userData');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      return user?.isGuest || user?.role === 'guest';
+    }
+  } catch (e) {
+    // Ignore parse errors
+  }
+  
+  return false;
+});
 
 // Check if current user is an admin
 const isAdmin = computed(() => {
@@ -256,7 +280,7 @@ const handleBellClick = () => {
   router.push('/messages');
 };
 
-// Open user sidebar directly
+// Open user sidebar directly (or guest sidebar for guest users)
 const openUserSidebar = () => {
   isUserSidebarOpen.value = true;
 };
@@ -267,6 +291,22 @@ onMounted(() => {
   // Listen for user data updates (e.g., after avatar upload)
   window.addEventListener('user-updated', handleUserUpdate);
   window.addEventListener('storage', handleUserUpdate);
+  
+  // Also listen for route changes to refresh auth state
+  router.afterEach(() => {
+    // Refresh authStore from localStorage if needed
+    const storedUser = localStorage.getItem('userData');
+    if (storedUser && !authStore.user) {
+      try {
+        const user = JSON.parse(storedUser);
+        authStore.user = user;
+        authStore.token = localStorage.getItem('userToken');
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    loadUserData();
+  });
 });
 
 // Cleanup event listeners
