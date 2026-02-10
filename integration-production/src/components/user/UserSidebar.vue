@@ -607,6 +607,13 @@ const handleDeleteAccount = async () => {
 
 // Methods
 const fetchAllData = async () => {
+  // Check if user is guest
+  if (authStore.isGuest || authStore.user?.role === 'guest') {
+    message.warning('Guest users cannot access profiles')
+    emit('close')
+    return
+  }
+
   if (!authStore.userId) return
 
   try {

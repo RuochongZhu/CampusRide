@@ -305,6 +305,24 @@ router.beforeEach((to, from, next) => {
   const requiresAuth = to.meta.requiresAuth
   const isAuthenticated = checkAuthStatus()
   
+  // Check if user is guest
+  const storedUser = localStorage.getItem('userData')
+  let isGuest = false
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser)
+      isGuest = user?.isGuest || user?.role === 'guest'
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+  
+  // Block guest users from accessing profile
+  if (to.name === 'UserProfile' && isGuest) {
+    next('/')
+    return
+  }
+  
   if (requiresAuth && !isAuthenticated) {
     next({
       path: '/login',

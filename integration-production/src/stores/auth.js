@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userId = computed(() => user.value?.id)
   const userEmail = computed(() => user.value?.email)
   const userName = computed(() => user.value?.full_name || user.value?.email)
+  const isGuest = computed(() => user.value?.isGuest || user.value?.role === 'guest')
 
   // Actions
   const login = async (credentials) => {
@@ -189,6 +190,7 @@ export const useAuthStore = defineStore('auth', () => {
     userId,
     userEmail,
     userName,
+    isGuest,
 
     // Actions
     login,

@@ -178,12 +178,14 @@
     </a-drawer>
 
     <!-- User Sidebar -->
-    <UserSidebar :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
+    <UserSidebar v-if="!isGuestUser" :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
+    <!-- Guest Sidebar -->
+    <GuestSidebar v-if="isGuestUser" :isOpen="isUserSidebarOpen" @close="isUserSidebarOpen = false" @logout="logout" />
   </header>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   SettingOutlined,
@@ -197,8 +199,10 @@ import {
 } from "@ant-design/icons-vue";
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
 import UserSidebar from '@/components/user/UserSidebar.vue';
+import GuestSidebar from '@/components/user/GuestSidebar.vue';
 import { useAuthStore } from '@/stores/auth';
-import { adminAPI } from '@/utils/api';
+// Admin emails allowed to access admin panel
+const ADMIN_EMAILS = ['rz469@cornell.edu'];
 
 
 const router = useRouter();
@@ -207,27 +211,35 @@ const isUserSidebarOpen = ref(false);
 const isMobileMenuOpen = ref(false);
 const userEmail = ref('');
 
-const isAdmin = ref(false);
+// Check if current user is guest (check both authStore and localStorage as fallback)
+const isGuestUser = computed(() => {
+  // First check authStore
+  if (authStore.isGuest || authStore.user?.role === 'guest') {
+    return true;
+  }
+  
+  // Fallback: check localStorage directly (for cases where authStore hasn't updated yet)
+  try {
+    const storedUser = localStorage.getItem('userData');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      return user?.isGuest || user?.role === 'guest';
+    }
+  } catch (e) {
+    // Ignore parse errors
+  }
+  
+  return false;
+});
+
+// Check if current user is an admin
+const isAdmin = computed(() => {
+  return ADMIN_EMAILS.includes((userEmail.value || '').toLowerCase());
+});
 
 const defaultAvatar = "/Profile_Photo.jpg";
 const userAvatar = ref(defaultAvatar);
 const userName = ref("Guest");
-
-const checkAdminAccess = async () => {
-  const token = localStorage.getItem('userToken');
-  if (!token) {
-    isAdmin.value = false;
-    return;
-  }
-
-  try {
-    await adminAPI.checkAdmin();
-    isAdmin.value = true;
-  } catch (error) {
-    // 401/403 means current user is not an admin.
-    isAdmin.value = false;
-  }
-};
 
 // Load user data from localStorage
 const loadUserData = () => {
@@ -240,16 +252,12 @@ const loadUserData = () => {
       userEmail.value = user.email || '';
       // Load avatar_url
       userAvatar.value = user.avatar_url || defaultAvatar;
-      checkAdminAccess();
-    } else {
-      isAdmin.value = false;
     }
   } catch (error) {
     console.error('Error loading user data:', error);
     userName.value = 'User';
     userEmail.value = '';
     userAvatar.value = defaultAvatar;
-    isAdmin.value = false;
   }
 };
 
@@ -272,7 +280,7 @@ const handleBellClick = () => {
   router.push('/messages');
 };
 
-// Open user sidebar directly
+// Open user sidebar directly (or guest sidebar for guest users)
 const openUserSidebar = () => {
   isUserSidebarOpen.value = true;
 };
@@ -283,6 +291,22 @@ onMounted(() => {
   // Listen for user data updates (e.g., after avatar upload)
   window.addEventListener('user-updated', handleUserUpdate);
   window.addEventListener('storage', handleUserUpdate);
+  
+  // Also listen for route changes to refresh auth state
+  router.afterEach(() => {
+    // Refresh authStore from localStorage if needed
+    const storedUser = localStorage.getItem('userData');
+    if (storedUser && !authStore.user) {
+      try {
+        const user = JSON.parse(storedUser);
+        authStore.user = user;
+        authStore.token = localStorage.getItem('userToken');
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    loadUserData();
+  });
 });
 
 // Cleanup event listeners
@@ -294,7 +318,6 @@ onUnmounted(() => {
 const logout = async () => {
   // Use auth store's logout to properly clear all tokens
   await authStore.logout();
-  isAdmin.value = false;
   isUserSidebarOpen.value = false;
   router.push("/login");
 };

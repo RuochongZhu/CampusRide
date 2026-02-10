@@ -11,6 +11,17 @@ const logger = console;
 // ================================================
 export const getUserProfile = async (req, res) => {
   try {
+    // Check if user is guest
+    if (req.user?.isGuest || req.user?.role === 'guest') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'GUEST_NOT_ALLOWED',
+          message: 'Guest users cannot access user profiles'
+        }
+      });
+    }
+
     const { userId } = req.params;
 
     // 验证参数

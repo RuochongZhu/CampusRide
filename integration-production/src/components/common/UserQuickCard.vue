@@ -101,6 +101,28 @@ const maskEmail = (email) => {
 const loadUserStats = async (userId) => {
   if (!userId) return
 
+  // Check if current user is guest (don't load stats for guest)
+  const storedUser = localStorage.getItem('userData');
+  let isGuest = false;
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser);
+      isGuest = user?.isGuest || user?.role === 'guest';
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+  
+  // Guest users cannot view profile stats
+  if (isGuest) {
+    stats.value = {
+      rides: 0,
+      trades: 0,
+      activities: 0
+    };
+    return;
+  }
+
   try {
     const response = await userProfileAPI.getUserProfile(userId)
     if (response.data?.success || response.data?.data) {
