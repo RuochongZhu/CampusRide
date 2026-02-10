@@ -33,15 +33,6 @@ class="object-cover w-full h-auto"
             </button>
           </div>
 
-          <!-- Demo mode notification -->
-          <div class="mb-4 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded">
-            <div class="font-semibold mb-1">🎯 Demo Account</div>
-            <div class="text-sm">
-              Email: demo@university.edu<br>
-              Password: demo1234
-            </div>
-          </div>
-          
           <form @submit.prevent="handleSignIn">
 <div class="mb-4">
 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">University email address</label>
@@ -322,4 +313,3 @@ input[type="number"]::-webkit-outer-spin-button {
 margin: 0;
 }
 </style>
-
