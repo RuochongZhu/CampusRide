@@ -164,7 +164,7 @@ app.get("/wxgroup_notice_wait", async (req, res) => {
     // 查询 wxgroup_notice_record 表，获取 sendtime 为空的记录
     const { data: notices, error } = await supabaseAdmin
       .from('wxgroup_notice_record')
-      .select('id, content')
+      .select('id, content, created_at')
       .is('sendtime', null)
       .order('created_at', { ascending: true }); // 按创建时间升序，先处理旧记录
 
@@ -182,19 +182,44 @@ app.get("/wxgroup_notice_wait", async (req, res) => {
       return;
     }
 
-    // 选择第一条记录（最早创建的）
-    const selectedNotice = notices[0];
-    const currentTime = new Date().toISOString();
+    const now = new Date();
+    const currentTime = now.toISOString();
 
-    // 更新该记录的 sendtime 为当前时间
+    // 批量规则：
+    // - 满 5 条：发送前 5 条
+    // - 未满 5 条但最早一条已超过 24 小时：发送全部
+    // - 否则：不发送
+    const batchSize = 5;
+    const oldestNotice = notices[0];
+    const oldestCreatedAt = new Date(oldestNotice.created_at || now.toISOString());
+    const ageMs = now.getTime() - oldestCreatedAt.getTime();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    let selectedNotices = [];
+    if (notices.length >= batchSize) {
+      selectedNotices = notices.slice(0, batchSize);
+    } else if (ageMs >= dayMs) {
+      selectedNotices = notices.slice();
+    } else {
+      res.set('Content-Type', 'text/plain');
+      res.send('');
+      return;
+    }
+
+    // 更新选中记录的 sendtime 为当前时间
+    const selectedIds = selectedNotices.map(n => n.id);
     await supabaseAdmin
       .from('wxgroup_notice_record')
       .update({ sendtime: currentTime })
-      .eq('id', selectedNotice.id);
+      .in('id', selectedIds);
 
-    // 直接响应文本内容
+    // 合并消息内容
+    const mergedContent = selectedNotices
+      .map((n, idx) => `${idx + 1}. ${n.content}`)
+      .join('\n\n');
+
     res.set('Content-Type', 'text/plain');
-    res.send(selectedNotice.content);
+    res.send(mergedContent);
   } catch (error) {
     console.error('Error in wxgroup_notice_wait endpoint:', error);
     res.set('Content-Type', 'text/plain');
@@ -210,4 +235,3 @@ app.use(errorHandler);
 
 export default app;
 export { socketManager }; 
-

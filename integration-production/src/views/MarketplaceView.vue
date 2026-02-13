@@ -251,6 +251,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
   SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined,
@@ -261,6 +262,7 @@ import CommentSection from '@/components/marketplace/CommentSection.vue'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
 
 // State management
+const route = useRoute()
 const loading = ref(false)
 const posting = ref(false)
 const viewMode = ref('grid')
@@ -438,6 +440,25 @@ const fetchItems = async () => {
     message.error('Failed to load marketplace items')
   } finally {
     loading.value = false
+  }
+}
+
+const openItemFromRoute = async () => {
+  const itemId = route.params?.id || route.query?.itemId
+  if (!itemId) return
+
+  try {
+    const response = await marketplaceAPI.getItem(itemId)
+    const item = response.data?.data?.item || response.data?.data
+    if (!item) {
+      message.error('Item not found')
+      return
+    }
+    selectedItem.value = item
+    showDetailsModal.value = true
+  } catch (error) {
+    console.error('Failed to load item detail:', error)
+    message.error('Failed to load item detail')
   }
 }
 
@@ -714,8 +735,9 @@ const fileToBase64 = (file) => {
 }
 
 // Lifecycle
-onMounted(() => {
-  fetchItems()
+onMounted(async () => {
+  await fetchItems()
+  await openItemFromRoute()
 })
 </script>
 

@@ -136,6 +136,20 @@ class ActivityService {
         throw createError;
       }
 
+      // 创建微信通知记录（深链接到具体详情）
+      try {
+        const activityLink = `https://www.campusgo.college/activities/${activity.id}`;
+        const noticeContent = `活动发布  ${activity.title}\n${activityLink}`;
+
+        await supabaseAdmin
+          .from('wxgroup_notice_record')
+          .insert({
+            content: noticeContent
+          });
+      } catch (noticeError) {
+        console.warn('Failed to create wxgroup notice for activity:', noticeError);
+      }
+
       // 防刷分验证
       const validation = await pointsService.validateActivityPoints(organizerId, 'create');
       if (!validation.valid) {

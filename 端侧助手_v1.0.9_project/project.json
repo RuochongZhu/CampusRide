@@ -1,0 +1,43 @@
+{
+  "assets": [],
+  "build": {
+    "build_id": "DD6E2C92-1",
+    "build_number": 1,
+    "build_time": 1768653832837,
+    "release": true
+  },
+  "encryptLevel": 0,
+  "features": {
+    "activityIntentTasks": false,
+    "nodejs": "auto"
+  },
+  "icon": "images/ic_app_logo.png",
+  "launchConfig": {
+    "displaySplash": true,
+    "hideLogs": true,
+    "splashIcon": "images/ic_splash.png",
+    "splashText": "脚本定制联系微信：179620729",
+    "stableMode": false
+  },
+  "main": "main.js",
+  "name": "端侧助手",
+  "optimization": {
+    "obfuscateComponents": false,
+    "removeAccessibilityService": false,
+    "removeOpenCv": false,
+    "unusedResources": false
+  },
+  "packageName": "org.example.mobilewxauto",
+  "permissionConfig": {
+    "requestListOnStartup": [
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ]
+  },
+  "plugins": {
+    "org.autojs.autojspro.plugin.mlkit.ocr": "1.1"
+  },
+  "scripts": {},
+  "useFeatures": [],
+  "versionCode": 2,
+  "versionName": "1.0.9"
+}

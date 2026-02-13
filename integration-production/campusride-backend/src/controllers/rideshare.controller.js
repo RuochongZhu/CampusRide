@@ -66,6 +66,21 @@ export const createRide = async (req, res, next) => {
       throw new AppError('Failed to create ride', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    // 创建微信通知记录（深链接到具体详情）
+    try {
+      const rideLink = `https://www.campusgo.college/rideshare/${ride.id}`;
+      const routeSummary = `${departureLocation} → ${destinationLocation}`;
+      const noticeContent = `打车发布  ${title}  ${routeSummary}\n${rideLink}`;
+
+      await supabaseAdmin
+        .from('wxgroup_notice_record')
+        .insert({
+          content: noticeContent
+        });
+    } catch (noticeError) {
+      console.warn('Failed to create wxgroup notice for ride:', noticeError);
+    }
+
     // 奖励创建拼车积分 (调用Claude Code的积分服务)
     try {
       await fetch(`${process.env.BACKEND_URL || 'http://localhost:3000'}/api/v1/points/award`, {

@@ -470,6 +470,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { notification } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {
@@ -545,6 +546,7 @@ const passengerRequestDestInput = ref(null);
 const driverOriginInput = ref(null);
 const driverDestInput = ref(null);
 let googleMapsLoaded = false;
+const route = useRoute();
 
 // Initialize Google Maps Autocomplete
 const initGoogleMaps = async () => {
@@ -703,6 +705,31 @@ const loadRides = async (params = {}) => {
     });
   } finally {
     loading.value = false;
+  }
+};
+
+const openRideFromRoute = async () => {
+  const rideId = route.params?.id || route.query?.rideId;
+  if (!rideId) return;
+
+  try {
+    const response = await carpoolingAPI.getRide(rideId);
+    const ride = response.data?.data?.ride || response.data?.data;
+    if (!ride) {
+      notification.error({
+        message: 'Not Found',
+        description: 'Ride not found.'
+      });
+      return;
+    }
+    selectedRide.value = ride;
+    showDetailsModal.value = true;
+  } catch (error) {
+    console.error('Failed to load ride detail:', error);
+    notification.error({
+      message: 'Error',
+      description: 'Failed to load ride detail.'
+    });
   }
 };
 
@@ -979,6 +1006,7 @@ onMounted(async () => {
   initGoogleMaps();
   // 加载拼车列表
   await loadRides();
+  await openRideFromRoute();
 });
 
 onUnmounted(() => {

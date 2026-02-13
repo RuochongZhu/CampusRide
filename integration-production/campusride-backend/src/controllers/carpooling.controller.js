@@ -83,6 +83,21 @@ export const createRide = async (req, res, next) => {
       throw new AppError('Failed to create ride', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    // 创建微信通知记录（深链接到具体详情）
+    try {
+      const rideLink = `https://www.campusgo.college/rideshare/${ride.id}`;
+      const routeSummary = `${departureLocation} → ${destinationLocation}`;
+      const noticeContent = `打车发布  ${title}  ${routeSummary}\n${rideLink}`;
+
+      await supabaseAdmin
+        .from('wxgroup_notice_record')
+        .insert({
+          content: noticeContent
+        });
+    } catch (noticeError) {
+      console.warn('Failed to create wxgroup notice for ride:', noticeError);
+    }
+
     res.status(201).json({
       success: true,
       data: { ride },

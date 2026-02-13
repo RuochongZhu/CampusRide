@@ -109,6 +109,15 @@ const routes = [
     }
   },
   {
+    path: '/rideshare/:id',
+    name: 'RideshareDetail',
+    component: RideshareView,
+    meta: {
+      requiresAuth: false,
+      title: 'Ride Details - CampusGo'
+    }
+  },
+  {
     path: '/activities',
     name: 'Activities',
     component: ActivitiesView,
@@ -140,7 +149,7 @@ const routes = [
     name: 'ActivityDetail',
     component: ActivityDetailView,
     meta: {
-      requiresAuth: true,
+      requiresAuth: false,
       title: 'Activity Details - CampusGo'
     }
   },
@@ -151,6 +160,15 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: 'Campus Marketplace - CampusGo'
+    }
+  },
+  {
+    path: '/marketplace/:id',
+    name: 'MarketplaceDetail',
+    component: MarketplaceView,
+    meta: {
+      requiresAuth: false,
+      title: 'Marketplace Item - CampusGo'
     }
   },
   {

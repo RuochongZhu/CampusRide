@@ -58,12 +58,12 @@ export const createItem = async (req, res, next) => {
       throw new AppError('Failed to create item', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
-    // 构建商品访问链接
-    const itemLink = `https://www.campusgo.college/marketplace`;
-    
+    // 构建商品访问链接（深链接到具体详情）
+    const itemLink = `https://www.campusgo.college/marketplace/${item.id}`;
+
     // 创建微信通知记录 start
-    const noticeContent = `上新商品  ${item.title}  \n${itemLink}`;
-    
+    const noticeContent = `二手上新  ${item.title}  \n${itemLink}`;
+
     await supabaseAdmin
       .from('wxgroup_notice_record')
       .insert({
@@ -205,7 +205,7 @@ export const searchItems = async (req, res, next) => {
 export const getItemById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     const { data: item, error } = await supabaseAdmin
       .from('marketplace_items')
@@ -220,8 +220,8 @@ export const getItemById = async (req, res, next) => {
       throw new AppError('Item not found', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
     }
 
-    // 增加浏览次数 (如果不是卖家本人)
-    if (item.seller_id !== userId) {
+    // 增加浏览次数（游客或非卖家都增加）
+    if (!userId || item.seller_id !== userId) {
       await supabaseAdmin
         .from('marketplace_items')
         .update({ 
@@ -233,15 +233,19 @@ export const getItemById = async (req, res, next) => {
       item.views_count += 1;
     }
 
-    // 检查是否已收藏
-    const { data: favorite } = await supabaseAdmin
-      .from('item_favorites')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('item_id', id)
-      .single();
+    // 检查是否已收藏（仅登录用户）
+    if (userId) {
+      const { data: favorite } = await supabaseAdmin
+        .from('item_favorites')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('item_id', id)
+        .single();
 
-    item.is_favorited = !!favorite;
+      item.is_favorited = !!favorite;
+    } else {
+      item.is_favorited = false;
+    }
 
     res.json({
       success: true,
