@@ -183,24 +183,10 @@ app.get("/wxgroup_notice_wait", async (req, res) => {
     }
 
     const now = new Date();
-    const currentTime = now.toISOString();
+    const currentTime = getNewYorkTimestamp(now);
+    const selectedNotices = selectNoticeBatch(notices, now);
 
-    // 批量规则：
-    // - 满 5 条：发送前 5 条
-    // - 未满 5 条但最早一条已超过 24 小时：发送全部
-    // - 否则：不发送
-    const batchSize = 5;
-    const oldestNotice = notices[0];
-    const oldestCreatedAt = new Date(oldestNotice.created_at || now.toISOString());
-    const ageMs = now.getTime() - oldestCreatedAt.getTime();
-    const dayMs = 24 * 60 * 60 * 1000;
-
-    let selectedNotices = [];
-    if (notices.length >= batchSize) {
-      selectedNotices = notices.slice(0, batchSize);
-    } else if (ageMs >= dayMs) {
-      selectedNotices = notices.slice();
-    } else {
+    if (!selectedNotices.length) {
       res.set('Content-Type', 'text/plain');
       res.send('');
       return;
@@ -226,6 +212,116 @@ app.get("/wxgroup_notice_wait", async (req, res) => {
     res.send('');
   }
 })
+
+// v2: 返回可确认的批次，客户端确认后才写入 sendtime
+app.get("/wxgroup_notice_wait_v2", async (req, res) => {
+  try {
+    const { data: notices, error } = await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .select('id, content, created_at')
+      .is('sendtime', null)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching wxgroup notices (v2):', error);
+      return res.json({ success: false, data: null });
+    }
+
+    if (!notices || notices.length === 0) {
+      return res.json({ success: true, data: null });
+    }
+
+    const now = new Date();
+    const selectedNotices = selectNoticeBatch(notices, now);
+
+    if (!selectedNotices.length) {
+      return res.json({ success: true, data: null });
+    }
+
+    const mergedContent = selectedNotices
+      .map((n, idx) => `${idx + 1}. ${n.content}`)
+      .join('\n\n');
+
+    return res.json({
+      success: true,
+      data: {
+        ids: selectedNotices.map(n => n.id),
+        count: selectedNotices.length,
+        content: mergedContent
+      }
+    });
+  } catch (error) {
+    console.error('Error in wxgroup_notice_wait_v2 endpoint:', error);
+    return res.json({ success: false, data: null });
+  }
+});
+
+// v2: 客户端确认已发送后写入 sendtime（纽约时区）
+app.post("/wxgroup_notice_ack", express.json(), async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    if (!ids.length) {
+      return res.status(400).json({ success: false, message: 'ids required' });
+    }
+
+    const currentTime = getNewYorkTimestamp(new Date());
+    await supabaseAdmin
+      .from('wxgroup_notice_record')
+      .update({ sendtime: currentTime })
+      .in('id', ids);
+
+    return res.json({ success: true, count: ids.length });
+  } catch (error) {
+    console.error('Error in wxgroup_notice_ack endpoint:', error);
+    return res.status(500).json({ success: false });
+  }
+});
+
+function getNewYorkTimestamp(date) {
+  // Format as ISO-like string with NY offset, e.g. 2026-02-13T08:30:00-05:00
+  const parts = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(date);
+
+  const get = (type) => parts.find(p => p.type === type)?.value;
+  const yyyy = get('year');
+  const mm = get('month');
+  const dd = get('day');
+  const hh = get('hour');
+  const mi = get('minute');
+  const ss = get('second');
+
+  const tzName = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    timeZoneName: 'shortOffset'
+  }).formatToParts(date).find(p => p.type === 'timeZoneName')?.value || 'GMT-00:00';
+
+  const offset = tzName.replace('GMT', '');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${offset}`;
+}
+
+function selectNoticeBatch(notices, now) {
+  const batchSize = 5;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const oldestNotice = notices[0];
+  const oldestCreatedAt = new Date(oldestNotice.created_at || now.toISOString());
+  const ageMs = now.getTime() - oldestCreatedAt.getTime();
+
+  if (notices.length >= batchSize) {
+    return notices.slice(0, batchSize);
+  }
+  if (ageMs >= dayMs) {
+    return notices.slice();
+  }
+  return [];
+}
 
 // 404 handler
 app.use(notFound);

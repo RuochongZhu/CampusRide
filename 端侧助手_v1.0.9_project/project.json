@@ -20,14 +20,14 @@
     "stableMode": false
   },
   "main": "main.js",
-  "name": "端侧助手",
+  "name": "端侧助手 1.0.9",
   "optimization": {
     "obfuscateComponents": false,
     "removeAccessibilityService": false,
     "removeOpenCv": false,
     "unusedResources": false
   },
-  "packageName": "org.example.mobilewxauto",
+  "packageName": "org.example.mobilewxauto.v109",
   "permissionConfig": {
     "requestListOnStartup": [
       "android.permission.WRITE_EXTERNAL_STORAGE"
