@@ -86,7 +86,7 @@
             <div class="comment-content">
               <div class="comment-header-info">
                 <span class="comment-author">
-                  {{ comment.users.first_name }} {{ comment.users.last_name }}
+                  {{ getDisplayName(comment.users) }}
                   <span class="comment-username">@{{ comment.users.username }}</span>
                 </span>
                 <span class="comment-time">
@@ -158,7 +158,7 @@
               <div v-if="activeReplyBox === comment.id" class="reply-form-wrapper">
                 <a-textarea
                   v-model:value="replyContent[comment.id]"
-                  :placeholder="`Reply to ${comment.users.first_name} ${comment.users.last_name}...`"
+                  :placeholder="`Reply to ${getDisplayName(comment.users)}...`"
                   :rows="2"
                   :maxlength="2000"
                   show-count
@@ -220,7 +220,7 @@
                   <div class="reply-content">
                     <div class="reply-header-info">
                       <span class="reply-author">
-                        {{ reply.users.first_name }} {{ reply.users.last_name }}
+                        {{ getDisplayName(reply.users) }}
                         <span class="reply-username">@{{ reply.users.username }}</span>
                       </span>
                       <span class="reply-time">
@@ -292,7 +292,7 @@
                     <div v-if="activeReplyBox === reply.id" class="nested-reply-form-wrapper">
                       <a-textarea
                         v-model:value="replyContent[reply.id]"
-                        :placeholder="`Reply to ${reply.users.first_name} ${reply.users.last_name}...`"
+                        :placeholder="`Reply to ${getDisplayName(reply.users)}...`"
                         :rows="2"
                         :maxlength="2000"
                         show-count
@@ -416,6 +416,7 @@ import { useAuthStore } from '@/stores/auth';
 import MediaUploader from './MediaUploader.vue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { getPublicUserName } from '@/utils/publicName';
 
 dayjs.extend(relativeTime);
 
@@ -478,6 +479,7 @@ const editSubmitting = ref(false);
 
 // 当前用户
 const currentUser = computed(() => authStore.user);
+const getDisplayName = (user) => getPublicUserName(user, 'User');
 
 // 加载评论
 const loadComments = async (reset = false) => {

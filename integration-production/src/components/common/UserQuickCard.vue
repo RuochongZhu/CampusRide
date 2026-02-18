@@ -5,7 +5,7 @@
         {{ getInitials(user) }}
       </a-avatar>
       <div class="user-info">
-        <h3>{{ user?.first_name }} {{ user?.last_name }}</h3>
+        <h3>{{ displayName }}</h3>
         <p class="email">{{ maskEmail(user?.email) }}</p>
         <div class="rating">
           <template v-if="hasRating">
@@ -58,6 +58,7 @@ import {
   ShopOutlined
 } from '@ant-design/icons-vue'
 import { userProfileAPI } from '@/utils/api'
+import { getPublicUserName } from '@/utils/publicName'
 
 const props = defineProps({
   user: {
@@ -82,6 +83,10 @@ const hasRating = computed(() => {
   return props.user?.avg_rating !== null &&
          props.user?.avg_rating !== undefined &&
          props.user?.avg_rating > 0
+})
+
+const displayName = computed(() => {
+  return getPublicUserName(props.user, 'User')
 })
 
 const getInitials = (user) => {

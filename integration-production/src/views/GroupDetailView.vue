@@ -232,6 +232,7 @@ import {
 import { groupAPI, activitiesAPI } from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
 import PostThoughtModal from '@/components/groups/PostThoughtModal.vue'
+import { getPublicUserName } from '@/utils/publicName'
 
 const router = useRouter()
 const route = useRoute()
@@ -494,9 +495,7 @@ const getStatusName = (status) => {
 }
 
 const getOrganizerName = (activity) => {
-  if (!activity?.organizer) return 'Unknown'
-  const { first_name, last_name } = activity.organizer
-  return `${first_name || ''} ${last_name || ''}`.trim() || 'Unknown'
+  return getPublicUserName(activity?.organizer, 'Unknown')
 }
 
 // Lifecycle

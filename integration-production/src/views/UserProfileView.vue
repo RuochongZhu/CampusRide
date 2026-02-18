@@ -39,7 +39,7 @@
               <!-- User Info -->
               <div>
                 <h1 class="text-2xl font-bold text-gray-900">
-                  {{ profileData.user.first_name }} {{ profileData.user.last_name }}
+                  {{ getDisplayName(profileData.user) }}
                 </h1>
                 <p class="text-gray-600">{{ profileData.user.email }}</p>
                 <p class="text-sm text-gray-500">{{ profileData.user.university || 'Your University' }}</p>
@@ -211,7 +211,7 @@
                       />
                       <div>
                         <p class="font-medium">
-                          {{ rating.rater?.first_name }} {{ rating.rater?.last_name }}
+                          {{ getDisplayName(rating.rater) }}
                         </p>
                         <p class="text-xs text-gray-500">{{ formatDate(rating.created_at) }}</p>
                       </div>
@@ -438,6 +438,7 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { marketplaceAPI } from '@/utils/api'
+import { getPublicUserName } from '@/utils/publicName'
 
 const route = useRoute()
 const router = useRouter()
@@ -485,6 +486,8 @@ const filteredCoupons = computed(() => {
   if (!profileData.value) return []
   return profileData.value.coupons[couponFilter.value] || []
 })
+
+const getDisplayName = (user) => getPublicUserName(user, 'User')
 
 // Methods
 const fetchProfileData = async () => {

@@ -120,7 +120,7 @@
               <!-- User Info -->
               <div class="flex-1 min-w-0">
                 <p v-if="!user.hide_rank" class="font-semibold text-sm md:text-lg text-gray-900 truncate">
-                  {{ user.first_name }} {{ user.last_name }}
+                  {{ getDisplayName(user) }}
                 </p>
                 <p v-else class="font-semibold text-sm md:text-lg text-gray-400 truncate blur-sm select-none">
                   Anonymous User
@@ -259,6 +259,7 @@ import {
 } from '@ant-design/icons-vue'
 import { leaderboardAPI, adminAPI } from '@/utils/api'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
+import { getPublicNameFromRaw } from '@/utils/publicName'
 
 // State
 const loading = ref(true)
@@ -266,6 +267,10 @@ const error = ref(null)
 const leaderboardData = ref([])
 const myRank = ref(null)
 const featureEnabled = ref(true)
+
+const getDisplayName = (user) => {
+  return getPublicNameFromRaw(user?.first_name, user?.last_name, user?.email, 'User')
+}
 
 // Methods
 const checkFeatureEnabled = async () => {

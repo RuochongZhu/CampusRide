@@ -37,6 +37,7 @@ import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { message as antdMessage } from 'ant-design-vue'
 import UserQuickCard from './UserQuickCard.vue'
+import { getPublicUserName } from '@/utils/publicName'
 
 const props = defineProps({
   user: {
@@ -99,7 +100,7 @@ const handleMessage = () => {
   }
   // Add user name for display
   if (props.user?.first_name || props.user?.last_name) {
-    query.userName = `${props.user.first_name || ''} ${props.user.last_name || ''}`.trim()
+    query.userName = getPublicUserName(props.user, 'User')
   }
 
   if (!query.userId && !query.userEmail) {

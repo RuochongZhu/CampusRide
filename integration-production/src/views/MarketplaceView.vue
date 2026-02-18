@@ -260,6 +260,7 @@ import {
 import { marketplaceAPI } from '@/utils/api'
 import CommentSection from '@/components/marketplace/CommentSection.vue'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
+import { getPublicUserName } from '@/utils/publicName'
 
 // State management
 const route = useRoute()
@@ -610,8 +611,7 @@ const getItemImage = (item) => {
 }
 
 const getSellerName = (seller) => {
-  if (!seller) return 'Unknown'
-  return `${seller.first_name || ''} ${seller.last_name || ''}`.trim() || 'Unknown'
+  return getPublicUserName(seller, 'Unknown')
 }
 
 const getInitials = (seller) => {

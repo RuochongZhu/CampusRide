@@ -484,6 +484,7 @@ import {
 } from 'ant-design-vue';
 import { carpoolingAPI } from '@/utils/api';
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue';
+import { getPublicUserName } from '@/utils/publicName';
 
 // Window width for responsive pagination
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -980,8 +981,7 @@ const formatDateTime = (datetime) => {
 };
 
 const getDriverName = (driver) => {
-  if (!driver) return 'Driver';
-  return `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || 'Driver';
+  return getPublicUserName(driver, 'Driver');
 };
 
 // Handle user message from ClickableAvatar

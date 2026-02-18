@@ -43,7 +43,7 @@
           <div class="flex items-center">
             <div v-if="!isEditingNickname" class="flex items-center space-x-2">
               <h3 class="text-xl font-semibold">
-                {{ userData.nickname || userData.first_name || 'User' }}
+                {{ displayUserName }}
               </h3>
               <button @click="startEditNickname" class="text-white/80 hover:text-white">
                 <EditOutlined class="text-sm" />
@@ -156,6 +156,23 @@
               </div>
             </div>
 
+            <!-- Display Name Toggle -->
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <IdcardOutlined class="text-gray-500" />
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Show my NetID after nickname</p>
+                    <p class="text-xs text-gray-500">Applies globally across all user names and avatars</p>
+                  </div>
+                </div>
+                <a-switch
+                  :checked="showNetIdSuffixEnabled"
+                  @change="toggleNetIdSuffix"
+                />
+              </div>
+            </div>
+
             <!-- Points History -->
             <div>
               <h4 class="font-semibold mb-2 text-gray-700">Points History</h4>
@@ -218,9 +235,9 @@
                     >
                       {{ index + 1 }}
                     </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="font-semibold text-sm text-gray-900 truncate">
-                        {{ user.first_name }} {{ user.last_name }}
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-sm text-gray-900 truncate">
+                        {{ getDisplayName(user) }}
                       </p>
                     </div>
                     <div class="text-right flex-shrink-0">
@@ -272,7 +289,7 @@
                 </a-avatar>
                 <div>
                   <p class="font-medium text-sm text-gray-900">
-                    {{ user.first_name }} {{ user.last_name }}
+                    {{ getDisplayName(user) }}
                   </p>
                   <p class="text-xs text-gray-500">
                     Blocked on {{ formatDate(user.blocked_at) }}
@@ -445,10 +462,12 @@ import {
   EyeOutlined,
   EyeInvisibleOutlined,
   DeleteOutlined,
-  LockOutlined
+  LockOutlined,
+  IdcardOutlined
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { userProfileAPI, leaderboardAPI, marketplaceAPI, messagesAPI, userAPI, adminAPI } from '@/utils/api'
+import { sanitizePublicDisplayName, getPublicNameFromRaw, useNetIdSuffixPreference, setNetIdSuffixPreference } from '@/utils/publicName'
 
 const props = defineProps({
   isOpen: {
@@ -523,6 +542,7 @@ const hideRankLoading = ref(false)
 
 // Points & Ranking feature enabled status
 const pointsRankingEnabled = ref(true)
+const showNetIdSuffixEnabled = useNetIdSuffixPreference()
 
 const defaultAvatar = '/Profile_Photo.jpg'
 
@@ -536,6 +556,11 @@ const cropImageStyle = computed(() => {
 
 const filteredCoupons = computed(() => {
   return couponsData.value[couponFilter.value] || []
+})
+
+const displayUserName = computed(() => {
+  const baseName = userData.value.nickname || userData.value.first_name || 'User'
+  return sanitizePublicDisplayName(baseName, userData.value.email, 'User')
 })
 
 // Nickname editing methods
@@ -896,6 +921,10 @@ const formatDate = (dateString) => {
   })
 }
 
+const getDisplayName = (user) => {
+  return getPublicNameFromRaw(user?.first_name, user?.last_name, user?.email, 'User')
+}
+
 // Blocked users methods
 const getInitials = (user) => {
   if (!user) return '?'
@@ -979,6 +1008,11 @@ const toggleHideRank = async (checked) => {
   } finally {
     hideRankLoading.value = false
   }
+}
+
+const toggleNetIdSuffix = (checked) => {
+  setNetIdSuffixPreference(checked)
+  message.success(checked ? 'NetID suffix is now visible globally' : 'NetID suffix is now hidden globally')
 }
 
 // Watch isOpen to fetch data

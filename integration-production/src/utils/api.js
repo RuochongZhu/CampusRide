@@ -56,6 +56,11 @@ api.interceptors.response.use(
 
     // 只在真正的认证错误时才处理
     if (error.response?.status === 401) {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        // 游客访问时不强制跳转登录
+        return Promise.reject(error);
+      }
       const currentPath = window.location.pathname;
 
       // // 如果已经在登录页面，不需要重定向

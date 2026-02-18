@@ -9,7 +9,7 @@
     <div class="comment-content">
       <div class="comment-header">
         <span class="user-name">
-          {{ comment.user?.first_name }} {{ comment.user?.last_name }}
+          {{ getDisplayName(comment.user) }}
         </span>
         <span class="timestamp">{{ formatTimeAgo(comment.created_at) }}</span>
       </div>
@@ -57,7 +57,7 @@
         <a-textarea
           v-model:value="replyContent"
           :rows="2"
-          :placeholder="`Reply to ${comment.user?.first_name}...`"
+          :placeholder="`Reply to ${getDisplayName(comment.user)}...`"
           :maxlength="1000"
           @keydown.meta.enter="submitReply"
           @keydown.ctrl.enter="submitReply"
@@ -104,6 +104,7 @@ import {
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { getPublicUserName } from '@/utils/publicName'
 
 dayjs.extend(relativeTime)
 
@@ -134,6 +135,8 @@ const getUserInitials = (user) => {
   const last = user.last_name?.[0] || ''
   return (first + last).toUpperCase()
 }
+
+const getDisplayName = (user) => getPublicUserName(user, 'User')
 
 const formatTimeAgo = (timestamp) => {
   return dayjs(timestamp).fromNow()

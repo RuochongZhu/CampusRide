@@ -82,6 +82,7 @@ import { useRouter } from 'vue-router'
 import { Loader } from '@googlemaps/js-api-loader'
 import { EnvironmentOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { getPublicUserName } from '@/utils/publicName'
 
 const props = defineProps({
   thoughts: {
@@ -110,6 +111,7 @@ const emit = defineEmits(['marker-hover', 'marker-click', 'user-click'])
 
 const router = useRouter()
 const authStore = useAuthStore()
+const getDisplayName = (user) => getPublicUserName(user, 'User')
 
 const mapContainer = ref(null)
 const loading = ref(true)
@@ -390,7 +392,7 @@ const renderUserMarkers = () => {
     const marker = new google.maps.Marker({
       position: userLocation,
       map: map,
-      title: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+      title: getDisplayName(user),
       icon: createAvatarMarkerIcon(avatarUrl)
     })
 
@@ -405,7 +407,7 @@ const renderUserMarkers = () => {
     marker.addListener('mouseover', () => {
       if (isInfoWindowPinned) return
 
-      const displayName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'
+      const displayName = getDisplayName(user)
       const thoughtText = user.latest_thought || ''
       const thoughtTime = user.latest_thought_time
         ? new Date(user.latest_thought_time).toLocaleString('en-US')
@@ -442,7 +444,7 @@ const renderUserMarkers = () => {
     marker.addListener('click', () => {
       isInfoWindowPinned = true
 
-      const displayName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User'
+      const displayName = getDisplayName(user)
       const content = `
         <div style="max-width: 240px; padding: 12px;">
           <div style="display: flex; align-items: center;">
@@ -598,9 +600,7 @@ const renderActivityMarkers = () => {
       statusText = 'Ended'
     }
 
-    const organizerName = activity.organizer
-      ? `${activity.organizer.first_name || ''} ${activity.organizer.last_name || ''}`.trim()
-      : 'Organizer'
+    const organizerName = getPublicUserName(activity.organizer, 'Organizer')
 
     const content = `
       <div style="max-width: 320px; padding: 12px;">

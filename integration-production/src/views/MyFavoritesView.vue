@@ -510,6 +510,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { marketplaceAPI } from '@/utils/api'
+import { getPublicUserName } from '@/utils/publicName'
 
 // State management
 const loading = ref(false)
@@ -635,8 +636,7 @@ const getItemImage = (item) => {
 }
 
 const getSellerName = (seller) => {
-  if (!seller) return 'Unknown'
-  return `${seller.first_name || ''} ${seller.last_name || ''}`.trim() || 'Unknown'
+  return getPublicUserName(seller, 'Unknown')
 }
 
 const getInitials = (seller) => {

@@ -14,7 +14,7 @@
       </a-avatar>
       <div class="flex-grow">
         <div class="font-medium text-sm text-gray-800">
-          {{ thought.user?.first_name }} {{ thought.user?.last_name }}
+          {{ getDisplayName(thought.user) }}
         </div>
         <div class="text-gray-600 text-sm mt-1 leading-relaxed">
           {{ thought.content }}
@@ -38,6 +38,7 @@ import { ClockCircleOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import { getPublicUserName } from '@/utils/publicName'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -56,6 +57,8 @@ defineProps({
 const formatTime = (time) => {
   return dayjs(time).fromNow()
 }
+
+const getDisplayName = (user) => getPublicUserName(user, 'User')
 </script>
 
 

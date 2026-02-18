@@ -22,7 +22,7 @@
             <div class="flex-grow min-w-0">
               <div class="flex items-center justify-between">
                 <div class="font-medium text-sm text-gray-800 truncate">
-                  {{ thought.user?.first_name }} {{ thought.user?.last_name }}
+                  {{ getDisplayName(thought.user) }}
                 </div>
                 <a-dropdown v-if="isMyThought(thought)" :trigger="['click']">
                   <a-button type="text" size="small">
@@ -87,6 +87,7 @@ import {
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import { getPublicUserName } from '@/utils/publicName'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -126,4 +127,6 @@ const getLocationText = (location) => {
   if (location.address) return location.address
   return `${location.lat?.toFixed(4)}, ${location.lng?.toFixed(4)}`
 }
+
+const getDisplayName = (user) => getPublicUserName(user, 'User')
 </script>

@@ -185,7 +185,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   SettingOutlined,
@@ -201,6 +201,7 @@ import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
 import UserSidebar from '@/components/user/UserSidebar.vue';
 import GuestSidebar from '@/components/user/GuestSidebar.vue';
 import { useAuthStore } from '@/stores/auth';
+import { sanitizePublicDisplayName, useNetIdSuffixPreference } from '@/utils/publicName';
 // Admin emails allowed to access admin panel
 const ADMIN_EMAILS = ['rz469@cornell.edu'];
 
@@ -240,6 +241,7 @@ const isAdmin = computed(() => {
 const defaultAvatar = "/Profile_Photo.jpg";
 const userAvatar = ref(defaultAvatar);
 const userName = ref("Guest");
+const showNetIdSuffixEnabled = useNetIdSuffixPreference();
 
 // Load user data from localStorage
 const loadUserData = () => {
@@ -248,7 +250,7 @@ const loadUserData = () => {
     if (userData) {
       const user = JSON.parse(userData);
       // Use first_name (which contains the nickname) or fallback to email
-      userName.value = user.first_name || user.email?.split('@')[0] || 'User';
+      userName.value = sanitizePublicDisplayName(user.first_name, user.email, 'User');
       userEmail.value = user.email || '';
       // Load avatar_url
       userAvatar.value = user.avatar_url || defaultAvatar;
@@ -290,6 +292,7 @@ onMounted(() => {
   loadUserData();
   // Listen for user data updates (e.g., after avatar upload)
   window.addEventListener('user-updated', handleUserUpdate);
+  window.addEventListener('name-display-updated', handleUserUpdate);
   window.addEventListener('storage', handleUserUpdate);
   
   // Also listen for route changes to refresh auth state
@@ -312,7 +315,12 @@ onMounted(() => {
 // Cleanup event listeners
 onUnmounted(() => {
   window.removeEventListener('user-updated', handleUserUpdate);
+  window.removeEventListener('name-display-updated', handleUserUpdate);
   window.removeEventListener('storage', handleUserUpdate);
+});
+
+watch(showNetIdSuffixEnabled, () => {
+  loadUserData();
 });
 
 const logout = async () => {

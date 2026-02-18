@@ -287,6 +287,7 @@ import {
 } from '@ant-design/icons-vue'
 import { useActivityStore } from '../../stores/activity'
 import { useAuthStore } from '../../stores/auth'
+import { getPublicUserName } from '@/utils/publicName'
 
 // Props
 const props = defineProps({
@@ -423,8 +424,7 @@ const getStatusText = (status) => {
 }
 
 const getOrganizerName = (organizer) => {
-  if (!organizer) return 'Unknown'
-  return `${organizer.first_name || ''} ${organizer.last_name || ''}`.trim()
+  return getPublicUserName(organizer, 'Unknown')
 }
 
 const getInitials = (user) => {

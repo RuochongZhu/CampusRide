@@ -19,7 +19,7 @@
         </a-avatar>
         <div class="ratee-details">
           <h3 class="ratee-name">
-            {{ rateeInfo.first_name }} {{ rateeInfo.last_name }}
+            {{ rateeDisplayName }}
           </h3>
           <p class="ratee-role">{{ roleText }}</p>
         </div>
@@ -77,6 +77,7 @@ import { ref, computed, watch } from 'vue';
 import { StarFilled } from '@ant-design/icons-vue';
 import { ratingAPI } from '@/utils/api';
 import { message } from 'ant-design-vue';
+import { getPublicNameFromRaw } from '@/utils/publicName';
 
 const props = defineProps({
   open: {
@@ -139,6 +140,11 @@ const roleText = computed(() => {
     return props.roleOfRater === 'organizer' ? 'Activity Participant' : 'Activity Organizer/Participant';
   }
   return props.roleOfRater === 'driver' ? 'Passenger' : 'Driver';
+});
+
+const rateeDisplayName = computed(() => {
+  if (!props.rateeInfo) return 'User';
+  return getPublicNameFromRaw(props.rateeInfo.first_name, props.rateeInfo.last_name, props.rateeInfo.email, 'User');
 });
 
 const ratingText = computed(() => {

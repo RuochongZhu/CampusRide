@@ -447,6 +447,7 @@ import {
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { adminAPI } from '@/utils/api'
+import { getPublicNameFromRaw } from '@/utils/publicName'
 
 // State
 const loading = ref(true)
@@ -495,7 +496,7 @@ const leaderboardColumns = [
 ]
 
 const userColumns = [
-  { title: 'Name', dataIndex: 'first_name', key: 'name', customRender: ({ record }) => `${record.first_name || ''} ${record.last_name || ''}`.trim() || 'Anonymous' },
+  { title: 'Name', dataIndex: 'first_name', key: 'name', customRender: ({ record }) => getPublicNameFromRaw(record.first_name, record.last_name, record.email, 'Anonymous') },
   { title: 'Email (Masked)', key: 'email' },
   { title: 'Points', dataIndex: 'points', key: 'points' },
   { title: 'Rides', dataIndex: 'total_carpools', key: 'total_carpools' },
@@ -727,7 +728,7 @@ const fetchLeaderboardData = async () => {
   return users.map((user, index) => ({
     ...user,
     rank: index + 1,
-    name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Anonymous',
+    name: getPublicNameFromRaw(user.first_name, user.last_name, user.email, 'Anonymous'),
     email: user.email || 'N/A',
     avg_rating: user.avg_rating || 0
   }))

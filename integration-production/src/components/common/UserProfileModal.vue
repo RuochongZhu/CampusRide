@@ -99,6 +99,7 @@ import { message } from 'ant-design-vue'
 import { messagesAPI } from '@/utils/api'
 import { useMessageStore } from '@/stores/message'
 import { useRouter } from 'vue-router'
+import { sanitizePublicDisplayName } from '@/utils/publicName'
 
 const props = defineProps({
   modelValue: {
@@ -322,11 +323,11 @@ function resetForm() {
 
 // 工具函数
 function getUserDisplayName(user) {
-  if (user.nickname) return user.nickname
+  if (user.nickname) return sanitizePublicDisplayName(user.nickname, user.email, '未知用户')
   if (user.first_name || user.last_name) {
-    return `${user.first_name || ''} ${user.last_name || ''}`.trim()
+    return sanitizePublicDisplayName(`${user.first_name || ''} ${user.last_name || ''}`.trim(), user.email, '未知用户')
   }
-  return user.email || '未知用户'
+  return sanitizePublicDisplayName('', user.email, '未知用户')
 }
 
 function getUserInitials(firstName, lastName) {
