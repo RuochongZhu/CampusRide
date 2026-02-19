@@ -90,7 +90,7 @@
             <img
               :src="getItemImage(item)"
               :alt="item.title"
-              :class="viewMode === 'grid' ? 'w-full h-32 md:h-48 object-cover' : 'w-full h-full object-cover rounded-lg'"
+              :class="viewMode === 'grid' ? 'w-full h-32 md:h-48 object-contain bg-gray-100' : 'w-full h-full object-contain bg-gray-100 rounded-lg'"
             />
           </div>
           <div :class="viewMode === 'grid' ? 'p-2 md:p-4' : 'flex-grow flex flex-col justify-between min-w-0'">
@@ -181,7 +181,7 @@
               <img
                 :src="image.url"
                 :alt="`Preview ${index + 1}`"
-                class="w-full h-20 object-cover rounded border"
+                class="w-full h-20 object-contain bg-gray-100 rounded border"
               />
               <button
                 @click="removeImage(index)"
@@ -209,7 +209,7 @@
     width="700px"
   >
     <div v-if="selectedItem" class="space-y-4">
-      <img :src="getItemImage(selectedItem)" :alt="selectedItem.title" class="w-full h-64 object-cover rounded-lg" />
+      <img :src="getItemImage(selectedItem)" :alt="selectedItem.title" class="w-full h-64 object-contain bg-gray-100 rounded-lg" />
       <div class="flex items-center justify-between">
         <span class="text-2xl font-bold text-[#C24D45]">${{ selectedItem.price }}</span>
         <a-tag :color="getConditionColor(selectedItem.condition)">{{ formatCondition(selectedItem.condition) }}</a-tag>

@@ -187,7 +187,7 @@
           <img
             :src="getItemImage(item)"
             :alt="item.title"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            class="w-full h-full object-contain bg-gray-100"
           />
           <!-- Favorited Badge -->
           <div class="absolute top-3 left-3">
@@ -272,7 +272,7 @@
               <img
                 :src="getItemImage(item)"
                 :alt="item.title"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-contain bg-gray-100"
               />
               <!-- Status Badge -->
               <div class="absolute top-2 left-2">
@@ -375,7 +375,7 @@
                 <img
                   :src="selectedItem.images[0]"
                   :alt="selectedItem.title"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-contain bg-gray-100"
                 />
                 <!-- Favorited Badge -->
                 <div class="absolute top-3 left-3">
@@ -389,7 +389,7 @@
           <!-- Single Image -->
           <div v-else class="mb-8">
             <div class="aspect-[16/10] rounded-2xl overflow-hidden bg-gray-100 relative">
-              <img :src="getItemImage(selectedItem)" :alt="selectedItem.title" class="w-full h-full object-cover" />
+              <img :src="getItemImage(selectedItem)" :alt="selectedItem.title" class="w-full h-full object-contain bg-gray-100" />
               <div class="absolute top-3 left-3">
                 <span class="px-3 py-1 bg-rose-100 text-rose-800 text-sm font-medium rounded-full">
                   ♥ Favorited {{ formatDate(selectedItem.favorited_at) }}

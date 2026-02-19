@@ -477,7 +477,8 @@ onMounted(() => {
 .item-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #f5f5f5;
 }
 
 .item-no-image {
