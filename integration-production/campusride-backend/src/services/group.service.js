@@ -286,7 +286,24 @@ class GroupService {
         throw new Error('只有创建者可以删除小组');
       }
 
-      // 删除小组（会级联删除成员）
+      // 兼容不同数据库约束：先显式清理关联数据，再删除小组
+      const safeDelete = async (table, filterColumn, value) => {
+        const { error } = await supabaseAdmin
+          .from(table)
+          .delete()
+          .eq(filterColumn, value);
+
+        // 42P01: table does not exist (older deployments)
+        if (error && error.code !== '42P01') {
+          throw error;
+        }
+      };
+
+      // Some deployments don't have ON DELETE CASCADE for group_members
+      await safeDelete('group_members', 'group_id', groupId);
+      await safeDelete('group_muted_users', 'group_id', groupId);
+      await safeDelete('group_messages', 'group_id', groupId);
+
       const { error } = await supabaseAdmin
         .from('groups')
         .delete()
