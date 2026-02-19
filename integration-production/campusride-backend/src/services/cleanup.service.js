@@ -8,6 +8,7 @@ class CleanupService {
   constructor() {
     this.intervalId = null;
     this.cleanupIntervalMs = 60 * 60 * 1000; // Run every hour
+    this.marketplaceRetentionDays = 21; // Auto-delete marketplace posts after 3 weeks
   }
 
   /**
@@ -44,6 +45,8 @@ class CleanupService {
       console.log('🧹 Running cleanup tasks...');
 
       await Promise.all([
+        this.cleanupExpiredRides(),
+        this.cleanupExpiredMarketplaceItems(),
         this.cleanupExpiredActivities(),
         this.cleanupExpiredVerificationTokens()
       ]);
@@ -55,18 +58,128 @@ class CleanupService {
   }
 
   /**
-   * Delete activities that ended more than 1 week ago
+   * Delete rides whose departure time has already passed
+   */
+  async cleanupExpiredRides() {
+    try {
+      const nowIso = new Date().toISOString();
+
+      const { data: expiredRides, error: findError } = await supabaseAdmin
+        .from('rides')
+        .select('id, title, departure_time')
+        .lt('departure_time', nowIso);
+
+      if (findError) {
+        console.error('Error finding expired rides:', findError);
+        return;
+      }
+
+      if (!expiredRides || expiredRides.length === 0) {
+        console.log('🧹 No expired rides to delete');
+        return;
+      }
+
+      const rideIds = expiredRides.map(ride => ride.id);
+
+      // Defensive cleanup; bookings usually cascade via FK.
+      await supabaseAdmin
+        .from('ride_bookings')
+        .delete()
+        .in('ride_id', rideIds);
+
+      const { error: deleteError } = await supabaseAdmin
+        .from('rides')
+        .delete()
+        .in('id', rideIds);
+
+      if (deleteError) {
+        console.error('Error deleting expired rides:', deleteError);
+        return;
+      }
+
+      console.log(`✅ Deleted ${expiredRides.length} expired rides`);
+      for (const ride of expiredRides) {
+        console.log(`   - Deleted ride: "${ride.title}" (departure: ${ride.departure_time})`);
+      }
+    } catch (error) {
+      console.error('Error in cleanupExpiredRides:', error);
+    }
+  }
+
+  /**
+   * Delete marketplace posts older than retention window (default: 21 days)
+   */
+  async cleanupExpiredMarketplaceItems() {
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - this.marketplaceRetentionDays);
+
+      const { data: expiredItems, error: findError } = await supabaseAdmin
+        .from('marketplace_items')
+        .select('id, title, created_at')
+        .eq('status', 'active')
+        .lt('created_at', cutoff.toISOString());
+
+      if (findError) {
+        console.error('Error finding expired marketplace items:', findError);
+        return;
+      }
+
+      if (!expiredItems || expiredItems.length === 0) {
+        console.log('🧹 No expired marketplace items to delete');
+        return;
+      }
+
+      const itemIds = expiredItems.map(item => item.id);
+
+      // Clean related records first (some projects don't enforce all FK cascades).
+      await supabaseAdmin
+        .from('item_favorites')
+        .delete()
+        .in('item_id', itemIds);
+
+      const { error: commentsError } = await supabaseAdmin
+        .from('marketplace_comments')
+        .delete()
+        .in('item_id', itemIds);
+
+      // Ignore when comment tables are not present in the current database.
+      if (commentsError && commentsError.code !== '42P01') {
+        console.error('Error deleting marketplace comments:', commentsError);
+        return;
+      }
+
+      const { error: deleteError } = await supabaseAdmin
+        .from('marketplace_items')
+        .delete()
+        .in('id', itemIds);
+
+      if (deleteError) {
+        console.error('Error deleting expired marketplace items:', deleteError);
+        return;
+      }
+
+      console.log(`✅ Deleted ${expiredItems.length} expired marketplace items`);
+      for (const item of expiredItems) {
+        console.log(`   - Deleted item: "${item.title}" (created: ${item.created_at})`);
+      }
+    } catch (error) {
+      console.error('Error in cleanupExpiredMarketplaceItems:', error);
+    }
+  }
+
+  /**
+   * Delete activities that already passed end_time
    */
   async cleanupExpiredActivities() {
     try {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const now = new Date();
 
-      // Find and delete activities that ended more than 1 week ago
+      // Find and delete activities that already ended
       const { data: expiredActivities, error: findError } = await supabaseAdmin
         .from('activities')
         .select('id, title, end_time')
-        .lt('end_time', oneWeekAgo.toISOString())
+        .lt('end_time', now.toISOString())
         .neq('status', 'deleted'); // Don't re-delete already deleted ones
 
       if (findError) {
