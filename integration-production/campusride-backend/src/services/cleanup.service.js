@@ -174,6 +174,17 @@ class CleanupService {
   async cleanupExpiredActivities() {
     try {
       const now = new Date();
+      const safeDeleteByIds = async (table, column, ids) => {
+        const { error } = await supabaseAdmin
+          .from(table)
+          .delete()
+          .in(column, ids);
+
+        // 42P01/Postgres, PGRST205/PostgREST: table does not exist
+        if (error && error.code !== '42P01' && error.code !== 'PGRST205') {
+          throw error;
+        }
+      };
 
       // Find and delete activities that already ended
       const { data: expiredActivities, error: findError } = await supabaseAdmin
@@ -197,17 +208,12 @@ class CleanupService {
       // Delete expired activities
       const activityIds = expiredActivities.map(a => a.id);
 
-      // First delete related records (participations, etc.)
-      await supabaseAdmin
-        .from('activity_participations')
-        .delete()
-        .in('activity_id', activityIds);
+      // First delete related records (different deployments use different table names)
+      await safeDeleteByIds('activity_participations', 'activity_id', activityIds);
+      await safeDeleteByIds('activity_participants', 'activity_id', activityIds);
 
       // Delete activity chat messages
-      await supabaseAdmin
-        .from('activity_chat_messages')
-        .delete()
-        .in('activity_id', activityIds);
+      await safeDeleteByIds('activity_chat_messages', 'activity_id', activityIds);
 
       // Delete the activities
       const { error: deleteError } = await supabaseAdmin

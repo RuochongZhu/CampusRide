@@ -1,6 +1,32 @@
 # Local-only archive folder
 ricardo-use.yueyuebang.cn_other/
 
+# Dependencies
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Archives and app bundles
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.apk
+
 # Local temporary screenshots/images in repo root
 /image.png
 /image copy*.png
