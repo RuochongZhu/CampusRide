@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../config/database.js';
 import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
 import socketManager from '../config/socket.js';
+import wechatLinkService from '../services/wechat-link.service.js';
 
 // 创建拼车行程
 export const createRide = async (req, res, next) => {
@@ -68,7 +69,8 @@ export const createRide = async (req, res, next) => {
 
     // 创建微信通知记录（深链接到具体详情）
     try {
-      const rideLink = `https://www.campusgo.college/rideshare/${ride.id}`;
+      const rideH5Link = `https://www.campusgo.college/rideshare/${ride.id}`;
+      const rideLink = await wechatLinkService.getBestNoticeLink(rideH5Link);
       const routeSummary = `${departureLocation} → ${destinationLocation}`;
       const noticeContent = `打车发布  ${title}  ${routeSummary}\n${rideLink}`;
 

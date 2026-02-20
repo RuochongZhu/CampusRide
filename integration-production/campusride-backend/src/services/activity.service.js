@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../config/database.js';
 import { socketManager } from '../app.js';
 import notificationService from './notification.service.js';
 import pointsService from './points.service.js';
+import wechatLinkService from './wechat-link.service.js';
 
 class ActivityService {
   constructor() {
@@ -138,7 +139,8 @@ class ActivityService {
 
       // 创建微信通知记录（深链接到具体详情）
       try {
-        const activityLink = `https://www.campusgo.college/activities/${activity.id}`;
+        const activityH5Link = `https://www.campusgo.college/activities/${activity.id}`;
+        const activityLink = await wechatLinkService.getBestNoticeLink(activityH5Link);
         const noticeContent = `活动发布  ${activity.title}\n${activityLink}`;
 
         await supabaseAdmin

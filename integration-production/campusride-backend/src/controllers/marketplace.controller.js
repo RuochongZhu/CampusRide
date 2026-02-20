@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../config/database.js';
 import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
 import socketManager from '../config/socket.js';
+import wechatLinkService from '../services/wechat-link.service.js';
 
 // 创建商品
 export const createItem = async (req, res, next) => {
@@ -58,8 +59,9 @@ export const createItem = async (req, res, next) => {
       throw new AppError('Failed to create item', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
-    // 构建商品访问链接（深链接到具体详情）
-    const itemLink = `https://www.campusgo.college/marketplace/${item.id}`;
+    // 构建商品访问链接（优先小程序短链，失败回退H5）
+    const itemH5Link = `https://www.campusgo.college/marketplace/${item.id}`;
+    const itemLink = await wechatLinkService.getBestNoticeLink(itemH5Link);
 
     // 创建微信通知记录 start
     const noticeContent = `二手上新  ${item.title}  \n${itemLink}`;
