@@ -1,0 +1,233 @@
+\documentclass[UTF8,12pt]{ctexrep}
+
+% Overleaf: set Compiler to XeLaTeX (Menu -> Compiler -> XeLaTeX)
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setstretch{1.25}
+\setlist[itemize]{leftmargin=*,itemsep=0.2em,topsep=0.2em}
+
+\newcommand{\CN}{\textbf{中文：}\,}
+\newcommand{\EN}{\textbf{English:}\,}
+
+\title{%
+一体化校园平台的便捷性—社交互动动态机制研究\\
+\large Convenience--Social Interaction Dynamics in an Integrated Campus Platform
+}
+\author{作者姓名\quad Author Name}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\pagenumbering{Roman}
+\tableofcontents
+\clearpage
+
+% =========================
+% Front Matter
+% =========================
+\chapter*{摘要\quad Abstract (Chinese)}
+\addcontentsline{toc}{chapter}{摘要\quad Abstract (Chinese)}
+\CN 介绍研究背景、问题、数据来源（3--5月平台日志 + 外部API数据）、方法（时间序列面板 + 机制模型）、主要发现、贡献与启示。\\
+\EN (Optional) If required by your program, keep only Chinese here and move English to the next section.
+
+\chapter*{Abstract\quad Abstract (English)}
+\addcontentsline{toc}{chapter}{Abstract\quad Abstract (English)}
+\EN Summarize the background, research questions, data (event logs + external APIs), methods (panel time-series / mechanism models), key findings, contributions, and implications.
+
+\chapter*{关键词\quad Keywords}
+\addcontentsline{toc}{chapter}{关键词\quad Keywords}
+\CN 便捷性；社交互动；校园平台；行为日志；系统工程；时间序列\\
+\EN convenience; social interaction; campus platform; event logs; systems engineering; time series
+
+\clearpage
+\pagenumbering{arabic}
+
+% =========================
+% Main Matter (Bilingual Outline)
+% =========================
+\chapter{引言\quad Introduction}
+\section{研究背景与动机\quad Background and Motivation}
+\begin{itemize}
+  \item \CN 校园高频需求（拼车/二手/活动）在多平台分散，带来搜索成本、协调成本与信任缺口。
+  \item \EN High-frequency campus needs are fragmented across platforms, increasing search/coordination costs and weakening trust.
+  \item \CN CampusGo 的定位：学生认证的一体化平台，强调安全与效率的端到端闭环。
+  \item \EN CampusGo positions as a student-verified integrated ecosystem with end-to-end workflows.
+\end{itemize}
+
+\section{研究问题与研究贡献\quad Research Questions and Contributions}
+\begin{itemize}
+  \item \CN RQ1：便捷性与社交互动是否存在双向促进的动态关系？
+  \item \EN RQ1: Do convenience and social interaction reinforce each other dynamically (bidirectional effects)?
+  \item \CN RQ2：社交互动是否降低发布--匹配--完成链路中的摩擦（更快完成、更少取消）？
+  \item \EN RQ2: Does social interaction reduce friction along posting--matching--completion (faster completion, fewer cancellations)?
+  \item \CN RQ3：外部冲击（伊萨卡天气、学期节奏）是否改变二者交互强度？
+  \item \EN RQ3: Do external shocks (Ithaca weather, academic calendar rhythms) moderate the interaction?
+  \item \CN 贡献：基于行为日志构造便捷/社交指标；用动态模型解释机制；用外部API验证情境效应；给出平台治理与校园政策启示。
+  \item \EN Contributions: log-based indices, dynamic mechanism modeling, external API validation, and design/policy implications.
+\end{itemize}
+
+\section{论文结构\quad Thesis Structure}
+\begin{itemize}
+  \item \CN 第2章介绍系统与数据；第3章方法；第4章结果；第5章讨论与启示；第6章结论与展望。
+  \item \EN Chapter 2 covers system/data; Chapter 3 methods; Chapter 4 results; Chapter 5 discussion/implications; Chapter 6 conclusion/future work.
+\end{itemize}
+
+\chapter{系统与数据\quad System and Data}
+\section{平台概述与核心流程\quad Platform Overview and Core Workflows}
+\begin{itemize}
+  \item \CN 模块：拼车（发布/预订/完成/取消）、二手市场（发布/互动/收藏/成交或下架）、活动与社群（报名/签到/群组互动）、站内消息。
+  \item \EN Modules: rideshare, marketplace, activities/groups, and in-app messaging.
+  \item \CN 闭环：发布--匹配--沟通--履约--反馈（不使用消息内容，仅使用元数据）。
+  \item \EN Closed-loop workflow; message content is excluded (metadata only).
+\end{itemize}
+
+\section{数据来源与样本范围\quad Data Sources and Sample Window}
+\begin{itemize}
+  \item \CN 平台日志时间：3--5月（约三个月），地点情境：纽约州伊萨卡。
+  \item \EN Event logs span March--May (about 3 months) in Ithaca, NY context.
+  \item \CN 事件类型：消息（发送者/接收者/时间）、发帖、预订、完成、取消、活动报名、签到等（以数据库字段为准）。
+  \item \EN Event types include messaging metadata, posting, booking, completion, cancellation, activity registration, and check-in.
+\end{itemize}
+
+\section{隐私与伦理\quad Privacy and Ethics}
+\begin{itemize}
+  \item \CN 不读取/不分析用户消息内容，仅使用时间戳与交互关系；所有分析使用匿名化用户ID。
+  \item \EN No message content is accessed; analysis uses only timestamps and interaction graphs with anonymized user IDs.
+\end{itemize}
+
+\section{外部数据\quad External Data (APIs)}
+\begin{itemize}
+  \item \CN 天气：NOAA（或 Open-Meteo）获取伊萨卡每日降水、温度、风速等，聚合为周度变量。
+  \item \EN Weather: NOAA (or Open-Meteo) daily precipitation/temperature/wind aggregated weekly.
+  \item \CN 学期节奏：校历/考试周/假期（手工整理为周度哑变量）。
+  \item \EN Academic calendar: exam weeks/breaks coded as weekly indicators.
+\end{itemize}
+
+\chapter{研究设计与方法\quad Research Design and Methods}
+\section{面板数据构建\quad Panel Construction}
+\begin{itemize}
+  \item \CN 主分析粒度：用户--周（降低稀疏性）；辅分析：帖子/行程级事件链。
+  \item \EN Main granularity: user-week panel; secondary analyses at listing/trip level.
+\end{itemize}
+
+\section{核心变量与指标构造\quad Key Variables and Index Construction}
+\subsection{社交互动指数\quad Social Interaction Index}
+\begin{itemize}
+  \item \CN 例：每周唯一互动对象数、会话数/消息数、活动/群组参与数、重复互动率；标准化后合成指数（等权或PCA/因子法）。
+  \item \EN Examples: weekly unique counterparts, conversations/messages, group/activity participation, repeat-interaction rate; standardized and aggregated (equal weights or PCA).
+\end{itemize}
+
+\subsection{便捷性（低摩擦）指数\quad Convenience (Low-Friction) Index}
+\begin{itemize}
+  \item \CN 例：发布到首次互动/预订耗时、预订到完成耗时、取消率、失败率（若有）；按模块构造后再汇总。
+  \item \EN Examples: time-to-first-engagement/booking, booking-to-completion time, cancellation rate, failure rate (if available); module-level then aggregated.
+\end{itemize}
+
+\section{模型一：交互作用的动态模型\quad Model 1: Dynamic Interaction (Cross-Lag / Panel VAR)}
+\begin{itemize}
+  \item \CN 用 $t-1$ 的便捷预测 $t$ 的社交，用 $t-1$ 的社交预测 $t$ 的便捷；加入用户固定效应与周固定效应控制个体差异与共同趋势。
+  \item \EN Bidirectional lagged effects with user and week fixed effects to control heterogeneity and common shocks.
+\end{itemize}
+
+\section{模型二：事件链效率模型\quad Model 2: Event-Chain Efficiency (Survival / Hazard Models)}
+\begin{itemize}
+  \item \CN 以“发布到预订/完成”的时间为因变量；核心解释变量为发布者前一周社交指数；输出社交对效率与取消的影响。
+  \item \EN Time-to-book/complete as outcome; prior-week social index as key predictor; estimate effects on speed and cancellations.
+\end{itemize}
+
+\section{外部验证与稳健性\quad External Validation and Robustness}
+\begin{itemize}
+  \item \CN 天气/考试周作为情境变量（交互项或事件研究）检验机制在高摩擦环境下是否更显著。
+  \item \EN Weather/exam-week moderation (interaction terms or event studies) to validate mechanism under higher friction.
+  \item \CN 稳健性：换聚合粒度（日/周）、换指标权重、剔除极端活跃用户、分模块回归（拼车/市场/活动）。
+  \item \EN Robustness: alternative aggregation, weighting, trimming, and module-specific models.
+\end{itemize}
+
+\chapter{实证结果\quad Empirical Results}
+\section{描述性统计与可视化\quad Descriptives and Visualization}
+\begin{itemize}
+  \item \CN 周度总览：发帖/预订/完成/取消/消息量的时间序列；社交网络指标（平均度、密度）随时间变化。
+  \item \EN Weekly time series of key volumes; evolving network metrics (degree, density).
+\end{itemize}
+
+\section{交互作用结果\quad Interaction Results}
+\begin{itemize}
+  \item \CN 报告交叉滞后系数、脉冲响应（IRF）或动态效应图；解释“便捷→社交”“社交→便捷”的相对强弱与时间窗口。
+  \item \EN Report cross-lag coefficients and impulse responses; interpret direction, magnitude, and time window.
+\end{itemize}
+
+\section{效率与取消的结果\quad Efficiency and Cancellation Results}
+\begin{itemize}
+  \item \CN 生存曲线：按社交指数分位展示发布到完成时间分布；报告风险比或时间加速因子。
+  \item \EN Survival curves by social quartiles; hazard ratios or acceleration factors.
+\end{itemize}
+
+\section{外部验证结果\quad External Validation Results}
+\begin{itemize}
+  \item \CN 雨雪/低温周与非恶劣天气周对比：拼车/活动参与/消息互动的差异；讨论平台是否起到“协调缓冲”作用。
+  \item \EN Compare adverse-weather weeks vs normal weeks; discuss whether the platform buffers coordination frictions.
+\end{itemize}
+
+\chapter{讨论与启示\quad Discussion and Implications}
+\section{机制解释\quad Mechanism Interpretation}
+\begin{itemize}
+  \item \CN 将实证结果映射回系统机制：一体化降低切换成本；站内沟通提高匹配效率；活动/群组作为弱连接入口等。
+  \item \EN Map empirical findings back to system mechanisms: integration reduces switching costs; messaging improves coordination; groups seed weak ties.
+\end{itemize}
+
+\section{系统工程与产品设计建议\quad Systems Engineering and Product Design}
+\begin{itemize}
+  \item \CN 需求--功能--数据可观测性的追踪链；关键模块接口与日志设计建议（便于持续验证与迭代）。
+  \item \EN Requirements-to-functions-to-observability traceability; interface/logging recommendations for continuous V\&V.
+\end{itemize}
+
+\section{校园治理/政策含义\quad Campus Governance / Policy Implications}
+\begin{itemize}
+  \item \CN 若社交显著提升效率：优先投入互动基础设施（群组、消息、活动机制、声誉/风控）；若便捷显著提升社交：优先优化发布与匹配链路。
+  \item \EN If social boosts efficiency, invest in interaction infrastructure; if convenience boosts social, optimize posting/matching workflows.
+\end{itemize}
+
+\section{局限与未来工作\quad Limitations and Future Work}
+\begin{itemize}
+  \item \CN 自选择偏差、线下履约不可观测、日志缺失；未来可加入更精细埋点或开展小规模A/B验证（若可行）。
+  \item \EN Selection bias, offline fulfillment unobserved, missing logs; future work may add instrumentation or small A/B tests.
+\end{itemize}
+
+\chapter{结论\quad Conclusion}
+\section{主要结论\quad Key Findings}
+\begin{itemize}
+  \item \CN 总结便捷与社交的动态交互、外部冲击下的表现、以及对平台与校园的实际启示。
+  \item \EN Summarize dynamic interaction, external-shock patterns, and actionable implications.
+\end{itemize}
+
+\section{展望\quad Outlook}
+\begin{itemize}
+  \item \CN 校园复制扩展路径、与学校/社团/商家协作的可能性、以及系统治理框架的深化。
+  \item \EN Campus-by-campus scaling, partnerships, and deeper governance models.
+\end{itemize}
+
+\appendix
+\chapter{附录A：事件字典模板\quad Appendix A: Event Dictionary Template}
+\begin{itemize}
+  \item \CN 事件表字段建议：timestamp, user\_id, event\_type, module, object\_id, counterpart\_user\_id, status
+  \item \EN Suggested schema: timestamp, user\_id, event\_type, module, object\_id, counterpart\_user\_id, status
+\end{itemize}
+
+\chapter{附录B：图表清单\quad Appendix B: Figure List (Recommended)}
+\begin{itemize}
+  \item \CN 周度总览折线图、网络指标折线图、交叉滞后热力图、IRF 动态效应图、生存曲线、天气对比图。
+  \item \EN Weekly overview, network metrics, cross-correlation heatmap, impulse responses, survival curves, weather comparisons.
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
+
