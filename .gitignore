@@ -1,2 +1,10 @@
 # Local-only archive folder
 ricardo-use.yueyuebang.cn_other/
+
+# Local temporary screenshots/images in repo root
+/image.png
+/image copy*.png
+
+# Local build artifacts generated under integration-production
+/integration-production/dist/assets/index-*.css
+/integration-production/dist/assets/index-*.js

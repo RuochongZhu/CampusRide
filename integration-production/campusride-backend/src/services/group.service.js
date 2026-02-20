@@ -293,16 +293,30 @@ class GroupService {
           .delete()
           .eq(filterColumn, value);
 
-        // 42P01: table does not exist (older deployments)
-        if (error && error.code !== '42P01') {
+        // 42P01/Postgres, PGRST205/PostgREST: table does not exist
+        if (error && error.code !== '42P01' && error.code !== 'PGRST205') {
           throw error;
         }
       };
 
       // Some deployments don't have ON DELETE CASCADE for group_members
       await safeDelete('group_members', 'group_id', groupId);
-      await safeDelete('group_muted_users', 'group_id', groupId);
       await safeDelete('group_messages', 'group_id', groupId);
+      await safeDelete('group_muted_users', 'group_id', groupId);
+
+      // If members still exist, deleting groups will definitely violate FK.
+      const { count: remainingMembers, error: countError } = await supabaseAdmin
+        .from('group_members')
+        .select('id', { head: true, count: 'exact' })
+        .eq('group_id', groupId);
+
+      if (countError && countError.code !== 'PGRST205' && countError.code !== '42P01') {
+        throw countError;
+      }
+
+      if ((remainingMembers || 0) > 0) {
+        throw new Error('小组成员清理失败，请稍后重试');
+      }
 
       const { error } = await supabaseAdmin
         .from('groups')
