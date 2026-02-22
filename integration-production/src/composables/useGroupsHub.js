@@ -13,11 +13,22 @@ export function useGroupsHub({ groupAPI, onGroupChanged, loadActivities }) {
   const selectedGroupForChat = ref(null)
 
   const fetchMyGroups = async () => {
+    // Guests or not-yet-restored auth state should not trigger a noisy error toast.
+    if (!localStorage.getItem('userToken')) {
+      myGroups.value = []
+      return
+    }
+
     try {
       const response = await groupAPI.getMyGroups()
       myGroups.value = response.data.data.groups || []
     } catch (error) {
       console.error('Failed to fetch my groups:', error)
+      const status = error?.response?.status
+      if (status === 401 || status === 403) {
+        myGroups.value = []
+        return
+      }
       message.error('Failed to fetch groups list')
     }
   }

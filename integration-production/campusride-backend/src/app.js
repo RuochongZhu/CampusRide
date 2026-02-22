@@ -45,6 +45,9 @@ dotenv.config();
 
 const app = express();
 
+// Behind Railway/other reverse proxies so Express can trust X-Forwarded-* headers.
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 

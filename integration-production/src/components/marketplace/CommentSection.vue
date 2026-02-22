@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { CommentOutlined, SendOutlined } from '@ant-design/icons-vue'
 import CommentItem from './CommentItem.vue'
@@ -95,6 +95,7 @@ const loadingMore = ref(false)
 const page = ref(1)
 const limit = 20
 const hasMore = ref(false)
+let latestRequestId = 0
 
 const totalComments = computed(() => {
   let count = comments.value.length
@@ -115,6 +116,15 @@ const getUserInitials = (user) => {
 
 // Load comments
 const loadComments = async (append = false) => {
+  const itemId = props.itemId
+  const requestId = ++latestRequestId
+
+  if (!itemId) {
+    comments.value = []
+    hasMore.value = false
+    return
+  }
+
   try {
     if (append) {
       loadingMore.value = true
@@ -122,10 +132,13 @@ const loadComments = async (append = false) => {
       loading.value = true
     }
 
-    const response = await marketplaceAPI.getItemComments(props.itemId, {
+    const response = await marketplaceAPI.getItemComments(itemId, {
       page: page.value,
       limit
     })
+
+    // Ignore stale responses when user quickly switches items.
+    if (requestId !== latestRequestId || itemId !== props.itemId) return
 
     const responseData = response.data?.data || response.data
     if (append) {
@@ -285,9 +298,13 @@ const loadMore = () => {
   loadComments(true)
 }
 
-onMounted(() => {
-  loadComments()
-})
+watch(() => props.itemId, () => {
+  page.value = 1
+  hasMore.value = false
+  comments.value = []
+  newComment.value = ''
+  loadComments(false)
+}, { immediate: true })
 </script>
 
 <style scoped>

@@ -242,7 +242,7 @@
 
       <!-- Comment Section -->
       <div class="mt-6 pt-6 border-t">
-        <CommentSection :itemId="selectedItem.id" :current-user="currentUser" />
+        <CommentSection :key="selectedItem.id" :itemId="selectedItem.id" :current-user="currentUser" />
       </div>
     </div>
   </a-modal>
