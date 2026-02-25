@@ -214,10 +214,12 @@
             <h2 class="text-xl font-semibold text-[#333333] mb-6">Location & Time</h2>
             
             <a-form-item label="Location" name="location">
-              <a-input 
-                v-model:value="formData.location" 
+              <input
+                ref="locationInput"
+                v-model="formData.location"
                 placeholder="Enter the location of your activity"
-                size="large"
+                class="ant-input ant-input-lg w-full"
+                style="height: 40px; padding: 4px 11px; border: 1px solid #d9d9d9; border-radius: 6px;"
               />
             </a-form-item>
 
@@ -438,6 +440,7 @@ const formRef = ref()
 const isSubmitting = ref(false)
 const myGroups = ref([])
 const loadingGroups = ref(false)
+const locationInput = ref(null)
 
 // Form data
 const formData = reactive({
@@ -468,7 +471,40 @@ const formData = reactive({
 // Fetch user's groups on mount
 onMounted(async () => {
   await fetchMyGroups()
+  setupLocationAutocomplete()
 })
+
+// Setup Google Places Autocomplete for location input
+const setupLocationAutocomplete = () => {
+  setTimeout(() => {
+    try {
+      if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.warn('Google Maps API not loaded yet')
+        return
+      }
+
+      if (locationInput.value) {
+        const autocomplete = new google.maps.places.Autocomplete(locationInput.value, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'us' }
+        })
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace()
+          if (place.formatted_address) {
+            formData.location = place.formatted_address
+          } else if (place.name) {
+            formData.location = place.name
+          }
+        })
+
+        console.log('✅ Location autocomplete initialized')
+      }
+    } catch (error) {
+      console.warn('Failed to setup location autocomplete:', error)
+    }
+  }, 500)
+}
 
 const fetchMyGroups = async () => {
   try {
@@ -526,7 +562,7 @@ const handleSubmit = async () => {
       description: formData.description,
       category: formData.category,
       groupId: formData.groupId, // Required group association
-      type: 'general', // Default type since we removed the selection
+      type: 'individual', // Default type - valid options: individual, team, competition, workshop, seminar
       urgentNeed: formData.urgentNeed,
       location: formData.location,
       startTime: formData.startTime.toISOString(),
