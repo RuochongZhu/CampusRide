@@ -90,7 +90,6 @@ api.interceptors.response.use(
               // 更新本地存储的token
               localStorage.setItem('userToken', newAccessToken);
               localStorage.setItem('refreshToken', newRefreshToken);
-              window.location.href = `/home`;
               // 更新API请求头
               api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
 
@@ -804,4 +803,3 @@ export const announcementsAPI = {
 
 // 导出默认API实例
 export default api;
-
