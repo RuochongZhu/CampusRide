@@ -99,6 +99,8 @@ const isResending = ref(false)
 
 // Use centralized API client
 
+const normalizeEmail = (value) => (value || '').trim().toLowerCase()
+
 // 验证邮箱
 const verifyEmail = async () => {
   const token = route.params.token
@@ -135,7 +137,8 @@ const verifyEmail = async () => {
 
 // 重发验证邮件
 const resendVerification = async () => {
-  if (!resendEmail.value) {
+  const email = normalizeEmail(resendEmail.value)
+  if (!email) {
     alert('Please enter your email address')
     return
   }
@@ -143,9 +146,10 @@ const resendVerification = async () => {
   isResending.value = true
 
   try {
-    const { data } = await authAPI.resendVerification(resendEmail.value)
+    const { data } = await authAPI.resendVerification(email)
     if (data?.success) {
-      alert('Verification email sent! Please check your inbox.')
+      // Backend may return "already verified" or a generic message.
+      alert(data?.message || 'Verification email sent! Please check your inbox.')
       resendEmail.value = ''
     } else {
       alert(data?.error?.message || 'Failed to send verification email')

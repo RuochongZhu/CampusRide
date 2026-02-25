@@ -30,19 +30,19 @@
           </div>
 
           <p class="text-gray-600 mb-6">
-            Enter your university email address and we'll send you a link to reset your password.
+            Enter your email address and we'll send you a link to reset your password.
           </p>
 
           <form @submit.prevent="handleForgotPassword">
             <!-- 邮箱 -->
             <div class="mb-6">
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">University Email Address</label>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
                 type="email"
                 id="email"
                 v-model="email"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B31B1B] focus:border-transparent"
-                placeholder="your-netid@university.edu"
+                placeholder="your-netid@cornell.edu"
                 required
               />
             </div>
@@ -92,6 +92,8 @@ const successMessage = ref('')
 
 // Use centralized API client
 
+const normalizeEmail = (value) => (value || '').trim().toLowerCase()
+
 // 清除提示信息
 const clearMessages = () => {
   errorMessage.value = ''
@@ -101,17 +103,14 @@ const clearMessages = () => {
 // 表单验证
 const validateForm = () => {
   clearMessages()
-  
-  if (!email.value) {
+
+  const normalized = normalizeEmail(email.value)
+  if (!normalized) {
     errorMessage.value = 'Email address is required'
     return false
   }
-  
-  // university email validation
-  if (!email.value.endsWith('@university.edu')) {
-    errorMessage.value = 'Email must end with @university.edu'
-    return false
-  }
+
+  email.value = normalized
   
   return true
 }
@@ -124,7 +123,7 @@ const handleForgotPassword = async () => {
   clearMessages()
   
   try {
-    const { data } = await authAPI.forgotPassword(email.value)
+    const { data } = await authAPI.forgotPassword(normalizeEmail(email.value))
     if (data?.success) {
       successMessage.value = 'Password reset email sent successfully! Please check your inbox.'
       setTimeout(() => {
