@@ -163,7 +163,8 @@ const handleResetPassword = async () => {
     const { data } = await authAPI.resetPassword(resetToken.value, form.value.password)
     if (data?.success) {
       successMessage.value = 'Password reset successfully! You can now log in with your new password.'
-      setTimeout(() => { router.push('/login') }, 3000)
+      // Don't force-navigation here; users may want to copy/save info or retry.
+      // Provide an explicit "Back to Login" button instead.
     } else {
       errorMessage.value = data?.error?.message || 'Failed to reset password'
     }

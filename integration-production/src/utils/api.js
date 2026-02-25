@@ -30,6 +30,17 @@ api.interceptors.request.use(
 let isRefreshing = false;
 let refreshSubscribers = [];
 
+// Some routes must remain usable even when a stale/invalid token exists in localStorage.
+// Example: password reset and email verification links opened from email.
+const isPublicAuthRoute = (path) => {
+  return (
+    path === '/forgot-password' ||
+    path === '/resend-verification' ||
+    path.startsWith('/reset-password/') ||
+    path.startsWith('/verify-email/')
+  );
+};
+
 // 处理token刷新后的请求重试
 const onRefreshed = (newToken) => {
   refreshSubscribers.map(callback => callback(newToken));
@@ -117,7 +128,10 @@ api.interceptors.response.use(
             // 如果已经在登录页面，不需要重定向
             if (currentPath === '/login' || currentPath === '/register') {
               return Promise.reject(error);
-            }else{
+            } else if (isPublicAuthRoute(currentPath)) {
+              // Don't kick users out of password-reset / email-verification flows.
+              return Promise.reject(refreshError);
+            } else {
               const returnPath = currentPath !== '/' ? currentPath : '/home';
               window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
               return Promise.reject(refreshError);
@@ -141,7 +155,9 @@ api.interceptors.response.use(
           // 保存当前路径以便登录后返回
           if (currentPath === '/login' || currentPath === '/register') {
               return Promise.reject(error);
-          }else{
+          } else if (isPublicAuthRoute(currentPath)) {
+              return Promise.reject(error);
+          } else {
             const returnPath = currentPath !== '/' ? currentPath : '/home';
             window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;  
           }
@@ -156,7 +172,9 @@ api.interceptors.response.use(
         // 保存当前路径以便登录后返回
         if (currentPath === '/login' || currentPath === '/register') {
               return Promise.reject(error);
-        }else{
+        } else if (isPublicAuthRoute(currentPath)) {
+              return Promise.reject(error);
+        } else {
           const returnPath = currentPath !== '/' ? currentPath : '/home';
           window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
         }

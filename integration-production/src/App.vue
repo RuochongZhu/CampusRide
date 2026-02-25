@@ -23,8 +23,7 @@ import { useAuthStore } from './stores/auth'
 const route = useRoute()
 
 onMounted(() => {
-  const authStore = useAuthStore()
-authStore.initializeAuth()
+  // Auth is initialized in `src/main.js`.
 
   const urlParams = new URLSearchParams(window.location.search)
   const tk = urlParams.get('tk')
@@ -64,4 +63,3 @@ body {
   flex: 1;
 }
 </style>
-
