@@ -67,6 +67,18 @@
     </div>
   </div>
 
+  <!-- Route Item Status (e.g., deleted listing opened from WeChat link) -->
+  <div v-if="routeItemAlert" class="max-w-7xl mx-auto px-3 md:px-4 pt-4">
+    <a-alert
+      :type="routeItemAlert.type"
+      show-icon
+      closable
+      :message="routeItemAlert.message"
+      :description="routeItemAlert.description"
+      @close="routeItemAlert = null"
+    />
+  </div>
+
   <!-- Loading State -->
   <div v-if="loading" class="flex justify-center items-center py-16 md:py-20">
     <a-spin size="large" />
@@ -184,7 +196,8 @@
                 class="w-full h-20 object-contain bg-gray-100 rounded border"
               />
               <button
-                @click="removeImage(index)"
+                type="button"
+                @click.prevent="removeImage(index)"
                 class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 ×
@@ -209,7 +222,28 @@
     width="700px"
   >
     <div v-if="selectedItem" class="space-y-4">
-      <img :src="getItemImage(selectedItem)" :alt="selectedItem.title" class="w-full h-64 object-contain bg-gray-100 rounded-lg" />
+      <!-- Images: horizontal swipe/scroll for multiple photos -->
+      <div v-if="selectedItemImages.length > 0" class="marketplace-image-scroller">
+        <div class="marketplace-image-track">
+          <div
+            v-for="(img, index) in selectedItemImages"
+            :key="`${selectedItem.id}_${index}`"
+            class="marketplace-image-slide"
+          >
+            <img
+              :src="img"
+              :alt="`${selectedItem.title} ${index + 1}`"
+              class="w-full h-64 object-contain bg-gray-100 rounded-lg"
+            />
+          </div>
+        </div>
+        <div v-if="selectedItemImages.length > 1" class="text-xs text-gray-500 text-center mt-2">
+          Swipe left/right to view more photos
+        </div>
+      </div>
+      <div v-else class="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+        No images
+      </div>
       <div class="flex items-center justify-between">
         <span class="text-2xl font-bold text-[#C24D45]">${{ selectedItem.price }}</span>
         <a-tag :color="getConditionColor(selectedItem.condition)">{{ formatCondition(selectedItem.condition) }}</a-tag>
@@ -230,14 +264,23 @@
           </template>
           {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
         </a-button>
-        <a-button
-          v-if="currentUser && (selectedItem.seller_id === currentUser.id || selectedItem.seller?.id === currentUser.id)"
-          danger
-          @click="confirmDeleteItem(selectedItem)"
-        >
-          <template #icon><DeleteOutlined /></template>
-          Delete
-        </a-button>
+        <div class="flex items-center gap-2">
+          <a-button
+            v-if="isSelectedItemOwner"
+            @click="openEditModal(selectedItem)"
+          >
+            <template #icon><EditOutlined /></template>
+            Edit
+          </a-button>
+          <a-button
+            v-if="isSelectedItemOwner"
+            danger
+            @click="confirmDeleteItem(selectedItem)"
+          >
+            <template #icon><DeleteOutlined /></template>
+            Delete
+          </a-button>
+        </div>
       </div>
 
       <!-- Comment Section -->
@@ -246,16 +289,88 @@
       </div>
     </div>
   </a-modal>
+
+  <!-- Edit Item Modal -->
+  <a-modal
+    v-model:open="showEditModal"
+    title="Edit Item"
+    @ok="handleUpdateItem"
+    okText="Save"
+    cancelText="Cancel"
+    width="600px"
+    :confirmLoading="editSubmitting"
+    @cancel="closeEditModal"
+  >
+    <div class="space-y-4 pt-4">
+      <a-input v-model:value="editItem.title" placeholder="Item Title *" />
+      <a-textarea v-model:value="editItem.description" placeholder="Description *" :rows="4" />
+      <a-input-number v-model:value="editItem.price" placeholder="Price *" style="width: 100%" prefix="$" :min="0" :precision="2" />
+      <a-select v-model:value="editItem.category" style="width: 100%" placeholder="Select Category *" :options="categoryOptions" />
+      <a-select v-model:value="editItem.condition" style="width: 100%" placeholder="Select Condition *" :options="conditionOptions.slice(1)" />
+      <a-input v-model:value="editItem.location" placeholder="Location (optional)" />
+
+      <!-- Image Upload Section -->
+      <div>
+        <label class="text-sm text-gray-600 mb-2 block">Images (optional)</label>
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
+          <input
+            ref="editFileInput"
+            type="file"
+            accept="image/*"
+            multiple
+            @change="handleEditFileUpload"
+            class="hidden"
+          />
+          <div class="text-center">
+            <a-button @click="triggerEditFileUpload" :loading="editUploadingImages">
+              <template #icon><PlusOutlined /></template>
+              {{ editUploadingImages ? 'Uploading...' : 'Add Images' }}
+            </a-button>
+            <p class="text-xs text-gray-500 mt-2">
+              Upload up to 5 images (JPG, PNG, WebP, max 5MB each)
+            </p>
+          </div>
+
+          <!-- Image Preview -->
+          <div v-if="editItem.images.length > 0" class="grid grid-cols-3 gap-2 mt-4">
+            <div
+              v-for="(image, index) in editItem.images"
+              :key="index"
+              class="relative group"
+            >
+              <img
+                :src="image.url"
+                :alt="`Preview ${index + 1}`"
+                class="w-full h-20 object-contain bg-gray-100 rounded border"
+              />
+              <button
+                type="button"
+                @click.prevent="removeEditImage(index)"
+                class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-sm text-gray-600">Tags (comma separated)</label>
+        <a-input v-model:value="editItem.tagsInput" placeholder="e.g. laptop, electronics, like-new" />
+      </div>
+    </div>
+  </a-modal>
 </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
   SearchOutlined, FilterOutlined, AppstoreOutlined, BarsOutlined,
-  HeartOutlined, HeartFilled, PlusOutlined, EyeOutlined, DeleteOutlined
+  HeartOutlined, HeartFilled, PlusOutlined, EyeOutlined, DeleteOutlined, EditOutlined
 } from '@ant-design/icons-vue';
 import { marketplaceAPI } from '@/utils/api'
 import CommentSection from '@/components/marketplace/CommentSection.vue'
@@ -264,6 +379,7 @@ import { getPublicUserName } from '@/utils/publicName'
 
 // State management
 const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const posting = ref(false)
 const viewMode = ref('grid')
@@ -276,8 +392,13 @@ const sortBy = ref('created_at')
 const showPostModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedItem = ref(null)
+const routeItemAlert = ref(null)
 const uploadingImages = ref(false)
 const fileInput = ref(null)
+const showEditModal = ref(false)
+const editSubmitting = ref(false)
+const editUploadingImages = ref(false)
+const editFileInput = ref(null)
 
 // Current user (get from localStorage)
 const currentUser = ref(null)
@@ -402,6 +523,18 @@ const newItem = ref({
   images: []
 })
 
+// Edit item form (mirrors "new item" structure)
+const editItem = ref({
+  title: '',
+  description: '',
+  price: null,
+  category: null,
+  condition: null,
+  location: '',
+  tagsInput: '',
+  images: [] // [{ filename, url }]
+})
+
 // Condition options
 const conditionOptions = [
   { value: 'all', label: 'All' },
@@ -420,6 +553,12 @@ const sortOptions = [
   { value: 'views_count', label: 'Most Viewed', order: 'desc' },
   { value: 'favorites_count', label: 'Most Popular', order: 'desc' }
 ];
+
+const isSelectedItemOwner = computed(() => {
+  if (!currentUser.value || !selectedItem.value) return false
+  const userId = currentUser.value.id
+  return selectedItem.value.seller_id === userId || selectedItem.value.seller?.id === userId
+})
 
 // Methods
 const fetchItems = async () => {
@@ -448,17 +587,33 @@ const openItemFromRoute = async () => {
   const itemId = route.params?.id || route.query?.itemId
   if (!itemId) return
 
+  routeItemAlert.value = null
+  selectedItem.value = null
+
   try {
     const response = await marketplaceAPI.getItem(itemId)
     const item = response.data?.data?.item || response.data?.data
     if (!item) {
-      message.error('Item not found')
+      routeItemAlert.value = {
+        type: 'warning',
+        message: 'This item has been deleted.',
+        description: 'The listing is no longer available.'
+      }
       return
     }
     selectedItem.value = item
     showDetailsModal.value = true
   } catch (error) {
     console.error('Failed to load item detail:', error)
+    const status = error?.response?.status
+    if (status === 404) {
+      routeItemAlert.value = {
+        type: 'warning',
+        message: 'This item has been deleted.',
+        description: 'The listing is no longer available.'
+      }
+      return
+    }
     message.error('Failed to load item detail')
   }
 }
@@ -559,6 +714,88 @@ const viewItemDetails = (item) => {
   showDetailsModal.value = true
 }
 
+const openEditModal = (item) => {
+  if (!item) return
+
+  editItem.value = {
+    title: item.title || '',
+    description: item.description || '',
+    price: item.price ?? null,
+    category: item.category || null,
+    condition: item.condition || null,
+    location: item.location || '',
+    tagsInput: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tagsInput || ''),
+    images: (getItemImages(item) || []).map(url => ({
+      url,
+      filename: extractFilenameFromUrl(url)
+    }))
+  }
+
+  showEditModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+}
+
+const handleUpdateItem = async () => {
+  if (!selectedItem.value) return
+
+  if (!editItem.value.title || !editItem.value.description || !editItem.value.price ||
+      !editItem.value.category || !editItem.value.condition) {
+    message.error('Please fill in all required fields')
+    return
+  }
+
+  editSubmitting.value = true
+  try {
+    const tags = editItem.value.tagsInput
+      ? editItem.value.tagsInput.split(',').map(t => t.trim()).filter(t => t)
+      : []
+
+    const payload = {
+      title: editItem.value.title,
+      description: editItem.value.description,
+      price: editItem.value.price,
+      category: editItem.value.category,
+      condition: editItem.value.condition,
+      location: editItem.value.location || '',
+      tags,
+      images: editItem.value.images.map(img => img.url)
+    }
+
+    const response = await marketplaceAPI.updateItem(selectedItem.value.id, payload)
+    const updated = response.data?.data?.item
+    if (updated) {
+      // Preserve client-only fields that update endpoint doesn't compute (e.g. is_favorited).
+      const previous = selectedItem.value || {}
+      selectedItem.value = {
+        ...previous,
+        ...updated,
+        is_favorited: previous.is_favorited ?? false
+      }
+
+      const idx = items.value.findIndex(i => i.id === updated.id)
+      if (idx !== -1) {
+        const existing = items.value[idx] || {}
+        items.value[idx] = {
+          ...existing,
+          ...updated,
+          is_favorited: existing.is_favorited ?? false
+        }
+      }
+    }
+
+    message.success('Item updated successfully!')
+    showEditModal.value = false
+  } catch (error) {
+    console.error('Failed to update item:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to update item')
+  } finally {
+    editSubmitting.value = false
+  }
+}
+
 // Delete item
 const confirmDeleteItem = (item) => {
   Modal.confirm({
@@ -608,6 +845,22 @@ const getItemImage = (item) => {
     return item.images[0]
   }
   return 'https://via.placeholder.com/400x300?text=No+Image'
+}
+
+const getItemImages = (item) => {
+  if (!item) return []
+  if (Array.isArray(item.images) && item.images.length > 0) return item.images
+  if (item.image) return [item.image]
+  return []
+}
+
+const selectedItemImages = computed(() => getItemImages(selectedItem.value))
+
+const extractFilenameFromUrl = (url) => {
+  if (!url || typeof url !== 'string') return ''
+  const withoutQuery = url.split('?')[0]
+  const parts = withoutQuery.split('/')
+  return parts[parts.length - 1] || ''
 }
 
 const getSellerName = (seller) => {
@@ -709,6 +962,77 @@ const handleFileUpload = async (event) => {
   }
 }
 
+const triggerEditFileUpload = () => {
+  editFileInput.value?.click()
+}
+
+const handleEditFileUpload = async (event) => {
+  const files = Array.from(event.target.files)
+  if (!files.length) return
+
+  // Validate total images limit
+  if (editItem.value.images.length + files.length > 5) {
+    message.error('Maximum 5 images allowed')
+    return
+  }
+
+  editUploadingImages.value = true
+
+  try {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        message.error(`${file.name} is not an image file`)
+        continue
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        message.error(`${file.name} is too large. Maximum size is 5MB`)
+        continue
+      }
+
+      const base64 = await fileToBase64(file)
+      const response = await marketplaceAPI.uploadImage({
+        image: base64,
+        filename: file.name,
+        itemType: 'marketplace'
+      })
+
+      if (response.data.success) {
+        editItem.value.images.push({
+          filename: response.data.data.filename,
+          url: response.data.data.url
+        })
+        message.success(`${file.name} uploaded successfully`)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to upload images:', error)
+    message.error(error.response?.data?.error?.message || 'Failed to upload images')
+  } finally {
+    editUploadingImages.value = false
+    if (editFileInput.value) {
+      editFileInput.value.value = ''
+    }
+  }
+}
+
+const removeEditImage = async (index) => {
+  try {
+    const image = editItem.value.images[index]
+    const filename = image?.filename || extractFilenameFromUrl(image?.url)
+
+    if (filename) {
+      await marketplaceAPI.deleteImage(filename)
+    }
+
+    editItem.value.images.splice(index, 1)
+    message.success('Image removed successfully')
+  } catch (error) {
+    console.error('Failed to remove image:', error)
+    // Still remove locally to avoid blocking the user.
+    editItem.value.images.splice(index, 1)
+  }
+}
+
 const removeImage = async (index) => {
   try {
     const image = newItem.value.images[index]
@@ -762,5 +1086,26 @@ onMounted(async () => {
 :deep(.ant-select-focused .ant-select-selector) {
   border-color: #C24D45 !important;
   box-shadow: 0 0 0 2px rgba(194, 77, 69, 0.2) !important;
+}
+
+.marketplace-image-scroller {
+  width: 100%;
+}
+
+.marketplace-image-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+}
+
+.marketplace-image-track::-webkit-scrollbar {
+  display: none;
+}
+
+.marketplace-image-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
 }
 </style>

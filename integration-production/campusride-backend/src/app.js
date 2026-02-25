@@ -311,7 +311,8 @@ function getNewYorkTimestamp(date) {
 }
 
 function selectNoticeBatch(notices, now) {
-  const batchSize = 5;
+  // Batch size for WeChat group messages (number of notice rows packed into one message).
+  const batchSize = 3;
   const dayMs = 24 * 60 * 60 * 1000;
   const oldestNotice = notices[0];
   const oldestCreatedAt = new Date(oldestNotice.created_at || now.toISOString());

@@ -222,6 +222,12 @@ export const getItemById = async (req, res, next) => {
       throw new AppError('Item not found', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
     }
 
+    // If the seller removed the listing, treat it as not found for link visitors.
+    // This prevents stale WeChat links from showing content that has been deleted.
+    if (item.status === 'removed') {
+      throw new AppError('Item has been deleted', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
+    }
+
     // 增加浏览次数（游客或非卖家都增加）
     if (!userId || item.seller_id !== userId) {
       await supabaseAdmin
