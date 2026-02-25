@@ -274,8 +274,14 @@ const handleMarkerClick = (thought) => {
 }
 
 // 小组创建成功
-const handleGroupCreated = () => {
+const handleGroupCreated = (group) => {
+  if (group?.id) {
+    selectedGroup.value = group.id
+  }
   fetchMyGroups()
+  fetchThoughts()
+  fetchMapThoughts()
+  fetchVisibleUsers()
   message.success('小组创建成功！')
 }
 

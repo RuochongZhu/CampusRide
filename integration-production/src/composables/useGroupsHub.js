@@ -99,9 +99,22 @@ export function useGroupsHub({ groupAPI, onGroupChanged, loadActivities }) {
     }
   }
 
-  const handleGroupCreated = async () => {
+  const handleGroupCreated = async (createdGroup) => {
+    if (createdGroup?.id) {
+      selectedGroupId.value = createdGroup.id
+    }
+
     await fetchMyGroups()
     await fetchAllGroups()
+
+    if (onGroupChanged) {
+      await onGroupChanged()
+    }
+
+    if (loadActivities) {
+      await loadActivities()
+    }
+
     message.success('Group created successfully!')
   }
 
