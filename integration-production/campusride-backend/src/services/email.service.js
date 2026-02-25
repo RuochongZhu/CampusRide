@@ -82,8 +82,13 @@ const createVerificationEmailTemplate = (verificationUrl, userEmail) => {
  */
 export const sendVerificationEmail = async (email, token) => {
   try {
-    // 使用前端URL生成验证链接，让前端处理验证流程
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Use FRONTEND_URL for deep links; accept comma-separated values and fall back to Vite default.
+    const frontendUrl =
+      (process.env.FRONTEND_URL || '')
+        .split(',')[0]
+        ?.trim()
+        ?.replace(/\/+$/, '') ||
+      'http://localhost:5173';
     const verificationUrl = `${frontendUrl}/verify-email/${token}`;
     const netid = email.split('@')[0];
 
@@ -171,7 +176,13 @@ export const generateTokenExpiry = () => {
  */
 export const sendPasswordResetEmail = async (email, token) => {
   try {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    const frontendUrl =
+      (process.env.FRONTEND_URL || '')
+        .split(',')[0]
+        ?.trim()
+        ?.replace(/\/+$/, '') ||
+      'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${token}`;
     const netid = email.split('@')[0];
     
     console.log(`📧 Attempting to send password reset email to ${email}`);
