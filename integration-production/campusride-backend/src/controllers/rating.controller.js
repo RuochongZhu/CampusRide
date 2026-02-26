@@ -4,6 +4,18 @@
 import { supabaseAdmin } from '../config/database.js';
 // import { logger } from '../utils/logger.js'; // Temporarily disabled
 
+const RATING_READY_DELAY_MS = 2 * 60 * 60 * 1000;
+
+const isTripRateWindowOpen = (trip) => {
+  if (!trip) return false;
+  if (trip.status === 'cancelled') return false;
+  if (trip.status === 'completed') return true;
+
+  const departureTimeMs = new Date(trip.departure_time).getTime();
+  if (Number.isNaN(departureTimeMs)) return false;
+  return Date.now() >= departureTimeMs + RATING_READY_DELAY_MS;
+};
+
 // ================================================
 // 创建或更新评分
 // ================================================
@@ -59,7 +71,7 @@ export const createRating = async (req, res) => {
     // 检查行程是否存在
     const { data: trip, error: tripError } = await supabaseAdmin
       .from('rides')
-      .select('id, driver_id, status')
+      .select('id, driver_id, status, departure_time')
       .eq('id', tripId)
       .single();
 
@@ -73,13 +85,13 @@ export const createRating = async (req, res) => {
       });
     }
 
-    // 检查行程是否已完成
-    if (trip.status !== 'completed') {
+    // 检查是否满足评分时间窗口（行程完成后，或出发2小时后）
+    if (!isTripRateWindowOpen(trip)) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'INVALID_TRIP_STATUS',
-          message: 'Can only rate completed trips'
+          message: 'You can rate this trip after it is completed or 2 hours after departure'
         }
       });
     }
@@ -107,6 +119,7 @@ export const createRating = async (req, res) => {
         .select('id')
         .eq('ride_id', tripId)
         .eq('passenger_id', rateeId)
+        .neq('status', 'cancelled')
         .single();
 
       if (!booking) {
@@ -125,6 +138,7 @@ export const createRating = async (req, res) => {
         .select('id')
         .eq('ride_id', tripId)
         .eq('passenger_id', raterId)
+        .neq('status', 'cancelled')
         .single();
 
       if (booking) {
@@ -472,7 +486,7 @@ export const canRate = async (req, res) => {
     // 检查行程是否存在且已完成
     const { data: trip, error: tripError } = await supabaseAdmin
       .from('rides')
-      .select('id, driver_id, status')
+      .select('id, driver_id, status, departure_time')
       .eq('id', tripId)
       .single();
 
@@ -486,12 +500,12 @@ export const canRate = async (req, res) => {
       });
     }
 
-    if (trip.status !== 'completed') {
+    if (!isTripRateWindowOpen(trip)) {
       return res.json({
         success: true,
         data: {
           canRate: false,
-          reason: 'Trip not completed yet'
+          reason: 'Trip is not ready for rating yet (available 2 hours after departure)'
         }
       });
     }
@@ -527,6 +541,7 @@ export const canRate = async (req, res) => {
         .select('id')
         .eq('ride_id', tripId)
         .eq('passenger_id', rateeId)
+        .neq('status', 'cancelled')
         .single();
 
       if (!booking) {
@@ -545,6 +560,7 @@ export const canRate = async (req, res) => {
         .select('id')
         .eq('ride_id', tripId)
         .eq('passenger_id', raterId)
+        .neq('status', 'cancelled')
         .single();
 
       if (booking) {

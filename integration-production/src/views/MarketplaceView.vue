@@ -3,62 +3,65 @@
 
   <!-- Search and Filter Section -->
   <div class="sticky top-16 z-40 bg-white shadow-sm">
-    <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
-      <div class="flex flex-col space-y-3 md:space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-          <div class="flex-grow flex items-center space-x-2 md:space-x-4">
-            <a-input-search
-              v-model:value="searchQuery"
-              placeholder="Search items..."
-              class="flex-1 md:max-w-xl"
-              @search="handleSearch"
-            />
-            <a-button @click="showAdvancedFilter = !showAdvancedFilter" class="flex-shrink-0">
-              <template #icon><FilterOutlined /></template>
-              <span class="hidden sm:inline ml-1">Filters</span>
-            </a-button>
-          </div>
-          <div class="flex items-center justify-between md:justify-end space-x-2 md:space-x-4">
-            <a-button-group class="hidden sm:flex">
-              <a-button :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'">
-                <template #icon><AppstoreOutlined /></template>
-              </a-button>
-              <a-button :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'">
-                <template #icon><BarsOutlined /></template>
-              </a-button>
-            </a-button-group>
-            <a-button type="primary" @click="showPostModal = true" class="flex-shrink-0">
-              <template #icon><PlusOutlined /></template>
-              <span class="hidden sm:inline ml-1">Post Item</span>
-            </a-button>
-          </div>
+    <div class="max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-4">
+      <!-- Mobile: single compact row; Desktop: original layout -->
+      <div class="flex items-center gap-2 md:flex-col md:space-y-4">
+        <div class="flex-grow flex items-center gap-2 md:gap-4 md:flex-row min-w-0">
+          <a-input-search
+            v-model:value="searchQuery"
+            placeholder="Search items..."
+            class="flex-1 md:max-w-xl marketplace-search-input"
+            @search="handleSearch"
+          />
+          <!-- Mobile: open filter drawer; Desktop: toggle inline panel -->
+          <a-button @click="isMobile ? (showFilterDrawer = true) : (showAdvancedFilter = !showAdvancedFilter)" class="flex-shrink-0 marketplace-icon-btn">
+            <template #icon><FilterOutlined /></template>
+            <span class="hidden sm:inline ml-1">Filters</span>
+          </a-button>
         </div>
+        <div class="flex items-center gap-2 md:gap-4 md:justify-end flex-shrink-0">
+          <a-button-group class="hidden sm:flex">
+            <a-button :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'">
+              <template #icon><AppstoreOutlined /></template>
+            </a-button>
+            <a-button :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'">
+              <template #icon><BarsOutlined /></template>
+            </a-button>
+          </a-button-group>
+          <a-button type="primary" @click="showPostModal = true" class="flex-shrink-0 marketplace-post-btn">
+            <template #icon><PlusOutlined /></template>
+            <span class="hidden sm:inline ml-1">Post Item</span>
+          </a-button>
+        </div>
+      </div>
 
-        <div v-show="showAdvancedFilter" class="bg-[#EDEEE8] p-3 md:p-4 rounded-lg">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <div>
-              <div class="text-xs md:text-sm mb-2">Price Range: ${{priceRange[0]}} - ${{priceRange[1]}}</div>
-              <a-slider v-model:value="priceRange" range :min="0" :max="2000" :step="10" @change="applyFilters" />
-            </div>
-            <div>
-              <div class="text-xs md:text-sm mb-2">Condition</div>
-              <a-select v-model:value="condition" style="width: 100%" :options="conditionOptions" @change="applyFilters" />
-            </div>
-            <div>
-              <div class="text-xs md:text-sm mb-2">Sort By</div>
-              <a-select v-model:value="sortBy" style="width: 100%" :options="sortOptions" @change="applyFilters" />
-            </div>
+      <!-- Desktop-only: Advanced Filter Panel (inline) -->
+      <div v-if="!isMobile" v-show="showAdvancedFilter" class="bg-[#EDEEE8] p-3 md:p-4 rounded-lg mt-2 md:mt-0">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <div>
+            <div class="text-xs md:text-sm mb-2 text-gray-600">Price Range: ${{priceRange[0]}} - ${{priceRange[1]}}</div>
+            <a-slider v-model:value="priceRange" range :min="0" :max="2000" :step="10" @change="applyFilters" />
+          </div>
+          <div>
+            <div class="text-xs md:text-sm mb-2 text-gray-600">Condition</div>
+            <a-select v-model:value="condition" style="width: 100%" :options="conditionOptions" @change="applyFilters" />
+          </div>
+          <div>
+            <div class="text-xs md:text-sm mb-2 text-gray-600">Sort By</div>
+            <a-select v-model:value="sortBy" style="width: 100%" :options="sortOptions" @change="applyFilters" />
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Category Tags Scroller -->
     <div class="max-w-7xl mx-auto px-3 md:px-4">
-      <div class="flex space-x-2 overflow-x-auto pb-2 -mx-3 md:-mx-4 px-3 md:px-4 scrollbar-hide">
+      <div class="marketplace-category-scroller">
         <a-tag
           v-for="category in categories"
           :key="category"
           :color="selectedCategory === category ? '#C24D45' : 'default'"
-          class="cursor-pointer px-3 md:px-4 py-1.5 md:py-2 !rounded-full whitespace-nowrap text-xs md:text-sm"
+          class="cursor-pointer px-3 md:px-4 py-1.5 md:py-2 !rounded-full whitespace-nowrap text-xs md:text-sm flex-shrink-0"
           @click="handleCategoryChange(category)"
         >
           {{ category }}
@@ -66,6 +69,36 @@
       </div>
     </div>
   </div>
+
+  <!-- Mobile Filter Drawer -->
+  <a-drawer
+    v-model:open="showFilterDrawer"
+    title="Filters"
+    placement="bottom"
+    :height="'auto'"
+    :headerStyle="{ background: '#fff', borderBottom: '1px solid #f0f0f0', padding: '14px 16px' }"
+    :bodyStyle="{ padding: '16px', background: '#EDEEE8' }"
+    class="marketplace-filter-drawer"
+  >
+    <div class="space-y-5">
+      <div>
+        <div class="text-xs font-medium text-gray-500 mb-2">Price Range: ${{priceRange[0]}} - ${{priceRange[1]}}</div>
+        <a-slider v-model:value="priceRange" range :min="0" :max="2000" :step="10" />
+      </div>
+      <div>
+        <div class="text-xs font-medium text-gray-500 mb-2">Condition</div>
+        <a-select v-model:value="condition" style="width: 100%" :options="conditionOptions" />
+      </div>
+      <div>
+        <div class="text-xs font-medium text-gray-500 mb-2">Sort By</div>
+        <a-select v-model:value="sortBy" style="width: 100%" :options="sortOptions" />
+      </div>
+      <div class="flex gap-3 pt-2">
+        <a-button class="flex-1" @click="resetFilters">Reset</a-button>
+        <a-button type="primary" class="flex-1" @click="applyFiltersAndCloseDrawer">Apply</a-button>
+      </div>
+    </div>
+  </a-drawer>
 
   <!-- Route Item Status (e.g., deleted listing opened from WeChat link) -->
   <div v-if="routeItemAlert" class="max-w-7xl mx-auto px-3 md:px-4 pt-4">
@@ -85,7 +118,7 @@
   </div>
 
   <!-- Items Grid/List -->
-  <div v-else class="py-4 md:py-8">
+  <div v-else class="py-3 md:py-8">
     <div class="max-w-7xl mx-auto px-3 md:px-4">
       <!-- Empty State -->
       <div v-if="items.length === 0" class="text-center py-16 md:py-20">
@@ -94,49 +127,53 @@
       </div>
 
       <!-- Items Display -->
-      <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6' : 'space-y-3 md:space-y-4'">
+      <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-6' : 'space-y-2.5 md:space-y-4'">
         <div v-for="item in items" :key="item.id"
-          :class="viewMode === 'grid' ? 'bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer' : 'bg-white rounded-lg shadow-sm p-3 md:p-4 flex space-x-3 md:space-x-4 cursor-pointer'"
+          :class="viewMode === 'grid'
+            ? 'marketplace-card-grid bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98]'
+            : 'marketplace-card-list bg-white rounded-xl shadow-sm p-3 md:p-4 flex gap-3 md:gap-4 cursor-pointer active:scale-[0.99]'"
           @click="viewItemDetails(item)">
+          <!-- Image -->
           <div :class="viewMode === 'grid' ? '' : 'w-24 h-24 md:w-48 md:h-48 flex-shrink-0'">
             <img
               :src="getItemImage(item)"
               :alt="item.title"
-              :class="viewMode === 'grid' ? 'w-full h-32 md:h-48 object-contain bg-gray-100' : 'w-full h-full object-contain bg-gray-100 rounded-lg'"
+              :class="viewMode === 'grid' ? 'w-full h-36 md:h-48 object-contain bg-gray-50' : 'w-full h-full object-contain bg-gray-50 rounded-lg'"
               class="cursor-zoom-in"
               @click.stop="openImagePreview(item, 0)"
             />
           </div>
-          <div :class="viewMode === 'grid' ? 'p-2 md:p-4' : 'flex-grow flex flex-col justify-between min-w-0'">
+          <!-- Info -->
+          <div :class="viewMode === 'grid' ? 'p-2.5 md:p-4' : 'flex-grow flex flex-col justify-between min-w-0'">
             <div>
-              <div class="flex items-start justify-between">
-                <h3 class="font-medium text-sm md:text-lg flex-grow pr-1 md:pr-2 line-clamp-2 md:truncate">{{ item.title }}</h3>
+              <div class="flex items-start justify-between gap-1">
+                <h3 class="font-medium text-[13px] leading-tight md:text-lg flex-grow line-clamp-2 md:truncate">{{ item.title }}</h3>
                 <HeartFilled
                   v-if="item.is_favorited"
-                  class="text-[#C24D45] text-base md:text-xl cursor-pointer flex-shrink-0"
+                  class="text-[#C24D45] text-base md:text-xl cursor-pointer flex-shrink-0 p-0.5"
                   @click.stop="toggleFavorite(item)"
                 />
                 <HeartOutlined
                   v-else
-                  class="text-gray-400 text-base md:text-xl cursor-pointer flex-shrink-0"
+                  class="text-gray-300 text-base md:text-xl cursor-pointer flex-shrink-0 p-0.5 hover:text-gray-400"
                   @click.stop="toggleFavorite(item)"
                 />
               </div>
               <p v-if="viewMode === 'list'" class="text-xs md:text-sm text-gray-500 mt-1 line-clamp-2">{{ truncateText(item.description, 100) }}</p>
             </div>
-            <div class="mt-2 md:mt-4">
+            <div class="mt-1.5 md:mt-4">
               <div class="flex items-center justify-between">
-                <span class="text-base md:text-xl font-bold text-[#C24D45]">${{ item.price }}</span>
-                <a-tag :color="getConditionColor(item.condition)" class="text-xs md:text-sm !m-0">{{ formatCondition(item.condition) }}</a-tag>
+                <span class="text-[15px] md:text-xl font-bold text-[#C24D45]">${{ item.price }}</span>
+                <a-tag :color="getConditionColor(item.condition)" class="!text-[10px] md:!text-sm !m-0 !px-1.5 md:!px-2">{{ formatCondition(item.condition) }}</a-tag>
               </div>
-              <div class="mt-2 md:mt-4 flex items-center justify-between">
-                <div class="flex items-center space-x-2 min-w-0">
+              <div class="mt-1.5 md:mt-4 flex items-center justify-between">
+                <div class="flex items-center gap-1.5 min-w-0">
                   <div v-if="item.seller" @click.stop>
                     <ClickableAvatar :user="item.seller" size="small" @message="handleUserMessage" />
                   </div>
-                  <span class="text-xs md:text-sm text-gray-500 truncate">{{ getSellerName(item.seller) }}</span>
+                  <span class="text-[11px] md:text-sm text-gray-400 truncate">{{ getSellerName(item.seller) }}</span>
                 </div>
-                <div class="flex items-center space-x-1 md:space-x-2 text-gray-400 text-xs md:text-sm">
+                <div class="flex items-center gap-1 text-gray-300 text-[11px] md:text-sm">
                   <EyeOutlined /> <span>{{ item.views_count || 0 }}</span>
                 </div>
               </div>
@@ -154,7 +191,8 @@
     @ok="handlePostItem"
     okText="Post"
     cancelText="Cancel"
-    width="600px"
+    :width="isMobile ? '100%' : '600px'"
+    :class="{ 'marketplace-mobile-modal': isMobile }"
     :confirmLoading="posting"
   >
     <div class="space-y-4 pt-4">
@@ -223,74 +261,110 @@
     v-model:open="showDetailsModal"
     :title="selectedItem?.title"
     :footer="null"
-    width="700px"
+    :width="isMobile ? '100%' : '700px'"
+    :class="{ 'marketplace-mobile-modal': isMobile, 'marketplace-details-modal': true }"
   >
-    <div v-if="selectedItem" class="space-y-4">
-      <!-- Images: horizontal swipe/scroll for multiple photos -->
-      <div v-if="selectedItemImages.length > 0" class="marketplace-image-scroller">
-        <div class="marketplace-image-track">
-          <div
-            v-for="(img, index) in selectedItemImages"
-            :key="`${selectedItem.id}_${index}`"
-            class="marketplace-image-slide"
-          >
-            <img
-              :src="img"
-              :alt="`${selectedItem.title} ${index + 1}`"
-              class="w-full h-64 object-contain bg-gray-100 rounded-lg cursor-zoom-in"
-              @click.stop="openImagePreview(selectedItem, index)"
-            />
+    <div v-if="selectedItem" class="marketplace-detail-content">
+      <!-- Scrollable content area -->
+      <div :class="isMobile ? 'marketplace-detail-scroll' : ''" class="space-y-3 md:space-y-4">
+        <!-- Images: horizontal swipe/scroll for multiple photos -->
+        <div v-if="selectedItemImages.length > 0" class="marketplace-image-scroller">
+          <div class="marketplace-image-track">
+            <div
+              v-for="(img, index) in selectedItemImages"
+              :key="`${selectedItem.id}_${index}`"
+              class="marketplace-image-slide"
+            >
+              <img
+                :src="img"
+                :alt="`${selectedItem.title} ${index + 1}`"
+                class="w-full h-48 md:h-64 object-contain bg-gray-50 rounded-lg cursor-zoom-in"
+                @click.stop="openImagePreview(selectedItem, index)"
+              />
+            </div>
+          </div>
+          <div v-if="selectedItemImages.length > 1" class="text-[11px] md:text-xs text-gray-400 text-center mt-1.5">
+            Swipe left/right to view more photos
           </div>
         </div>
-        <div v-if="selectedItemImages.length > 1" class="text-xs text-gray-500 text-center mt-2">
-          Swipe left/right to view more photos
+        <div v-else class="w-full h-48 md:h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+          No images
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xl md:text-2xl font-bold text-[#C24D45]">${{ selectedItem.price }}</span>
+          <a-tag :color="getConditionColor(selectedItem.condition)">{{ formatCondition(selectedItem.condition) }}</a-tag>
+        </div>
+        <p class="text-sm md:text-base text-gray-700 leading-relaxed">{{ selectedItem.description }}</p>
+        <div class="flex items-center gap-3 pt-3 md:pt-4 border-t" @click.stop>
+          <ClickableAvatar v-if="selectedItem.seller" :user="selectedItem.seller" @message="handleUserMessage" />
+          <div>
+            <p class="font-medium text-sm md:text-base">{{ getSellerName(selectedItem.seller) }}</p>
+            <p class="text-xs md:text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
+          </div>
+        </div>
+
+        <!-- Desktop: inline action buttons -->
+        <div v-if="!isMobile" class="flex items-center justify-between pt-3 md:pt-4 gap-2">
+          <a-button @click="toggleFavorite(selectedItem)" class="flex-shrink-0">
+            <template #icon>
+              <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
+              <HeartOutlined v-else />
+            </template>
+            {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
+          </a-button>
+          <div class="flex items-center gap-2">
+            <a-button
+              v-if="isSelectedItemOwner"
+              @click="openEditModal(selectedItem)"
+            >
+              <template #icon><EditOutlined /></template>
+              Edit
+            </a-button>
+            <a-button
+              v-if="isSelectedItemOwner"
+              danger
+              @click="confirmDeleteItem(selectedItem)"
+            >
+              <template #icon><DeleteOutlined /></template>
+              Delete
+            </a-button>
+          </div>
+        </div>
+
+        <!-- Comment Section -->
+        <div class="mt-4 md:mt-6 pt-4 md:pt-6 border-t" :class="isMobile ? 'pb-20' : ''">
+          <CommentSection :key="selectedItem.id" :itemId="selectedItem.id" :current-user="currentUser" />
         </div>
       </div>
-      <div v-else class="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-        No images
-      </div>
-      <div class="flex items-center justify-between">
-        <span class="text-2xl font-bold text-[#C24D45]">${{ selectedItem.price }}</span>
-        <a-tag :color="getConditionColor(selectedItem.condition)">{{ formatCondition(selectedItem.condition) }}</a-tag>
-      </div>
-      <p class="text-gray-700">{{ selectedItem.description }}</p>
-      <div class="flex items-center space-x-4 pt-4 border-t" @click.stop>
-        <ClickableAvatar v-if="selectedItem.seller" :user="selectedItem.seller" @message="handleUserMessage" />
-        <div>
-          <p class="font-medium">{{ getSellerName(selectedItem.seller) }}</p>
-          <p class="text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between pt-4">
-        <a-button @click="toggleFavorite(selectedItem)">
+
+      <!-- Mobile: fixed bottom action bar -->
+      <div v-if="isMobile" class="marketplace-detail-actions">
+        <a-button @click="toggleFavorite(selectedItem)" class="flex-1" size="large">
           <template #icon>
             <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
             <HeartOutlined v-else />
           </template>
           {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
         </a-button>
-        <div class="flex items-center gap-2">
-          <a-button
-            v-if="isSelectedItemOwner"
-            @click="openEditModal(selectedItem)"
-          >
-            <template #icon><EditOutlined /></template>
-            Edit
-          </a-button>
-          <a-button
-            v-if="isSelectedItemOwner"
-            danger
-            @click="confirmDeleteItem(selectedItem)"
-          >
-            <template #icon><DeleteOutlined /></template>
-            Delete
-          </a-button>
-        </div>
-      </div>
-
-      <!-- Comment Section -->
-      <div class="mt-6 pt-6 border-t">
-        <CommentSection :key="selectedItem.id" :itemId="selectedItem.id" :current-user="currentUser" />
+        <a-button
+          v-if="isSelectedItemOwner"
+          @click="openEditModal(selectedItem)"
+          class="flex-1"
+          size="large"
+        >
+          <template #icon><EditOutlined /></template>
+          Edit
+        </a-button>
+        <a-button
+          v-if="isSelectedItemOwner"
+          danger
+          @click="confirmDeleteItem(selectedItem)"
+          class="flex-1"
+          size="large"
+        >
+          <template #icon><DeleteOutlined /></template>
+          Delete
+        </a-button>
       </div>
     </div>
   </a-modal>
@@ -302,7 +376,8 @@
     @ok="handleUpdateItem"
     okText="Save"
     cancelText="Cancel"
-    width="600px"
+    :width="isMobile ? '100%' : '600px'"
+    :class="{ 'marketplace-mobile-modal': isMobile }"
     :confirmLoading="editSubmitting"
     @cancel="closeEditModal"
   >
@@ -428,12 +503,24 @@ import CommentSection from '@/components/marketplace/CommentSection.vue'
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue'
 import { getPublicUserName } from '@/utils/publicName'
 
+// Mobile detection
+const isMobile = ref(false)
+const checkMobile = () => {
+  const wasMobile = isMobile.value
+  isMobile.value = window.innerWidth < 768
+  // On first detection or switching to mobile, default to list view
+  if (isMobile.value && !wasMobile) {
+    viewMode.value = 'list'
+  }
+}
+
 // State management
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const posting = ref(false)
-const viewMode = ref('grid')
+const viewMode = ref(window.innerWidth < 768 ? 'list' : 'grid')
+const showFilterDrawer = ref(false)
 const searchQuery = ref('')
 const selectedCategory = ref('All')
 const showAdvancedFilter = ref(false)
@@ -759,6 +846,17 @@ const handleCategoryChange = (category) => {
 }
 
 const applyFilters = () => {
+  fetchItems()
+}
+
+const resetFilters = () => {
+  priceRange.value = [0, 2000]
+  condition.value = 'all'
+  sortBy.value = 'created_at'
+}
+
+const applyFiltersAndCloseDrawer = () => {
+  showFilterDrawer.value = false
   fetchItems()
 }
 
@@ -1220,16 +1318,20 @@ const fileToBase64 = (file) => {
 
 // Lifecycle
 onMounted(async () => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   await fetchItems()
   await openItemFromRoute()
 })
 
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
+  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
 <style scoped>
+/* ===== Theme colors ===== */
 :deep(.ant-btn-primary) {
   background-color: #C24D45;
   border-color: #C24D45;
@@ -1252,10 +1354,25 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 2px rgba(194, 77, 69, 0.2) !important;
 }
 
+/* ===== Category scroller with fade hints ===== */
+.marketplace-category-scroller {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+}
+.marketplace-category-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== Image scroller (detail modal) ===== */
 .marketplace-image-scroller {
   width: 100%;
 }
-
 .marketplace-image-track {
   display: flex;
   overflow-x: auto;
@@ -1263,16 +1380,15 @@ onBeforeUnmount(() => {
   -webkit-overflow-scrolling: touch;
   gap: 8px;
 }
-
 .marketplace-image-track::-webkit-scrollbar {
   display: none;
 }
-
 .marketplace-image-slide {
   flex: 0 0 100%;
   scroll-snap-align: center;
 }
 
+/* ===== Fullscreen image preview ===== */
 .marketplace-fullscreen-overlay {
   position: fixed;
   inset: 0;
@@ -1282,13 +1398,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
 }
-
 .marketplace-fullscreen-close {
   position: absolute;
   top: max(16px, env(safe-area-inset-top));
   right: 16px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.22);
@@ -1296,20 +1411,18 @@ onBeforeUnmount(() => {
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
+  z-index: 10;
 }
-
 .marketplace-fullscreen-slider {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
 }
-
 .marketplace-fullscreen-track {
   height: 100%;
   display: flex;
   transition: transform 0.25s ease-out;
 }
-
 .marketplace-fullscreen-slide {
   min-width: 100vw;
   height: 100vh;
@@ -1318,13 +1431,11 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: max(56px, env(safe-area-inset-top)) 16px max(56px, env(safe-area-inset-bottom));
 }
-
 .marketplace-fullscreen-image {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
-
 .marketplace-fullscreen-indicator {
   position: absolute;
   bottom: max(16px, env(safe-area-inset-bottom));
@@ -1336,5 +1447,120 @@ onBeforeUnmount(() => {
   background: rgba(0, 0, 0, 0.45);
   border-radius: 9999px;
   padding: 6px 12px;
+}
+
+/* ===== Mobile-only styles (< 768px) ===== */
+@media (max-width: 767px) {
+  /* Mobile modal: full-width, anchored to bottom */
+  .marketplace-mobile-modal :deep(.ant-modal) {
+    max-width: 100vw !important;
+    margin: 0 !important;
+    top: auto !important;
+    bottom: 0;
+    padding-bottom: 0;
+    position: fixed;
+  }
+  .marketplace-mobile-modal :deep(.ant-modal-content) {
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .marketplace-mobile-modal :deep(.ant-modal-header) {
+    border-radius: 16px 16px 0 0;
+    padding: 14px 16px;
+  }
+  .marketplace-mobile-modal :deep(.ant-modal-body) {
+    padding: 12px 16px 16px;
+    overflow: hidden;
+  }
+  .marketplace-mobile-modal :deep(.ant-modal-footer) {
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  /* Details modal: taller, no body overflow (scroll handled inside) */
+  .marketplace-details-modal :deep(.ant-modal-content) {
+    max-height: 92vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .marketplace-details-modal :deep(.ant-modal-body) {
+    flex: 1;
+    overflow: hidden;
+    padding-bottom: 0;
+    position: relative;
+  }
+
+  /* Detail content wrapper */
+  .marketplace-detail-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Scrollable area above fixed action bar */
+  .marketplace-detail-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(92vh - 56px - 64px); /* modal header + action bar */
+  }
+
+  /* Fixed bottom action bar */
+  .marketplace-detail-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 8px;
+    padding: 10px 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  /* Search input compact height */
+  .marketplace-search-input :deep(.ant-input) {
+    height: 36px;
+    font-size: 14px;
+  }
+  .marketplace-search-input :deep(.ant-input-search-button) {
+    height: 36px !important;
+  }
+
+  /* Icon button compact */
+  .marketplace-icon-btn {
+    height: 36px !important;
+    width: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Post button compact */
+  .marketplace-post-btn {
+    height: 36px !important;
+    padding: 0 10px !important;
+    font-size: 13px;
+  }
+
+  /* Image remove button always visible on mobile (no hover) */
+  .marketplace-mobile-modal .group button,
+  .group button {
+    opacity: 1 !important;
+  }
+
+  /* Filter drawer rounded top */
+  .marketplace-filter-drawer :deep(.ant-drawer-content-wrapper) {
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+  }
 }
 </style>

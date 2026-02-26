@@ -328,6 +328,119 @@
               />
             </div>
           </div>
+
+          <!-- My Trips -->
+          <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg md:text-2xl font-bold">My Trips</h2>
+              <button
+                class="px-3 py-1.5 text-xs md:text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-all"
+                @click="loadMyTrips"
+              >
+                🔄 Refresh
+              </button>
+            </div>
+
+            <div class="inline-flex bg-gray-100 rounded-full p-1 mb-4">
+              <button
+                :class="[
+                  'px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all',
+                  myTripsTab === 'driver' ? 'bg-red-600 text-white' : 'text-gray-600'
+                ]"
+                @click="myTripsTab = 'driver'"
+              >
+                I Posted
+              </button>
+              <button
+                :class="[
+                  'px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all',
+                  myTripsTab === 'passenger' ? 'bg-red-600 text-white' : 'text-gray-600'
+                ]"
+                @click="myTripsTab = 'passenger'"
+              >
+                I Booked
+              </button>
+            </div>
+
+            <div v-if="myTripsLoading" class="text-sm text-gray-500 py-6">Loading your trips...</div>
+
+            <div v-else-if="myTripsTab === 'driver'" class="space-y-3">
+              <div
+                v-for="ride in myPostedRides"
+                :key="`my-driver-${ride.id}`"
+                class="border border-gray-200 rounded-lg p-3 md:p-4"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-semibold text-sm md:text-base truncate">{{ ride.title }}</p>
+                    <p class="text-xs md:text-sm text-gray-600 mt-1">{{ ride.departure_location }} → {{ ride.destination_location }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ formatDateTime(ride.departure_time) }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Seats: {{ getBookedSeats(ride) }}/{{ ride.available_seats }}
+                    </p>
+                  </div>
+                  <a-tag :color="getRideStatusColor(ride.status)" class="!m-0">{{ formatRideStatus(ride.status) }}</a-tag>
+                </div>
+
+                <div class="mt-3 flex items-center gap-2">
+                  <button
+                    class="px-3 py-1.5 text-xs md:text-sm border rounded-md hover:bg-gray-50"
+                    @click="viewRideDetails(ride)"
+                  >
+                    View
+                  </button>
+                  <button
+                    v-if="canCompleteRide(ride)"
+                    class="px-3 py-1.5 text-xs md:text-sm bg-green-600 hover:bg-green-700 text-white rounded-md disabled:bg-gray-400"
+                    :disabled="isTripActionLoading(`complete-${ride.id}`)"
+                    @click="completeRideFromMyTrips(ride)"
+                  >
+                    {{ isTripActionLoading(`complete-${ride.id}`) ? 'Completing...' : 'Complete Ride' }}
+                  </button>
+                </div>
+              </div>
+              <div v-if="myPostedRides.length === 0" class="text-sm text-gray-500 py-3">You have not posted trips yet.</div>
+            </div>
+
+            <div v-else class="space-y-3">
+              <div
+                v-for="booking in myBookedTrips"
+                :key="`my-booking-${booking.id}`"
+                class="border border-gray-200 rounded-lg p-3 md:p-4"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-semibold text-sm md:text-base truncate">{{ booking.ride?.title || 'Ride' }}</p>
+                    <p class="text-xs md:text-sm text-gray-600 mt-1">
+                      {{ booking.ride?.departure_location || '-' }} → {{ booking.ride?.destination_location || '-' }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">{{ formatDateTime(booking.ride?.departure_time) }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Seats booked: {{ booking.seats_booked || 1 }}</p>
+                  </div>
+                  <a-tag :color="getRideStatusColor(booking.status)" class="!m-0">{{ formatRideStatus(booking.status) }}</a-tag>
+                </div>
+
+                <div class="mt-3 flex items-center gap-2">
+                  <button
+                    v-if="booking.ride"
+                    class="px-3 py-1.5 text-xs md:text-sm border rounded-md hover:bg-gray-50"
+                    @click="viewRideDetails(booking.ride)"
+                  >
+                    View
+                  </button>
+                  <button
+                    v-if="canCancelBooking(booking)"
+                    class="px-3 py-1.5 text-xs md:text-sm bg-gray-700 hover:bg-gray-800 text-white rounded-md disabled:bg-gray-400"
+                    :disabled="isTripActionLoading(`cancel-${booking.id}`)"
+                    @click="cancelBookingFromMyTrips(booking)"
+                  >
+                    {{ isTripActionLoading(`cancel-${booking.id}`) ? 'Cancelling...' : 'Cancel Booking' }}
+                  </button>
+                </div>
+              </div>
+              <div v-if="myBookedTrips.length === 0" class="text-sm text-gray-500 py-3">You have no bookings yet.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -529,6 +642,11 @@ const availableRides = ref([]);
 const currentPage = ref(1);
 const pageSize = ref(20);
 const totalRides = ref(0);
+const myTripsLoading = ref(false);
+const myTripsTab = ref('driver');
+const myPostedRides = ref([]);
+const myBookedTrips = ref([]);
+const tripActionLoading = ref({});
 
 // Modals
 const showBookingModal = ref(false);
@@ -709,6 +827,37 @@ const loadRides = async (params = {}) => {
   }
 };
 
+const setTripActionLoading = (key, value) => {
+  tripActionLoading.value = {
+    ...tripActionLoading.value,
+    [key]: value
+  };
+};
+
+const isTripActionLoading = (key) => !!tripActionLoading.value[key];
+
+const loadMyTrips = async () => {
+  try {
+    myTripsLoading.value = true;
+
+    const [driverResponse, bookingResponse] = await Promise.all([
+      carpoolingAPI.getMyRides({ limit: 20 }),
+      carpoolingAPI.getMyBookings({ limit: 20 })
+    ]);
+
+    myPostedRides.value = driverResponse.data?.data?.rides || [];
+    myBookedTrips.value = bookingResponse.data?.data?.bookings || [];
+  } catch (error) {
+    console.error('Failed to load my trips:', error);
+    notification.error({
+      message: 'Error',
+      description: error.response?.data?.error?.message || 'Failed to load your trips.'
+    });
+  } finally {
+    myTripsLoading.value = false;
+  }
+};
+
 const openRideFromRoute = async () => {
   const rideId = route.params?.id || route.query?.rideId;
   if (!rideId) return;
@@ -817,6 +966,7 @@ const postTrip = async () => {
 
       // Reload rides
       await loadRides();
+      await loadMyTrips();
     }
   } catch (error) {
     console.error('Failed to post trip:', error);
@@ -892,6 +1042,7 @@ const postPassengerRequest = async () => {
 
       // Reload rides
       await loadRides();
+      await loadMyTrips();
     }
   } catch (error) {
     console.error('Post passenger request error:', error);
@@ -918,8 +1069,24 @@ const openBookingModal = (ride) => {
 };
 
 // View ride details
-const viewRideDetails = (ride) => {
-  selectedRide.value = ride;
+const viewRideDetails = async (ride) => {
+  if (!ride) return;
+
+  const hasFullDetails = ride.available_seats !== undefined && ride.price_per_seat !== undefined;
+  if (hasFullDetails) {
+    selectedRide.value = ride;
+    showDetailsModal.value = true;
+    return;
+  }
+
+  try {
+    const response = await carpoolingAPI.getRide(ride.id);
+    selectedRide.value = response.data?.data?.ride || ride;
+  } catch (error) {
+    console.warn('Failed to fetch full ride details, using partial data:', error);
+    selectedRide.value = ride;
+  }
+
   showDetailsModal.value = true;
 };
 
@@ -952,6 +1119,7 @@ const confirmBooking = async () => {
 
       // Reload rides to update availability
       await loadRides();
+      await loadMyTrips();
     }
   } catch (error) {
     console.error('Failed to book ride:', error);
@@ -961,6 +1129,69 @@ const confirmBooking = async () => {
     });
   } finally {
     bookingRide.value = false;
+  }
+};
+
+const canCompleteRide = (ride) => {
+  return ['active', 'full'].includes(ride?.status);
+};
+
+const canCancelBooking = (booking) => {
+  if (!booking || booking.status === 'cancelled' || booking.status === 'completed') return false;
+  const departureTime = booking.ride?.departure_time ? new Date(booking.ride.departure_time) : null;
+  if (!departureTime || Number.isNaN(departureTime.getTime())) return false;
+  return departureTime.getTime() - Date.now() >= 2 * 60 * 60 * 1000;
+};
+
+const completeRideFromMyTrips = async (ride) => {
+  if (!ride?.id) return;
+
+  const loadingKey = `complete-${ride.id}`;
+  try {
+    setTripActionLoading(loadingKey, true);
+    const response = await carpoolingAPI.completeRide(ride.id);
+
+    if (response.data?.success) {
+      notification.success({
+        message: 'Trip Completed',
+        description: 'Ride marked as completed.'
+      });
+      await Promise.all([loadRides(), loadMyTrips()]);
+    }
+  } catch (error) {
+    console.error('Failed to complete ride:', error);
+    notification.error({
+      message: 'Error',
+      description: error.response?.data?.error?.message || 'Failed to complete ride.'
+    });
+  } finally {
+    setTripActionLoading(loadingKey, false);
+  }
+};
+
+const cancelBookingFromMyTrips = async (booking) => {
+  if (!booking?.id) return;
+
+  const loadingKey = `cancel-${booking.id}`;
+  try {
+    setTripActionLoading(loadingKey, true);
+    const response = await carpoolingAPI.cancelBooking(booking.id);
+
+    if (response.data?.success) {
+      notification.success({
+        message: 'Booking Cancelled',
+        description: 'Your booking has been cancelled.'
+      });
+      await Promise.all([loadRides(), loadMyTrips()]);
+    }
+  } catch (error) {
+    console.error('Failed to cancel booking:', error);
+    notification.error({
+      message: 'Error',
+      description: error.response?.data?.error?.message || 'Failed to cancel booking.'
+    });
+  } finally {
+    setTripActionLoading(loadingKey, false);
   }
 };
 
@@ -978,6 +1209,29 @@ const disabledDate = (current) => {
 const formatDateTime = (datetime) => {
   if (!datetime) return '';
   return dayjs(datetime).format('MMM D, YYYY h:mm A');
+};
+
+const getRideStatusColor = (status) => {
+  const colorMap = {
+    active: 'green',
+    full: 'orange',
+    completed: 'blue',
+    cancelled: 'red',
+    confirmed: 'green'
+  };
+  return colorMap[status] || 'default';
+};
+
+const formatRideStatus = (status) => {
+  if (!status) return 'Unknown';
+  return status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const getBookedSeats = (ride) => {
+  const bookings = Array.isArray(ride?.bookings) ? ride.bookings : [];
+  return bookings
+    .filter(booking => booking.status !== 'cancelled')
+    .reduce((sum, booking) => sum + (booking.seats_booked || 0), 0);
 };
 
 const getDriverName = (driver) => {
@@ -1006,6 +1260,7 @@ onMounted(async () => {
   initGoogleMaps();
   // 加载拼车列表
   await loadRides();
+  await loadMyTrips();
   await openRideFromRoute();
 });
 

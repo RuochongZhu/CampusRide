@@ -618,6 +618,39 @@ export const bookRide = async (req, res, next) => {
       priority: 'medium'
     });
 
+    // 评分提醒：在行程出发时间 + 2小时后，向双方发送系统消息中的5星评分入口
+    const reminderAt = new Date(new Date(ride.departure_time).getTime() + RIDE_RATING_REMINDER_DELAY_MS).toISOString();
+
+    await notificationService.sendNotification({
+      userId,
+      type: 'ride_rating_reminder',
+      title: 'Rate your driver in 5-star system',
+      content: `Please rate the driver for "${ride.title}". Tap stars to submit.`,
+      data: {
+        rideId,
+        rateeId: ride.driver_id,
+        roleOfRater: 'passenger',
+        showAfter: reminderAt,
+        trigger: 'ride_rating_reminder'
+      },
+      priority: 'high'
+    });
+
+    await notificationService.sendNotification({
+      userId: ride.driver_id,
+      type: 'ride_rating_reminder',
+      title: 'Rate your passenger in 5-star system',
+      content: `Please rate ${passengerName} for "${ride.title}". Tap stars to submit.`,
+      data: {
+        rideId,
+        rateeId: userId,
+        roleOfRater: 'driver',
+        showAfter: reminderAt,
+        trigger: 'ride_rating_reminder'
+      },
+      priority: 'high'
+    });
+
     res.status(201).json({
       success: true,
       data: { booking },
@@ -839,13 +872,8 @@ export const completeRide = async (req, res, next) => {
       .eq('ride_id', rideId)
       .neq('status', 'cancelled');
 
-    const reminderAt = new Date(Date.now() + RIDE_RATING_REMINDER_DELAY_MS).toISOString();
-    const driverName = [ride.driver?.first_name, ride.driver?.last_name].filter(Boolean).join(' ') || 'Driver';
-
-    // 先给乘客发送完成提示 + 延时评分提醒
+    // 给乘客发送完成提示
     for (const booking of (activeBookings || [])) {
-      const passengerName = [booking.passenger?.first_name, booking.passenger?.last_name].filter(Boolean).join(' ') || 'Passenger';
-
       await notificationService.sendNotification({
         userId: booking.passenger_id,
         type: 'ride_completed',
@@ -857,37 +885,6 @@ export const completeRide = async (req, res, next) => {
           trigger: 'ride_completed'
         },
         priority: 'medium'
-      });
-
-      await notificationService.sendNotification({
-        userId: booking.passenger_id,
-        type: 'ride_rating_reminder',
-        title: 'Rate your ride in 5-star system',
-        content: `Please rate ${driverName} for "${ride.title}". Your rating goes into the 5-star trust score.`,
-        data: {
-          rideId,
-          rateeId: ride.driver_id,
-          roleOfRater: 'passenger',
-          showAfter: reminderAt,
-          trigger: 'ride_rating_reminder'
-        },
-        priority: 'high'
-      });
-
-      // 给司机发每位乘客的评分提醒（同样延时）
-      await notificationService.sendNotification({
-        userId: ride.driver_id,
-        type: 'ride_rating_reminder',
-        title: 'Rate your passenger in 5-star system',
-        content: `Please rate ${passengerName} for "${ride.title}". This impacts the 5-star trust score.`,
-        data: {
-          rideId,
-          rateeId: booking.passenger_id,
-          roleOfRater: 'driver',
-          showAfter: reminderAt,
-          trigger: 'ride_rating_reminder'
-        },
-        priority: 'high'
       });
     }
 
