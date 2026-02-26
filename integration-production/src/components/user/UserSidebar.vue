@@ -1159,6 +1159,8 @@ const checkPointsRankingEnabled = async () => {
   position: absolute;
   top: 50%;
   left: 50%;
+  max-width: none;
+  max-height: none;
   user-select: none;
   pointer-events: none;
 }
