@@ -343,7 +343,7 @@
       v-model:open="showUploadModal"
       title="Update Avatar"
       :footer="null"
-      width="400px"
+      width="420px"
     >
       <div class="space-y-4">
         <!-- Image Cropper Area -->
@@ -356,10 +356,10 @@
               @mousemove="onDrag"
               @mouseup="endDrag"
               @mouseleave="endDrag"
-              @touchstart="startDrag"
-              @touchmove="onDrag"
+              @touchstart.prevent="startDrag"
+              @touchmove.prevent="onDrag"
               @touchend="endDrag"
-              @wheel="onWheel"
+              @wheel.prevent="onWheel"
             >
               <img
                 ref="cropImage"
@@ -370,11 +370,19 @@
                 @load="onImageLoad"
                 draggable="false"
               />
-              <div class="crop-overlay">
-                <div class="crop-circle"></div>
-              </div>
+              <!-- Dark overlay with circular cutout via SVG -->
+              <svg class="crop-overlay-svg" viewBox="0 0 300 300">
+                <defs>
+                  <mask id="cropMask">
+                    <rect width="300" height="300" fill="white" />
+                    <circle cx="150" cy="150" r="100" fill="black" />
+                  </mask>
+                </defs>
+                <rect width="300" height="300" fill="rgba(0,0,0,0.55)" mask="url(#cropMask)" />
+                <circle cx="150" cy="150" r="100" fill="none" stroke="#C24D45" stroke-width="2" />
+              </svg>
             </div>
-            <p class="text-xs text-gray-500 text-center mt-3">Drag to move • Scroll to zoom</p>
+            <p class="text-xs text-gray-500 text-center mt-3">Drag to move · Scroll to zoom</p>
             <!-- Zoom slider -->
             <div class="flex items-center justify-center mt-2 px-4">
               <span class="text-xs text-gray-500 mr-2">-</span>
@@ -1133,55 +1141,34 @@ const checkPointsRankingEnabled = async () => {
 
 .crop-wrapper {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 300px;
+  height: 300px;
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 50%;
-  background: #f0f0f0;
+  border-radius: 8px;
+  background: #1a1a1a;
   touch-action: none;
+  cursor: grab;
+}
+
+.crop-wrapper:active {
+  cursor: grabbing;
 }
 
 .crop-image {
   position: absolute;
   top: 50%;
   left: 50%;
-  object-fit: none;
-  transition: transform 0.05s ease, width 0.05s ease, height 0.05s ease;
-  cursor: grab;
   user-select: none;
+  pointer-events: none;
 }
 
-.crop-overlay {
+.crop-overlay-svg {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-
-.crop-circle {
-  width: 100%;
-  height: 100%;
-  border: 3px solid #C24D45;
-  border-radius: 50%;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
-}
-
-.crop-controls {
-  padding: 0 16px;
-}
-
-.crop-controls :deep(.ant-slider-track) {
-  background-color: #C24D45;
-}
-
-.crop-controls :deep(.ant-slider-handle) {
-  border-color: #C24D45;
-}
-
-.crop-controls :deep(.ant-slider-handle:hover) {
-  border-color: #A93C35;
 }
 </style>
