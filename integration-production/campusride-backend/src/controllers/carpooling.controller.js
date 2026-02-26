@@ -5,6 +5,58 @@ import wechatLinkService from '../services/wechat-link.service.js';
 
 const RIDE_RATING_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
 
+// 简化地址，提取关键地点名称用于微信群推送
+const simplifyLocation = (fullAddress) => {
+  if (!fullAddress) return '';
+
+  // 常见地点关键词映射（优先匹配）
+  const knownPlaces = {
+    'cornell': 'Cornell',
+    'jfk': 'JFK',
+    'laguardia': 'LaGuardia',
+    'newark': 'Newark',
+    'penn station': 'Penn Station',
+    'grand central': 'Grand Central',
+    'times square': 'Times Square',
+    'ithaca': 'Ithaca',
+    'syracuse': 'Syracuse',
+    'buffalo': 'Buffalo',
+    'rochester': 'Rochester',
+    'albany': 'Albany',
+    'nyc': 'NYC',
+    'new york': 'NYC',
+    'manhattan': 'Manhattan',
+    'brooklyn': 'Brooklyn',
+    'queens': 'Queens',
+    'boston': 'Boston',
+    'philadelphia': 'Philadelphia',
+    'washington': 'DC',
+    'chicago': 'Chicago'
+  };
+
+  const lowerAddr = fullAddress.toLowerCase();
+
+  // 检查是否包含已知地点
+  for (const [key, value] of Object.entries(knownPlaces)) {
+    if (lowerAddr.includes(key)) {
+      return value;
+    }
+  }
+
+  // 如果没有匹配，取第一个逗号前的部分（通常是地点名或街道）
+  const parts = fullAddress.split(',');
+  if (parts.length > 0) {
+    const firstPart = parts[0].trim();
+    // 如果第一部分太长（超过25字符），尝试取城市名（通常是第二部分）
+    if (firstPart.length > 25 && parts.length > 1) {
+      return parts[1].trim();
+    }
+    return firstPart;
+  }
+
+  return fullAddress.substring(0, 20);
+};
+
 // 创建拼车行程
 export const createRide = async (req, res, next) => {
   try {
@@ -88,8 +140,11 @@ export const createRide = async (req, res, next) => {
     try {
       const rideH5Link = `https://www.campusgo.college/rideshare/${ride.id}`;
       const rideLink = await wechatLinkService.getBestNoticeLink(rideH5Link);
-      const routeSummary = `${departureLocation} → ${destinationLocation}`;
-      const noticeContent = `打车发布  ${title}  ${routeSummary}\n${rideLink}`;
+      // 使用简化地址生成一行摘要
+      const fromSimple = simplifyLocation(departureLocation);
+      const toSimple = simplifyLocation(destinationLocation);
+      const routeSummary = `${fromSimple} → ${toSimple}`;
+      const noticeContent = `🚗 打车 | ${routeSummary}\n${rideLink}`;
 
       await supabaseAdmin
         .from('wxgroup_notice_record')
