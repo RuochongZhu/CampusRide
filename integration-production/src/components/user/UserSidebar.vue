@@ -380,8 +380,8 @@
               <span class="text-xs text-gray-500 mr-2">-</span>
               <a-slider
                 v-model:value="cropScale"
-                :min="50"
-                :max="300"
+                :min="MIN_ZOOM"
+                :max="MAX_ZOOM"
                 :step="5"
                 style="width: 150px"
               />
@@ -501,6 +501,11 @@ const cropY = ref(0)
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
 const originalImageSize = ref({ width: 0, height: 0 })
+const baseDisplayScale = ref(1)
+
+const CROP_VIEWPORT_SIZE = 200
+const MIN_ZOOM = 100
+const MAX_ZOOM = 300
 
 // Nickname editing state
 const isEditingNickname = ref(false)
@@ -547,10 +552,18 @@ const showNetIdSuffixEnabled = useNetIdSuffixPreference()
 const defaultAvatar = '/Profile_Photo.jpg'
 
 // Computed
+const zoomFactor = computed(() => cropScale.value / 100)
+
+const displayedImageSize = computed(() => ({
+  width: originalImageSize.value.width * baseDisplayScale.value * zoomFactor.value,
+  height: originalImageSize.value.height * baseDisplayScale.value * zoomFactor.value
+}))
+
 const cropImageStyle = computed(() => {
-  const scale = cropScale.value / 100
   return {
-    transform: `translate(-50%, -50%) translate(${cropX.value}px, ${cropY.value}px) scale(${scale})`
+    width: `${displayedImageSize.value.width}px`,
+    height: `${displayedImageSize.value.height}px`,
+    transform: `translate(-50%, -50%) translate(${cropX.value}px, ${cropY.value}px)`
   }
 })
 
@@ -739,15 +752,38 @@ const handleFileSelect = (event) => {
     cropScale.value = 100
     cropX.value = 0
     cropY.value = 0
+    originalImageSize.value = { width: 0, height: 0 }
+    baseDisplayScale.value = 1
   }
   reader.readAsDataURL(file)
 }
 
 const onImageLoad = (e) => {
-  originalImageSize.value = {
-    width: e.target.naturalWidth,
-    height: e.target.naturalHeight
+  const width = e.target.naturalWidth || 0
+  const height = e.target.naturalHeight || 0
+  originalImageSize.value = { width, height }
+
+  if (width > 0 && height > 0) {
+    // Always fit the shorter side to crop area at 100% zoom.
+    baseDisplayScale.value = Math.max(CROP_VIEWPORT_SIZE / width, CROP_VIEWPORT_SIZE / height)
+  } else {
+    baseDisplayScale.value = 1
   }
+
+  cropScale.value = 100
+  cropX.value = 0
+  cropY.value = 0
+}
+
+const clampCropOffset = () => {
+  const { width, height } = displayedImageSize.value
+  if (!width || !height) return
+
+  const maxX = Math.max(0, (width - CROP_VIEWPORT_SIZE) / 2)
+  const maxY = Math.max(0, (height - CROP_VIEWPORT_SIZE) / 2)
+
+  cropX.value = Math.min(maxX, Math.max(-maxX, cropX.value))
+  cropY.value = Math.min(maxY, Math.max(-maxY, cropY.value))
 }
 
 // Drag handlers
@@ -766,6 +802,7 @@ const onDrag = (e) => {
   const point = e.touches ? e.touches[0] : e
   cropX.value = point.clientX - dragStart.value.x
   cropY.value = point.clientY - dragStart.value.y
+  clampCropOffset()
 }
 
 const endDrag = () => {
@@ -776,7 +813,7 @@ const onWheel = (e) => {
   e.preventDefault()
   const delta = e.deltaY > 0 ? -10 : 10
   const newScale = cropScale.value + delta
-  cropScale.value = Math.max(50, Math.min(300, newScale))
+  cropScale.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale))
 }
 
 const cancelUpload = () => {
@@ -785,6 +822,8 @@ const cancelUpload = () => {
   cropScale.value = 100
   cropX.value = 0
   cropY.value = 0
+  originalImageSize.value = { width: 0, height: 0 }
+  baseDisplayScale.value = 1
 }
 
 const uploadAvatar = async () => {
@@ -801,22 +840,35 @@ const uploadAvatar = async () => {
     img.onload = async () => {
       // Set canvas size to desired output (256x256 for avatar)
       const outputSize = 256
-      const cropSize = 200 // Size of the crop area in the UI
+      const cropSize = CROP_VIEWPORT_SIZE
       canvas.width = outputSize
       canvas.height = outputSize
 
-      // Calculate crop parameters based on drag position
-      const scale = cropScale.value / 100
-      const ratio = outputSize / cropSize
+      // Match output crop exactly to what the user sees in the 200x200 preview.
+      const naturalWidth = img.naturalWidth || img.width
+      const naturalHeight = img.naturalHeight || img.height
+      const totalScale = baseDisplayScale.value * zoomFactor.value
+      const sourceSize = cropSize / totalScale
+      const rawSourceX = (naturalWidth / 2) - ((cropSize / 2) + cropX.value) / totalScale
+      const rawSourceY = (naturalHeight / 2) - ((cropSize / 2) + cropY.value) / totalScale
+      const sourceX = Math.max(0, Math.min(rawSourceX, naturalWidth - sourceSize))
+      const sourceY = Math.max(0, Math.min(rawSourceY, naturalHeight - sourceSize))
 
-      // Scale the drag offset to match output size
-      const offsetX = (outputSize / 2) + (cropX.value * ratio) - (img.width * scale * ratio / 2)
-      const offsetY = (outputSize / 2) + (cropY.value * ratio) - (img.height * scale * ratio / 2)
-
-      // Draw the image with crop settings
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, outputSize, outputSize)
-      ctx.drawImage(img, offsetX, offsetY, img.width * scale * ratio, img.height * scale * ratio)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(
+        img,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        outputSize,
+        outputSize
+      )
 
       // Convert to base64
       const croppedImage = canvas.toDataURL('image/jpeg', 0.9)
@@ -850,6 +902,8 @@ const uploadAvatar = async () => {
         cropScale.value = 100
         cropX.value = 0
         cropY.value = 0
+        originalImageSize.value = { width: 0, height: 0 }
+        baseDisplayScale.value = 1
       } else {
         throw new Error(uploadRes.data.error?.message || 'Failed to upload avatar')
       }
@@ -1041,6 +1095,13 @@ watch(
   }
 )
 
+watch(
+  () => cropScale.value,
+  () => {
+    clampCropOffset()
+  }
+)
+
 // Check if points & ranking feature is enabled
 const checkPointsRankingEnabled = async () => {
   try {
@@ -1078,19 +1139,15 @@ const checkPointsRankingEnabled = async () => {
   overflow: hidden;
   border-radius: 50%;
   background: #f0f0f0;
+  touch-action: none;
 }
 
 .crop-image {
   position: absolute;
   top: 50%;
   left: 50%;
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
   object-fit: none;
-  transform-origin: center center;
-  transition: transform 0.05s ease;
+  transition: transform 0.05s ease, width 0.05s ease, height 0.05s ease;
   cursor: grab;
   user-select: none;
 }
