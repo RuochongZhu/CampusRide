@@ -618,6 +618,35 @@ export const bookRide = async (req, res, next) => {
       priority: 'medium'
     });
 
+    await notificationService.sendNotification({
+      userId,
+      type: 'ride_payment_confirmed',
+      title: 'Payment confirmed',
+      content: `Payment confirmed for "${ride.title}" ($${Number(totalPrice).toFixed(2)}).`,
+      data: {
+        rideId,
+        bookingId: booking.id,
+        amount: totalPrice,
+        trigger: 'ride_payment_confirmed'
+      },
+      priority: 'medium'
+    });
+
+    await notificationService.sendNotification({
+      userId: ride.driver_id,
+      type: 'ride_payment_received',
+      title: 'Payment received',
+      content: `Payment received from ${passengerName} for "${ride.title}" ($${Number(totalPrice).toFixed(2)}).`,
+      data: {
+        rideId,
+        bookingId: booking.id,
+        passengerId: userId,
+        amount: totalPrice,
+        trigger: 'ride_payment_received'
+      },
+      priority: 'medium'
+    });
+
     // 评分提醒：在行程出发时间 + 2小时后，向双方发送系统消息中的5星评分入口
     const reminderAt = new Date(new Date(ride.departure_time).getTime() + RIDE_RATING_REMINDER_DELAY_MS).toISOString();
 
@@ -887,6 +916,18 @@ export const completeRide = async (req, res, next) => {
         priority: 'medium'
       });
     }
+
+    await notificationService.sendNotification({
+      userId: ride.driver_id,
+      type: 'ride_completed',
+      title: 'Ride completed',
+      content: `You marked "${ride.title}" as completed.`,
+      data: {
+        rideId,
+        trigger: 'ride_completed'
+      },
+      priority: 'medium'
+    });
 
     res.json({
       success: true,

@@ -230,8 +230,13 @@
                     @click="openRideFromMessagePrompt(null, prompt)"
                   >
                     <div class="flex items-center space-x-2 md:space-x-3">
-                      <div class="w-10 h-10 md:w-12 md:h-12 bg-amber-500 rounded-full flex items-center justify-center text-white">
-                        ⭐
+                      <div
+                        :class="[
+                          'w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white',
+                          getRidePromptBadgeClass(prompt.type)
+                        ]"
+                      >
+                        {{ getRidePromptIcon(prompt.type) }}
                       </div>
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between gap-2">
@@ -240,7 +245,9 @@
                         </div>
                         <p class="text-xs md:text-sm text-gray-600 mt-1">{{ prompt.content }}</p>
                         <div class="flex items-center space-x-2 mt-1">
-                          <a-tag color="gold" size="small" class="text-xs">5-star rating</a-tag>
+                          <a-tag :color="getRidePromptTagColor(prompt.type)" size="small" class="text-xs">
+                            {{ getRidePromptTagText(prompt.type) }}
+                          </a-tag>
                         </div>
                       </div>
                     </div>
@@ -764,6 +771,14 @@ const filteredThreads = computed(() => {
   })
 })
 
+const rideNotificationTypes = new Set([
+  'ride_new_booking',
+  'ride_booking_confirmed',
+  'ride_payment_confirmed',
+  'ride_payment_received',
+  'ride_completed',
+  'ride_rating_reminder'
+])
 
 const parseNotificationData = (payload) => {
   if (!payload) return {}
@@ -775,6 +790,77 @@ const parseNotificationData = (payload) => {
     }
   }
   return payload
+}
+
+const isRideLifecycleNotification = (notification) => {
+  return rideNotificationTypes.has(notification?.type)
+}
+
+const getRidePromptBadgeClass = (type) => {
+  const classMap = {
+    ride_new_booking: 'bg-blue-500',
+    ride_booking_confirmed: 'bg-green-500',
+    ride_payment_confirmed: 'bg-emerald-500',
+    ride_payment_received: 'bg-cyan-500',
+    ride_completed: 'bg-purple-500',
+    ride_rating_reminder: 'bg-amber-500'
+  }
+  return classMap[type] || 'bg-gray-500'
+}
+
+const getRidePromptIcon = (type) => {
+  const iconMap = {
+    ride_new_booking: '🧾',
+    ride_booking_confirmed: '✅',
+    ride_payment_confirmed: '💳',
+    ride_payment_received: '💰',
+    ride_completed: '🏁',
+    ride_rating_reminder: '⭐'
+  }
+  return iconMap[type] || '🔔'
+}
+
+const getRidePromptTagColor = (type) => {
+  const colorMap = {
+    ride_new_booking: 'blue',
+    ride_booking_confirmed: 'green',
+    ride_payment_confirmed: 'cyan',
+    ride_payment_received: 'cyan',
+    ride_completed: 'purple',
+    ride_rating_reminder: 'gold'
+  }
+  return colorMap[type] || 'default'
+}
+
+const getRidePromptTagText = (type) => {
+  const textMap = {
+    ride_new_booking: 'Booking',
+    ride_booking_confirmed: 'Confirmed',
+    ride_payment_confirmed: 'Payment',
+    ride_payment_received: 'Payment',
+    ride_completed: 'Completed',
+    ride_rating_reminder: '5-star rating'
+  }
+  return textMap[type] || 'Ride'
+}
+
+const mapNotificationToSystemMessage = (notification) => {
+  return {
+    id: `notif-${notification.id}`,
+    notification_id: notification.id,
+    source: 'notification',
+    sender_id: 'system',
+    sender_type: 'admin',
+    sender_first_name: 'System',
+    sender_last_name: 'Notice',
+    sender_avatar_url: null,
+    content: notification.content || notification.title || 'Ride update',
+    message_type: notification.type || 'notification',
+    is_pinned: false,
+    is_read: !!notification.is_read,
+    created_at: notification.created_at,
+    updated_at: notification.updated_at || notification.created_at
+  }
 }
 
 const isRidePromptDue = (prompt) => {
@@ -868,6 +954,16 @@ const isSameDay = (date1, date2) => {
 const threadsError = ref(null)
 const messagesError = ref(null)
 
+const refreshRideNotificationState = async () => {
+  await loadRideMessagePrompts()
+
+  if (isSystemMessagesThread.value) {
+    await loadSystemMessages()
+    syncSystemThreadMessages()
+    nextTick(() => scrollToBottom())
+  }
+}
+
 // Socket.IO connection
 const initializeSocket = () => {
   if (!currentUserId.value) return
@@ -913,6 +1009,15 @@ const initializeSocket = () => {
       if (newMessage.thread_id !== selectedThreadId.value && newMessage.sender_id !== currentUserId.value) {
         message.info(`New message: ${newMessage.content.substring(0, 50)}...`)
       }
+    })
+
+    socket.value.on('notification', () => {
+      // Notification rows are persisted in DB; delay a bit to fetch the latest state.
+      setTimeout(() => {
+        refreshRideNotificationState().catch((error) => {
+          console.warn('Failed to refresh ride notifications:', error)
+        })
+      }, 300)
     })
 
     // Listen for typing indicator
@@ -1184,31 +1289,75 @@ const selectSystemMessagesThread = async () => {
 
   // Mark system messages as read
   await messagesAPI.markSystemMessagesAsRead().catch(() => {})
+  await markRideNotificationsAsRead()
 
   // Scroll to bottom after messages load
   nextTick(() => scrollToBottom())
 }
 
+const markRideNotificationsAsRead = async () => {
+  const unreadRideNotificationIds = systemMessages.value
+    .filter(item => item.source === 'notification' && !item.is_read && item.notification_id)
+    .map(item => item.notification_id)
+
+  if (unreadRideNotificationIds.length === 0) return
+
+  await Promise.allSettled(
+    [...new Set(unreadRideNotificationIds)].map((notificationId) => notificationsAPI.markAsRead(notificationId))
+  )
+
+  const unreadSet = new Set(unreadRideNotificationIds)
+  systemMessages.value = systemMessages.value.map((item) => {
+    if (item.source === 'notification' && unreadSet.has(item.notification_id)) {
+      return { ...item, is_read: true }
+    }
+    return item
+  })
+  syncSystemThreadMessages()
+
+  rideMessagePrompts.value = rideMessagePrompts.value.map((prompt) => {
+    if (unreadSet.has(prompt.id)) {
+      return { ...prompt, is_read: true }
+    }
+    return prompt
+  })
+}
+
 // Load system messages from backend API
 const loadSystemMessages = async () => {
   try {
-    const response = await messagesAPI.getSystemMessages({ limit: 100 })
-    if (response.data?.success) {
-      systemMessages.value = response.data.data.messages || []
+    const [systemMessageResult, rideNotificationResult] = await Promise.allSettled([
+      messagesAPI.getSystemMessages({ limit: 100 }),
+      notificationsAPI.getNotifications({ limit: 100 })
+    ])
 
-      // Update preview and last message time
-      if (systemMessages.value.length > 0) {
-        const lastMessage = systemMessages.value[systemMessages.value.length - 1]
-        const preview = lastMessage.content || ''
-        systemMessagesPreview.value = preview.length > 50 ? preview.substring(0, 50) + '...' : preview
-        lastSystemMessageTime.value = new Date(lastMessage.created_at)
+    const baseSystemMessages = systemMessageResult.status === 'fulfilled' && systemMessageResult.value.data?.success
+      ? (systemMessageResult.value.data.data.messages || [])
+      : []
+    const rideNotificationsRaw = rideNotificationResult.status === 'fulfilled'
+      ? (rideNotificationResult.value.data?.data?.notifications || [])
+      : []
 
-        // Count unread messages
-        systemMessagesUnreadCount.value = systemMessages.value.filter(m => !m.is_read).length
-      } else {
-        systemMessagesPreview.value = 'No messages yet'
-        systemMessagesUnreadCount.value = 0
-      }
+    const rideNotifications = rideNotificationsRaw
+      .filter(isRideLifecycleNotification)
+      .filter(isRidePromptDue)
+      .map(mapNotificationToSystemMessage)
+
+    systemMessages.value = [...baseSystemMessages, ...rideNotifications]
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+
+    // Update preview and last message time
+    if (systemMessages.value.length > 0) {
+      const lastMessage = systemMessages.value[systemMessages.value.length - 1]
+      const preview = lastMessage.content || ''
+      systemMessagesPreview.value = preview.length > 50 ? preview.substring(0, 50) + '...' : preview
+      lastSystemMessageTime.value = new Date(lastMessage.created_at)
+
+      // Count unread messages
+      systemMessagesUnreadCount.value = systemMessages.value.filter(m => !m.is_read).length
+    } else {
+      systemMessagesPreview.value = 'No messages yet'
+      systemMessagesUnreadCount.value = 0
     }
   } catch (error) {
     console.error('Failed to load system messages:', error)
@@ -1674,8 +1823,7 @@ const loadRideMessagePrompts = async () => {
     myUpcomingRides.value = uniqueRides.slice(0, 6)
 
     const notifications = notificationsResponse.data?.data?.notifications || []
-    const rideTypes = new Set(['ride_new_booking', 'ride_booking_confirmed', 'ride_rating_reminder'])
-    rideMessagePrompts.value = notifications.filter(item => rideTypes.has(item.type))
+    rideMessagePrompts.value = notifications.filter(isRideLifecycleNotification)
   } catch (error) {
     console.error('Failed to load ride prompts:', error)
     myUpcomingRides.value = []
