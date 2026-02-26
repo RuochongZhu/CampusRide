@@ -103,6 +103,8 @@
               :src="getItemImage(item)"
               :alt="item.title"
               :class="viewMode === 'grid' ? 'w-full h-32 md:h-48 object-contain bg-gray-100' : 'w-full h-full object-contain bg-gray-100 rounded-lg'"
+              class="cursor-zoom-in"
+              @click.stop="openImagePreview(item, 0)"
             />
           </div>
           <div :class="viewMode === 'grid' ? 'p-2 md:p-4' : 'flex-grow flex flex-col justify-between min-w-0'">
@@ -128,9 +130,11 @@
                 <a-tag :color="getConditionColor(item.condition)" class="text-xs md:text-sm !m-0">{{ formatCondition(item.condition) }}</a-tag>
               </div>
               <div class="mt-2 md:mt-4 flex items-center justify-between">
-                <div class="hidden md:flex items-center space-x-2">
-                  <ClickableAvatar v-if="item.seller" :user="item.seller" size="small" @message="handleUserMessage" />
-                  <span class="text-sm text-gray-500">{{ getSellerName(item.seller) }}</span>
+                <div class="flex items-center space-x-2 min-w-0">
+                  <div v-if="item.seller" @click.stop>
+                    <ClickableAvatar :user="item.seller" size="small" @message="handleUserMessage" />
+                  </div>
+                  <span class="text-xs md:text-sm text-gray-500 truncate">{{ getSellerName(item.seller) }}</span>
                 </div>
                 <div class="flex items-center space-x-1 md:space-x-2 text-gray-400 text-xs md:text-sm">
                   <EyeOutlined /> <span>{{ item.views_count || 0 }}</span>
@@ -233,7 +237,8 @@
             <img
               :src="img"
               :alt="`${selectedItem.title} ${index + 1}`"
-              class="w-full h-64 object-contain bg-gray-100 rounded-lg"
+              class="w-full h-64 object-contain bg-gray-100 rounded-lg cursor-zoom-in"
+              @click.stop="openImagePreview(selectedItem, index)"
             />
           </div>
         </div>
@@ -249,8 +254,8 @@
         <a-tag :color="getConditionColor(selectedItem.condition)">{{ formatCondition(selectedItem.condition) }}</a-tag>
       </div>
       <p class="text-gray-700">{{ selectedItem.description }}</p>
-      <div class="flex items-center space-x-4 pt-4 border-t">
-        <ClickableAvatar :user="selectedItem.seller" @message="handleUserMessage" />
+      <div class="flex items-center space-x-4 pt-4 border-t" @click.stop>
+        <ClickableAvatar v-if="selectedItem.seller" :user="selectedItem.seller" @message="handleUserMessage" />
         <div>
           <p class="font-medium">{{ getSellerName(selectedItem.seller) }}</p>
           <p class="text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
@@ -361,11 +366,57 @@
       </div>
     </div>
   </a-modal>
+
+  <!-- Fullscreen Image Preview -->
+  <div
+    v-if="imagePreviewVisible"
+    class="marketplace-fullscreen-overlay"
+    @click.self="closeImagePreview"
+  >
+    <button
+      type="button"
+      class="marketplace-fullscreen-close"
+      aria-label="Close image preview"
+      @click="closeImagePreview"
+    >
+      ×
+    </button>
+
+    <div
+      class="marketplace-fullscreen-slider"
+      @touchstart.passive="onPreviewTouchStart"
+      @touchend.passive="onPreviewTouchEnd"
+    >
+      <div
+        class="marketplace-fullscreen-track"
+        :style="{ transform: `translateX(-${imagePreviewIndex * 100}%)` }"
+      >
+        <div
+          v-for="(img, index) in imagePreviewImages"
+          :key="`preview_${index}`"
+          class="marketplace-fullscreen-slide"
+        >
+          <img
+            :src="img"
+            :alt="`Preview ${index + 1}`"
+            class="marketplace-fullscreen-image"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="imagePreviewImages.length > 1"
+      class="marketplace-fullscreen-indicator"
+    >
+      {{ imagePreviewIndex + 1 }} / {{ imagePreviewImages.length }}
+    </div>
+  </div>
 </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -399,6 +450,10 @@ const showEditModal = ref(false)
 const editSubmitting = ref(false)
 const editUploadingImages = ref(false)
 const editFileInput = ref(null)
+const imagePreviewVisible = ref(false)
+const imagePreviewImages = ref([])
+const imagePreviewIndex = ref(0)
+const previewTouchStartX = ref(0)
 
 // Current user (get from localStorage)
 const currentUser = ref(null)
@@ -560,6 +615,64 @@ const isSelectedItemOwner = computed(() => {
   return selectedItem.value.seller_id === userId || selectedItem.value.seller?.id === userId
 })
 
+const normalizeSeller = (seller, item = {}) => {
+  const sellerData = Array.isArray(seller) ? seller[0] : seller
+  if (sellerData && typeof sellerData === 'object') return sellerData
+
+  const fallbackId = item?.seller_id || item?.user_id || null
+  const fallbackEmail = item?.seller_email || item?.email || ''
+  const fallbackFirstName = item?.seller_first_name || item?.first_name || ''
+  const fallbackLastName = item?.seller_last_name || item?.last_name || ''
+  const fallbackAvatar = item?.seller_avatar_url || item?.avatar_url || ''
+  const fallbackUniversity = item?.seller_university || item?.university || ''
+
+  if (!fallbackId && !fallbackEmail && !fallbackFirstName && !fallbackLastName) {
+    return null
+  }
+
+  return {
+    id: fallbackId,
+    email: fallbackEmail,
+    first_name: fallbackFirstName,
+    last_name: fallbackLastName,
+    avatar_url: fallbackAvatar,
+    university: fallbackUniversity
+  }
+}
+
+const normalizeImages = (images, image) => {
+  if (Array.isArray(images)) {
+    return images.filter((img) => typeof img === 'string' && img.length > 0)
+  }
+  if (typeof images === 'string' && images.length > 0) {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) {
+        return parsed.filter((img) => typeof img === 'string' && img.length > 0)
+      }
+    } catch (_) {
+      return [images]
+    }
+    return [images]
+  }
+  if (image) return [image]
+  return []
+}
+
+const normalizeMarketplaceItem = (item = {}) => {
+  const normalized = {
+    ...item,
+    seller: normalizeSeller(item.seller, item),
+    images: normalizeImages(item.images, item.image)
+  }
+
+  if (normalized.images.length > 0) {
+    normalized.image = normalized.images[0]
+  }
+
+  return normalized
+}
+
 // Methods
 const fetchItems = async () => {
   loading.value = true
@@ -574,7 +687,7 @@ const fetchItems = async () => {
     }
 
     const response = await marketplaceAPI.getItems(params)
-    items.value = response.data.data.items || []
+    items.value = (response.data.data.items || []).map(normalizeMarketplaceItem)
   } catch (error) {
     console.error('Failed to fetch items:', error)
     message.error('Failed to load marketplace items')
@@ -601,7 +714,7 @@ const openItemFromRoute = async () => {
       }
       return
     }
-    selectedItem.value = item
+    selectedItem.value = normalizeMarketplaceItem(item)
     showDetailsModal.value = true
   } catch (error) {
     console.error('Failed to load item detail:', error)
@@ -631,7 +744,7 @@ const handleSearch = async () => {
       category: selectedCategory.value !== 'All' ? selectedCategory.value : undefined
     }
     const response = await marketplaceAPI.searchItems(params)
-    items.value = response.data.data.items || []
+    items.value = (response.data.data.items || []).map(normalizeMarketplaceItem)
   } catch (error) {
     console.error('Search failed:', error)
     message.error('Search failed')
@@ -710,7 +823,7 @@ const handlePostItem = async () => {
 }
 
 const viewItemDetails = (item) => {
-  selectedItem.value = item
+  selectedItem.value = normalizeMarketplaceItem(item)
   showDetailsModal.value = true
 }
 
@@ -769,20 +882,20 @@ const handleUpdateItem = async () => {
     if (updated) {
       // Preserve client-only fields that update endpoint doesn't compute (e.g. is_favorited).
       const previous = selectedItem.value || {}
-      selectedItem.value = {
+      selectedItem.value = normalizeMarketplaceItem({
         ...previous,
         ...updated,
         is_favorited: previous.is_favorited ?? false
-      }
+      })
 
       const idx = items.value.findIndex(i => i.id === updated.id)
       if (idx !== -1) {
         const existing = items.value[idx] || {}
-        items.value[idx] = {
+        items.value[idx] = normalizeMarketplaceItem({
           ...existing,
           ...updated,
           is_favorited: existing.is_favorited ?? false
-        }
+        })
       }
     }
 
@@ -855,6 +968,53 @@ const getItemImages = (item) => {
 }
 
 const selectedItemImages = computed(() => getItemImages(selectedItem.value))
+
+const openImagePreview = (item, startIndex = 0) => {
+  const images = getItemImages(item)
+  if (images.length === 0) return
+
+  imagePreviewImages.value = images
+  imagePreviewIndex.value = Math.min(Math.max(startIndex, 0), images.length - 1)
+  imagePreviewVisible.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+const closeImagePreview = () => {
+  imagePreviewVisible.value = false
+  imagePreviewImages.value = []
+  imagePreviewIndex.value = 0
+  previewTouchStartX.value = 0
+  document.body.style.overflow = ''
+}
+
+const showNextPreviewImage = () => {
+  if (imagePreviewIndex.value >= imagePreviewImages.value.length - 1) return
+  imagePreviewIndex.value += 1
+}
+
+const showPreviousPreviewImage = () => {
+  if (imagePreviewIndex.value <= 0) return
+  imagePreviewIndex.value -= 1
+}
+
+const onPreviewTouchStart = (event) => {
+  previewTouchStartX.value = event.changedTouches?.[0]?.clientX || 0
+}
+
+const onPreviewTouchEnd = (event) => {
+  const touchEndX = event.changedTouches?.[0]?.clientX || 0
+  const deltaX = touchEndX - previewTouchStartX.value
+  const minSwipeDistance = 40
+
+  if (Math.abs(deltaX) < minSwipeDistance) return
+
+  // Follow requested behavior: swipe right to go to next image.
+  if (deltaX > 0) {
+    showNextPreviewImage()
+  } else {
+    showPreviousPreviewImage()
+  }
+}
 
 const extractFilenameFromUrl = (url) => {
   if (!url || typeof url !== 'string') return ''
@@ -1063,6 +1223,10 @@ onMounted(async () => {
   await fetchItems()
   await openItemFromRoute()
 })
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = ''
+})
 </script>
 
 <style scoped>
@@ -1107,5 +1271,70 @@ onMounted(async () => {
 .marketplace-image-slide {
   flex: 0 0 100%;
   scroll-snap-align: center;
+}
+
+.marketplace-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marketplace-fullscreen-close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.marketplace-fullscreen-slider {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.marketplace-fullscreen-track {
+  height: 100%;
+  display: flex;
+  transition: transform 0.25s ease-out;
+}
+
+.marketplace-fullscreen-slide {
+  min-width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(56px, env(safe-area-inset-top)) 16px max(56px, env(safe-area-inset-bottom));
+}
+
+.marketplace-fullscreen-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.marketplace-fullscreen-indicator {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 9999px;
+  padding: 6px 12px;
 }
 </style>
