@@ -37,7 +37,7 @@ const routes = [
   },
   {
     path: '/home',
-    redirect: '/activities'
+    redirect: '/marketplace'
   },
   {
     path: '/login',
@@ -347,7 +347,7 @@ router.beforeEach((to, from, next) => {
       query: { redirect: to.fullPath }
     })
   } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
-    next('/activities')
+    next('/marketplace')
   } else {
     next()
   }
