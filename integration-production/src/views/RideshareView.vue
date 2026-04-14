@@ -341,7 +341,7 @@
               </button>
             </div>
 
-            <div class="inline-flex bg-gray-100 rounded-full p-1 mb-4">
+            <div class="inline-flex bg-gray-100 rounded-full p-1 mb-2">
               <button
                 :class="[
                   'px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all',
@@ -361,6 +361,9 @@
                 I Booked
               </button>
             </div>
+            <p class="text-xs text-gray-500 mb-4">
+              To cancel a reservation or message the driver, open <strong>I Booked</strong> and use the buttons on that booking.
+            </p>
 
             <div v-if="myTripsLoading" class="text-sm text-gray-500 py-6">Loading your trips...</div>
 
@@ -382,12 +385,19 @@
                   <a-tag :color="getRideStatusColor(ride.status)" class="!m-0">{{ formatRideStatus(ride.status) }}</a-tag>
                 </div>
 
-                <div class="mt-3 flex items-center gap-2">
+                <div class="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     class="px-3 py-1.5 text-xs md:text-sm border rounded-md hover:bg-gray-50"
                     @click="viewRideDetails(ride)"
                   >
                     View
+                  </button>
+                  <button
+                    class="px-3 py-1.5 text-xs md:text-sm border border-red-200 text-red-700 rounded-md hover:bg-red-50"
+                    :disabled="isTripActionLoading(`ride-chat-driver-${ride.id}`)"
+                    @click.stop="openRideGroupChatForPostedRide(ride)"
+                  >
+                    {{ isTripActionLoading(`ride-chat-driver-${ride.id}`) ? 'Opening...' : 'Ride group chat' }}
                   </button>
                   <button
                     v-if="canCompleteRide(ride)"
@@ -410,28 +420,47 @@
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
-                    <p class="font-semibold text-sm md:text-base truncate">{{ booking.ride?.title || 'Ride' }}</p>
+                    <p class="font-semibold text-sm md:text-base truncate">{{ getBookingRide(booking)?.title || 'Ride' }}</p>
                     <p class="text-xs md:text-sm text-gray-600 mt-1">
-                      {{ booking.ride?.departure_location || '-' }} → {{ booking.ride?.destination_location || '-' }}
+                      {{ getBookingRide(booking)?.departure_location || '-' }} → {{ getBookingRide(booking)?.destination_location || '-' }}
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">{{ formatDateTime(booking.ride?.departure_time) }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ formatDateTime(getBookingRide(booking)?.departure_time) }}</p>
                     <p class="text-xs text-gray-500 mt-1">Seats booked: {{ booking.seats_booked || 1 }}</p>
                   </div>
                   <a-tag :color="getRideStatusColor(booking.status)" class="!m-0">{{ formatRideStatus(booking.status) }}</a-tag>
                 </div>
 
-                <div class="mt-3 flex items-center gap-2">
+                <div class="mt-3 flex flex-wrap items-center gap-2">
                   <button
-                    v-if="booking.ride"
+                    v-if="getBookingRide(booking)"
                     class="px-3 py-1.5 text-xs md:text-sm border rounded-md hover:bg-gray-50"
-                    @click="viewRideDetails(booking.ride)"
+                    @click="viewRideDetails(getBookingRide(booking))"
                   >
                     View
                   </button>
                   <button
-                    v-if="canCancelBooking(booking)"
-                    class="px-3 py-1.5 text-xs md:text-sm bg-gray-700 hover:bg-gray-800 text-white rounded-md disabled:bg-gray-400"
-                    :disabled="isTripActionLoading(`cancel-${booking.id}`)"
+                    v-if="getBookingRide(booking)?.driver?.id"
+                    type="button"
+                    class="px-3 py-1.5 text-xs md:text-sm border border-blue-200 text-blue-800 rounded-md hover:bg-blue-50"
+                    @click.stop="messageDriverFromBooking(booking)"
+                  >
+                    Message driver
+                  </button>
+                  <button
+                    v-if="booking.status === 'confirmed'"
+                    type="button"
+                    class="px-3 py-1.5 text-xs md:text-sm border border-red-200 text-red-700 rounded-md hover:bg-red-50"
+                    :disabled="isTripActionLoading(`ride-chat-${booking.id}`)"
+                    @click.stop="openRideGroupChatForBooking(booking)"
+                  >
+                    {{ isTripActionLoading(`ride-chat-${booking.id}`) ? 'Opening...' : 'Ride group chat' }}
+                  </button>
+                  <button
+                    v-if="canShowCancelBooking(booking)"
+                    type="button"
+                    class="px-3 py-1.5 text-xs md:text-sm bg-gray-700 hover:bg-gray-800 text-white rounded-md disabled:bg-gray-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="!canCancelBooking(booking) || isTripActionLoading(`cancel-${booking.id}`)"
+                    :title="cancelBookingDisabledReason(booking) || 'Cancel before departure'"
                     @click="cancelBookingFromMyTrips(booking)"
                   >
                     {{ isTripActionLoading(`cancel-${booking.id}`) ? 'Cancelling...' : 'Cancel Booking' }}
@@ -577,13 +606,19 @@
           </template>
         </div>
       </a-modal>
+
+      <GroupChatModal
+        v-model:visible="showRideGroupChatModal"
+        :group="rideGroupChatGroup || {}"
+        :chat-active="rideGroupChatActive"
+      />
     </main>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { notification } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {
@@ -597,6 +632,7 @@ import {
 } from 'ant-design-vue';
 import { carpoolingAPI } from '@/utils/api';
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue';
+import GroupChatModal from '@/components/groups/GroupChatModal.vue';
 import { getPublicUserName } from '@/utils/publicName';
 
 // Window width for responsive pagination
@@ -659,6 +695,10 @@ const bookingForm = ref({
   specialRequests: ''
 });
 
+const showRideGroupChatModal = ref(false);
+const rideGroupChatGroup = ref(null);
+const rideGroupChatActive = ref(true);
+
 // Google Maps refs
 const passengerRequestOriginInput = ref(null);
 const passengerRequestDestInput = ref(null);
@@ -666,6 +706,14 @@ const driverOriginInput = ref(null);
 const driverDestInput = ref(null);
 let googleMapsLoaded = false;
 const route = useRoute();
+const router = useRouter();
+
+const getBookingRide = (booking) => {
+  if (!booking) return null;
+  const r = booking.ride ?? booking.rides;
+  if (!r) return null;
+  return Array.isArray(r) ? r[0] : r;
+};
 
 // Initialize Google Maps Autocomplete
 const initGoogleMaps = async () => {
@@ -1136,11 +1184,114 @@ const canCompleteRide = (ride) => {
   return ['active', 'full'].includes(ride?.status);
 };
 
+/** Show cancel control for any booking that is not in a terminal state */
+const canShowCancelBooking = (booking) => {
+  if (!booking) return false;
+  const s = String(booking.status || '').toLowerCase();
+  return !['cancelled', 'completed', 'no_show'].includes(s);
+};
+
+/** Whether the cancel action is allowed (before departure) */
 const canCancelBooking = (booking) => {
-  if (!booking || booking.status === 'cancelled' || booking.status === 'completed') return false;
-  const departureTime = booking.ride?.departure_time ? new Date(booking.ride.departure_time) : null;
-  if (!departureTime || Number.isNaN(departureTime.getTime())) return false;
-  return departureTime.getTime() - Date.now() >= 2 * 60 * 60 * 1000;
+  if (!canShowCancelBooking(booking)) return false;
+  const ride = getBookingRide(booking);
+  const departureTime = ride?.departure_time ? new Date(ride.departure_time) : null;
+  if (!departureTime || Number.isNaN(departureTime.getTime())) return true;
+  return Date.now() < departureTime.getTime();
+};
+
+const cancelBookingDisabledReason = (booking) => {
+  if (!canShowCancelBooking(booking)) return '';
+  if (canCancelBooking(booking)) return '';
+  const ride = getBookingRide(booking);
+  const departureTime = ride?.departure_time ? new Date(ride.departure_time) : null;
+  if (!departureTime || Number.isNaN(departureTime.getTime())) {
+    return 'Cannot cancel: missing departure time for this ride';
+  }
+  if (Date.now() >= departureTime.getTime()) {
+    return 'Cannot cancel after departure time';
+  }
+  return '';
+};
+
+const messageDriverFromBooking = (booking) => {
+  const ride = getBookingRide(booking);
+  const driver = ride?.driver;
+  if (!driver?.id) {
+    notification.warning({
+      message: 'Unavailable',
+      description: 'Could not find the driver for this ride.'
+    });
+    return;
+  }
+  router.push({
+    path: '/messages',
+    query: {
+      userId: String(driver.id),
+      userName: getPublicUserName(driver, 'Driver')
+    }
+  });
+};
+
+const openRideGroupChatForBooking = async (booking) => {
+  const ride = getBookingRide(booking);
+  const rideId = ride?.id;
+  if (!rideId) {
+    notification.warning({ message: 'Unavailable', description: 'Missing ride information.' });
+    return;
+  }
+  const loadingKey = `ride-chat-${booking.id}`;
+  try {
+    setTripActionLoading(loadingKey, true);
+    const res = await carpoolingAPI.getRideGroupChat(rideId);
+    const payload = res.data?.data;
+    if (!payload?.group?.id) {
+      notification.warning({
+        message: 'Group chat not ready',
+        description: payload?.message || 'The group chat is created when someone books this ride.'
+      });
+      return;
+    }
+    rideGroupChatGroup.value = payload.group;
+    rideGroupChatActive.value = payload.chatActive !== false;
+    showRideGroupChatModal.value = true;
+  } catch (error) {
+    console.error('getRideGroupChat:', error);
+    notification.error({
+      message: 'Could not open chat',
+      description: error.response?.data?.error?.message || 'Please try again.'
+    });
+  } finally {
+    setTripActionLoading(loadingKey, false);
+  }
+};
+
+const openRideGroupChatForPostedRide = async (ride) => {
+  if (!ride?.id) return;
+  const loadingKey = `ride-chat-driver-${ride.id}`;
+  try {
+    setTripActionLoading(loadingKey, true);
+    const res = await carpoolingAPI.getRideGroupChat(ride.id);
+    const payload = res.data?.data;
+    if (!payload?.group?.id) {
+      notification.info({
+        message: 'No group chat yet',
+        description: payload?.message || 'The group chat appears after a passenger books your ride.'
+      });
+      return;
+    }
+    rideGroupChatGroup.value = payload.group;
+    rideGroupChatActive.value = payload.chatActive !== false;
+    showRideGroupChatModal.value = true;
+  } catch (error) {
+    console.error('getRideGroupChat:', error);
+    notification.error({
+      message: 'Could not open chat',
+      description: error.response?.data?.error?.message || 'Please try again.'
+    });
+  } finally {
+    setTripActionLoading(loadingKey, false);
+  }
 };
 
 const completeRideFromMyTrips = async (ride) => {
@@ -1171,6 +1322,13 @@ const completeRideFromMyTrips = async (ride) => {
 
 const cancelBookingFromMyTrips = async (booking) => {
   if (!booking?.id) return;
+  if (!canCancelBooking(booking)) {
+    notification.warning({
+      message: 'Cannot cancel',
+      description: cancelBookingDisabledReason(booking) || 'This booking cannot be cancelled.'
+    });
+    return;
+  }
 
   const loadingKey = `cancel-${booking.id}`;
   try {

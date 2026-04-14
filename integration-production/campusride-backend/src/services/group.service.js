@@ -405,6 +405,33 @@ class GroupService {
     }
   }
 
+  /**
+   * Ride carpool groups: messaging allowed only before chat_expires_at (departure + 1h).
+   */
+  async checkRideCarpoolChatActive(groupId) {
+    try {
+      const { data: g, error } = await supabaseAdmin
+        .from('groups')
+        .select('group_kind, chat_expires_at')
+        .eq('id', groupId)
+        .single();
+
+      if (error || !g) {
+        return { active: false, reason: 'NOT_FOUND' };
+      }
+      if (g.group_kind !== 'ride_carpool') {
+        return { active: true };
+      }
+      if (g.chat_expires_at && new Date(g.chat_expires_at) < new Date()) {
+        return { active: false, reason: 'CHAT_EXPIRED' };
+      }
+      return { active: true };
+    } catch (e) {
+      console.error('checkRideCarpoolChatActive:', e);
+      return { active: false, reason: 'ERROR' };
+    }
+  }
+
   // 获取小组消息
   async getGroupMessages(groupId, params = {}) {
     try {
@@ -445,6 +472,15 @@ class GroupService {
   // 发送小组消息
   async sendGroupMessage(groupId, userId, content) {
     try {
+      const chatCheck = await this.checkRideCarpoolChatActive(groupId);
+      if (!chatCheck.active && chatCheck.reason === 'CHAT_EXPIRED') {
+        return {
+          success: false,
+          error: 'This ride group chat has ended.',
+          code: 'CHAT_EXPIRED'
+        };
+      }
+
       // 创建消息
       const { data: message, error } = await supabaseAdmin
         .from('group_messages')

@@ -332,6 +332,9 @@ export const carpoolingAPI = {
 
   // 完成行程
   completeRide: (rideId) => api.post(`/carpooling/rides/${rideId}/complete`),
+
+  /** Ride carpool group chat (driver + passengers who booked); active until departure + 1h */
+  getRideGroupChat: (rideId) => api.get(`/carpooling/rides/${rideId}/group-chat`),
 };
 
 // 市场相关 API

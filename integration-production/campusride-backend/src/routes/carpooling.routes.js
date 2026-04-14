@@ -9,7 +9,8 @@ import {
   getMyRides,
   getMyBookings,
   cancelBooking,
-  completeRide
+  completeRide,
+  getRideGroupChat
 } from '../controllers/carpooling.controller.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 import { authenticateToken, optionalAuth, requireRegisteredUser } from '../middleware/auth.middleware.js';
@@ -22,6 +23,9 @@ router.post('/rides', authenticateToken, requireRegisteredUser, asyncHandler(cre
 
 // GET /api/v1/carpooling/rides - Search rides (guests can view)
 router.get('/rides', optionalAuth, asyncHandler(getRides));
+
+// GET /api/v1/carpooling/rides/:rideId/group-chat — ride carpool group (driver + booked passengers)
+router.get('/rides/:rideId/group-chat', authenticateToken, requireRegisteredUser, asyncHandler(getRideGroupChat));
 
 // GET /api/v1/carpooling/rides/:id (guests can view)
 router.get('/rides/:id', optionalAuth, asyncHandler(getRideById));

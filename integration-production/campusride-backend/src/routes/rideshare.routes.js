@@ -1,9 +1,9 @@
 import express from 'express';
-import { 
-  createRide, 
-  getRides, 
-  getRideById, 
-  updateRide, 
+import {
+  createRide,
+  getRides,
+  getRideById,
+  updateRide,
   deleteRide,
   bookRide,
   getMyRides,
@@ -11,6 +11,7 @@ import {
   cancelBooking,
   completeRide
 } from '../controllers/rideshare.controller.js';
+import { getRideGroupChat } from '../controllers/carpooling.controller.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 import { authenticateToken, optionalAuth, requireRegisteredUser } from '../middleware/auth.middleware.js';
 
@@ -22,6 +23,9 @@ router.post('/rides', authenticateToken, requireRegisteredUser, asyncHandler(cre
 
 // GET /api/v1/rideshare/rides - Search rides (guests can view)
 router.get('/rides', optionalAuth, asyncHandler(getRides));
+
+// GET /api/v1/rideshare/rides/:rideId/group-chat
+router.get('/rides/:rideId/group-chat', authenticateToken, requireRegisteredUser, asyncHandler(getRideGroupChat));
 
 // GET /api/v1/rideshare/rides/:id (guests can view)
 router.get('/rides/:id', optionalAuth, asyncHandler(getRideById));

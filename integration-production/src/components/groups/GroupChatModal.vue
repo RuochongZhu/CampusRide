@@ -78,6 +78,14 @@
         </div>
       </div>
 
+      <a-alert
+        v-if="!chatActive"
+        type="info"
+        show-icon
+        class="mb-3"
+        message="This ride group chat has ended (messages were allowed until one hour after departure). You can still read the history below."
+      />
+
       <!-- Message Input -->
       <div class="flex space-x-3">
         <a-textarea
@@ -86,6 +94,7 @@
           :rows="2"
           :maxlength="500"
           show-count
+          :disabled="!chatActive"
           @keydown.enter.ctrl="sendMessage"
           @keydown.enter.meta="sendMessage"
           @keydown.enter.exact.prevent="sendMessage"
@@ -93,7 +102,7 @@
         <a-button
           type="primary"
           :loading="sendingMessage"
-          :disabled="!newMessage.trim()"
+          :disabled="!chatActive || !newMessage.trim()"
           @click="sendMessage"
           class="bg-[#C24D45] border-none hover:bg-[#A93C35] flex-shrink-0 h-full"
         >
@@ -127,6 +136,11 @@ const props = defineProps({
   group: {
     type: Object,
     default: () => ({})
+  },
+  /** When false (e.g. ride carpool chat after expiry), new messages are disabled */
+  chatActive: {
+    type: Boolean,
+    default: true
   }
 })
 

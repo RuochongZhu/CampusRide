@@ -2,6 +2,12 @@ import { supabaseAdmin } from '../config/database.js';
 import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
 import notificationService from '../services/notification.service.js';
 import wechatLinkService from '../services/wechat-link.service.js';
+import {
+  ensureRideCarpoolGroupOnBooking,
+  removePassengerFromRideGroup,
+  syncRideCarpoolGroupExpiry,
+  unwrapRideEmbed
+} from '../services/rideCarpoolGroup.service.js';
 
 const RIDE_RATING_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
 
@@ -445,6 +451,12 @@ export const updateRide = async (req, res, next) => {
       throw new AppError('Failed to update ride', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    try {
+      await syncRideCarpoolGroupExpiry(id);
+    } catch (syncErr) {
+      console.warn('syncRideCarpoolGroupExpiry:', syncErr);
+    }
+
     res.json({
       success: true,
       data: { ride: updatedRide },
@@ -680,6 +692,12 @@ export const bookRide = async (req, res, next) => {
       priority: 'high'
     });
 
+    try {
+      await ensureRideCarpoolGroupOnBooking(rideId, userId);
+    } catch (groupErr) {
+      console.warn('ensureRideCarpoolGroupOnBooking failed:', groupErr);
+    }
+
     res.status(201).json({
       success: true,
       data: { booking },
@@ -806,14 +824,15 @@ export const cancelBooking = async (req, res, next) => {
       throw new AppError('Booking already cancelled', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
-    // 检查是否可以取消(出发前2小时)
-    const departureTime = new Date(booking.ride.departure_time);
-    const now = new Date();
-    const timeDiff = departureTime.getTime() - now.getTime();
-    const hoursDiff = timeDiff / (1000 * 60 * 60);
+    const rideRow = unwrapRideEmbed(booking.ride);
+    if (!rideRow?.departure_time) {
+      throw new AppError('Invalid booking data', 500, ERROR_CODES.DATABASE_ERROR);
+    }
 
-    if (hoursDiff < 2) {
-      throw new AppError('Cannot cancel booking less than 2 hours before departure', 400, ERROR_CODES.VALIDATION_ERROR);
+    const departureTime = new Date(rideRow.departure_time);
+    const now = new Date();
+    if (now >= departureTime) {
+      throw new AppError('Cannot cancel booking after departure', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // 取消预订
@@ -829,8 +848,14 @@ export const cancelBooking = async (req, res, next) => {
       throw new AppError('Failed to cancel booking', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
+    try {
+      await removePassengerFromRideGroup(booking.ride_id, userId);
+    } catch (rmErr) {
+      console.warn('removePassengerFromRideGroup:', rmErr);
+    }
+
     // 如果行程之前是满的,现在取消后重新设为active
-    if (booking.ride.status === 'full') {
+    if (rideRow.status === 'full') {
       await supabaseAdmin
         .from('rides')
         .update({ status: 'active' })
@@ -932,6 +957,67 @@ export const completeRide = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Ride completed successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const RIDE_CARPOOL_KIND = 'ride_carpool';
+
+/** GET /carpooling/rides/:rideId/group-chat — driver or passenger in the ride chat */
+export const getRideGroupChat = async (req, res, next) => {
+  try {
+    const { rideId } = req.params;
+    const userId = req.user.id;
+
+    const { data: ride, error: rErr } = await supabaseAdmin
+      .from('rides')
+      .select('id, driver_id, title, departure_time')
+      .eq('id', rideId)
+      .single();
+
+    if (rErr || !ride) {
+      throw new AppError('Ride not found', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
+    }
+
+    const { data: group } = await supabaseAdmin
+      .from('groups')
+      .select('*')
+      .eq('ride_id', rideId)
+      .eq('group_kind', RIDE_CARPOOL_KIND)
+      .maybeSingle();
+
+    if (!group) {
+      return res.json({
+        success: true,
+        data: {
+          group: null,
+          chatActive: false,
+          message: 'Group chat is created when the first passenger books this ride.'
+        }
+      });
+    }
+
+    const { data: membership } = await supabaseAdmin
+      .from('group_members')
+      .select('role')
+      .eq('group_id', group.id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!membership) {
+      throw new AppError('You are not part of this ride chat', 403, ERROR_CODES.ACCESS_DENIED);
+    }
+
+    let chatActive = true;
+    if (group.chat_expires_at) {
+      chatActive = new Date(group.chat_expires_at) > new Date();
+    }
+
+    res.json({
+      success: true,
+      data: { group, chatActive }
     });
   } catch (error) {
     next(error);

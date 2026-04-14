@@ -404,10 +404,11 @@ class GroupController {
       const result = await groupService.sendGroupMessage(groupId, userId, content);
 
       if (!result.success) {
-        return res.status(400).json({
+        const status = result.code === 'CHAT_EXPIRED' ? 403 : 400;
+        return res.status(status).json({
           success: false,
           error: {
-            code: 'SEND_MESSAGE_FAILED',
+            code: result.code || 'SEND_MESSAGE_FAILED',
             message: result.error
           }
         });
