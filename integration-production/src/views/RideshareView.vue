@@ -196,6 +196,7 @@
                         v-if="ride.driver"
                         :user="ride.driver"
                         :size="48"
+                        :disabled="isCurrentUserDriver(ride)"
                         @message="handleUserMessage"
                       />
                     </div>
@@ -217,6 +218,7 @@
                           v-if="ride.driver"
                           :user="ride.driver"
                           :size="96"
+                          :disabled="isCurrentUserDriver(ride)"
                           @message="handleUserMessage"
                         />
                         <div class="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow">
@@ -259,7 +261,16 @@
                         <p class="text-sm text-gray-500">per person</p>
                       </div>
                       <!-- Dynamic button based on booking status -->
-                      <template v-if="ride.is_booked_by_user">
+                      <template v-if="isCurrentUserDriver(ride)">
+                        <button
+                          type="button"
+                          class="bg-slate-100 text-slate-700 border border-slate-200 py-2 px-4 rounded-md font-medium mt-4 cursor-default"
+                          disabled
+                        >
+                          Your trip
+                        </button>
+                      </template>
+                      <template v-else-if="ride.is_booked_by_user">
                         <button
                           class="bg-green-600 text-white py-2 px-4 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
                           disabled
@@ -288,7 +299,16 @@
 
                   <!-- Mobile Book Button -->
                   <div class="md:hidden">
-                    <template v-if="ride.is_booked_by_user">
+                    <template v-if="isCurrentUserDriver(ride)">
+                      <button
+                        type="button"
+                        class="w-full bg-slate-100 text-slate-700 border border-slate-200 py-2 rounded-md text-sm font-medium cursor-default"
+                        disabled
+                      >
+                        Your trip
+                      </button>
+                    </template>
+                    <template v-else-if="ride.is_booked_by_user">
                       <button class="w-full bg-green-600 text-white py-2 rounded-md text-sm font-medium cursor-not-allowed opacity-75" disabled>
                         ✓ Booked
                       </button>
@@ -549,6 +569,7 @@
               v-if="selectedRide.driver"
               :user="selectedRide.driver"
               :size="80"
+              :disabled="isCurrentUserDriver(selectedRide)"
               @message="handleUserMessage"
             />
             <div>
@@ -577,7 +598,21 @@
             <p class="text-gray-700">{{ selectedRide.description }}</p>
           </div>
 
-          <template v-if="selectedRide.is_booked_by_user">
+          <template v-if="isCurrentUserDriver(selectedRide)">
+            <div class="mt-4">
+              <button
+                type="button"
+                class="w-full bg-slate-100 text-slate-700 border border-slate-200 py-3 rounded-md font-medium cursor-default"
+                disabled
+              >
+                Your trip
+              </button>
+              <p class="text-xs text-gray-500 mt-2 text-center">
+                Manage this ride under <strong>My Trips</strong> → <strong>I Posted</strong>
+              </p>
+            </div>
+          </template>
+          <template v-else-if="selectedRide.is_booked_by_user">
             <!-- Already booked by user -->
             <button
               class="w-full bg-green-600 text-white py-3 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
@@ -634,6 +669,7 @@ import { carpoolingAPI } from '@/utils/api';
 import ClickableAvatar from '@/components/common/ClickableAvatar.vue';
 import GroupChatModal from '@/components/groups/GroupChatModal.vue';
 import { getPublicUserName } from '@/utils/publicName';
+import { useAuthStore } from '@/stores/auth';
 
 // Window width for responsive pagination
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -707,6 +743,17 @@ const driverDestInput = ref(null);
 let googleMapsLoaded = false;
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
+
+/** True when the logged-in user posted this ride (cannot book own trip) */
+const isCurrentUserDriver = (ride) => {
+  if (!ride) return false;
+  const uid = authStore.userId;
+  if (!uid) return false;
+  const driverId = ride.driver_id ?? ride.driver?.id;
+  if (!driverId) return false;
+  return String(driverId) === String(uid);
+};
 
 const getBookingRide = (booking) => {
   if (!booking) return null;
