@@ -19,11 +19,11 @@
 
         <nav class="hidden md:flex items-center space-x-6">
           <router-link
-            to="/activities"
+            to="/marketplace"
             class="nav-link"
-            :class="{ active: $route.path.includes('activities') }"
+            :class="{ active: $route.path.includes('marketplace') }"
           >
-            Activities
+            Marketplace
           </router-link>
           <router-link
             to="/rideshare"
@@ -33,11 +33,11 @@
             Carpooling
           </router-link>
           <router-link
-            to="/marketplace"
+            to="/activities"
             class="nav-link"
-            :class="{ active: $route.path.includes('marketplace') }"
+            :class="{ active: $route.path.includes('activities') }"
           >
-            Marketplace
+            Activities
           </router-link>
           <router-link
             v-if="isAdmin"
@@ -103,13 +103,13 @@
         <!-- Navigation Links -->
         <nav class="flex-1 py-2">
           <router-link
-            to="/activities"
+            to="/marketplace"
             class="mobile-nav-link"
-            :class="{ active: $route.path.includes('activities') }"
+            :class="{ active: $route.path.includes('marketplace') }"
             @click="closeMobileMenu"
           >
-            <CalendarOutlined class="text-lg" />
-            <span>Activities</span>
+            <ShopOutlined class="text-lg" />
+            <span>Marketplace</span>
           </router-link>
 
           <router-link
@@ -123,13 +123,13 @@
           </router-link>
 
           <router-link
-            to="/marketplace"
+            to="/activities"
             class="mobile-nav-link"
-            :class="{ active: $route.path.includes('marketplace') }"
+            :class="{ active: $route.path.includes('activities') }"
             @click="closeMobileMenu"
           >
-            <ShopOutlined class="text-lg" />
-            <span>Marketplace</span>
+            <CalendarOutlined class="text-lg" />
+            <span>Activities</span>
           </router-link>
 
           <router-link

@@ -112,6 +112,25 @@
     />
   </div>
 
+  <div class="max-w-7xl mx-auto px-3 md:px-4 pt-4">
+    <div class="rounded-2xl border border-[#d8cfc3] bg-[#f8f4ed] p-4 md:p-5 shadow-sm">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="max-w-3xl">
+          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b5e3c]">Marketplace First</p>
+          <h2 class="mt-1 text-xl font-semibold text-[#2f2a24] md:text-2xl">Use this board for items, sublease listings, and roommate search.</h2>
+          <p class="mt-2 text-sm text-[#5f564c] md:text-base">
+            Use <strong>Housing</strong> for sublease / lease takeover, <strong>Roommates</strong> for roommate search, and the in-app message button to confirm details before you commit.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a-button @click="handleCategoryChange('Housing')">Housing</a-button>
+          <a-button @click="handleCategoryChange('Roommates')">Roommates</a-button>
+          <a-button type="primary" @click="showPostModal = true">Post Listing</a-button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div v-if="loading" class="flex justify-center items-center py-16 md:py-20">
     <a-spin size="large" />
@@ -202,6 +221,9 @@
       <a-select v-model:value="newItem.category" style="width: 100%" placeholder="Select Category *" :options="categoryOptions" />
       <a-select v-model:value="newItem.condition" style="width: 100%" placeholder="Select Condition *" :options="conditionOptions.slice(1)" />
       <a-input v-model:value="newItem.location" placeholder="Location (optional)" />
+      <p class="text-xs text-gray-500">
+        Use <strong>Housing</strong> for sublease / lease takeover and <strong>Roommates</strong> for roommate search.
+      </p>
 
       <!-- Image Upload Section -->
       <div>
@@ -302,16 +324,33 @@
             <p class="text-xs md:text-sm text-gray-500">{{ selectedItem.seller?.university || 'Unknown University' }}</p>
           </div>
         </div>
+        <div
+          v-if="canMessageSelectedSeller"
+          class="flex flex-col gap-2 rounded-xl border border-[#edd6c4] bg-[#fff8f2] p-3 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-sm font-medium text-[#5b3a20]">Need to confirm pickup, price, or condition?</p>
+            <p class="text-xs text-[#8a7058] md:text-sm">Message the seller in-app before paying or meeting offline.</p>
+          </div>
+          <a-button type="primary" @click="openSelectedSellerConversation">
+            Message Seller
+          </a-button>
+        </div>
 
         <!-- Desktop: inline action buttons -->
         <div v-if="!isMobile" class="flex items-center justify-between pt-3 md:pt-4 gap-2">
-          <a-button @click="toggleFavorite(selectedItem)" class="flex-shrink-0">
-            <template #icon>
-              <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
-              <HeartOutlined v-else />
-            </template>
-            {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
-          </a-button>
+          <div class="flex items-center gap-2">
+            <a-button v-if="canMessageSelectedSeller" type="primary" @click="openSelectedSellerConversation">
+              Message Seller
+            </a-button>
+            <a-button @click="toggleFavorite(selectedItem)" class="flex-shrink-0">
+              <template #icon>
+                <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
+                <HeartOutlined v-else />
+              </template>
+              {{ selectedItem.is_favorited ? 'Saved' : 'Save' }}
+            </a-button>
+          </div>
           <div class="flex items-center gap-2">
             <a-button
               v-if="isSelectedItemOwner"
@@ -339,6 +378,15 @@
 
       <!-- Mobile: fixed bottom action bar -->
       <div v-if="isMobile" class="marketplace-detail-actions">
+        <a-button
+          v-if="canMessageSelectedSeller"
+          type="primary"
+          @click="openSelectedSellerConversation"
+          class="flex-1"
+          size="large"
+        >
+          Message Seller
+        </a-button>
         <a-button @click="toggleFavorite(selectedItem)" class="flex-1" size="large">
           <template #icon>
             <HeartFilled v-if="selectedItem.is_favorited" class="text-[#C24D45]" />
@@ -650,7 +698,7 @@ const items = ref([
 ])
 
 // Categories
-const categories = ['All', 'Electronics', 'Books', 'Furniture', 'Fashion', 'Sports', 'Art', 'Others']
+const categories = ['All', 'Housing', 'Roommates', 'Electronics', 'Books', 'Furniture', 'Fashion', 'Sports', 'Art', 'Others']
 const categoryOptions = categories.slice(1).map(c => ({value: c, label: c}));
 
 // New item form
@@ -700,6 +748,12 @@ const isSelectedItemOwner = computed(() => {
   if (!currentUser.value || !selectedItem.value) return false
   const userId = currentUser.value.id
   return selectedItem.value.seller_id === userId || selectedItem.value.seller?.id === userId
+})
+
+const canMessageSelectedSeller = computed(() => {
+  if (!selectedItem.value?.seller) return false
+  if (!currentUser.value?.id) return false
+  return selectedItem.value.seller.id !== currentUser.value.id
 })
 
 const normalizeSeller = (seller, item = {}) => {
@@ -1153,6 +1207,39 @@ const truncateText = (text, maxLength) => {
   return text.substring(0, maxLength) + '...'
 }
 
+const buildMessageQuery = (user, fallbackName = 'User') => {
+  const query = {}
+
+  if (user?.id) {
+    query.userId = String(user.id)
+  }
+  if (user?.email) {
+    query.userEmail = user.email
+  }
+  query.userName = getSellerName(user) || fallbackName
+
+  return query
+}
+
+const openConversationWithUser = (user, fallbackName = 'User') => {
+  const query = buildMessageQuery(user, fallbackName)
+
+  if (!query.userId && !query.userEmail) {
+    message.warning('Unable to open chat for this seller right now')
+    return
+  }
+
+  router.push({
+    path: '/messages',
+    query
+  }).catch(() => {})
+}
+
+const openSelectedSellerConversation = () => {
+  if (!selectedItem.value?.seller) return
+  openConversationWithUser(selectedItem.value.seller, getSellerName(selectedItem.value.seller))
+}
+
 // Handle user message from ClickableAvatar
 const handleUserMessage = (user) => {
   // This will be handled by the ClickableAvatar component internally
@@ -1161,16 +1248,26 @@ const handleUserMessage = (user) => {
 
 // Image upload methods
 const triggerFileUpload = () => {
-  fileInput.value.click()
+  fileInput.value?.click()
+}
+
+const resetInputValue = (inputRef) => {
+  if (inputRef?.value) {
+    inputRef.value.value = ''
+  }
 }
 
 const handleFileUpload = async (event) => {
   const files = Array.from(event.target.files)
-  if (!files.length) return
+  if (!files.length) {
+    resetInputValue(fileInput)
+    return
+  }
 
   // Validate total images limit
   if (newItem.value.images.length + files.length > 5) {
     message.error('Maximum 5 images allowed')
+    resetInputValue(fileInput)
     return
   }
 
@@ -1214,9 +1311,7 @@ const handleFileUpload = async (event) => {
   } finally {
     uploadingImages.value = false
     // Clear the input
-    if (fileInput.value) {
-      fileInput.value.value = ''
-    }
+    resetInputValue(fileInput)
   }
 }
 
@@ -1226,11 +1321,15 @@ const triggerEditFileUpload = () => {
 
 const handleEditFileUpload = async (event) => {
   const files = Array.from(event.target.files)
-  if (!files.length) return
+  if (!files.length) {
+    resetInputValue(editFileInput)
+    return
+  }
 
   // Validate total images limit
   if (editItem.value.images.length + files.length > 5) {
     message.error('Maximum 5 images allowed')
+    resetInputValue(editFileInput)
     return
   }
 
@@ -1267,9 +1366,7 @@ const handleEditFileUpload = async (event) => {
     message.error(error.response?.data?.error?.message || 'Failed to upload images')
   } finally {
     editUploadingImages.value = false
-    if (editFileInput.value) {
-      editFileInput.value.value = ''
-    }
+    resetInputValue(editFileInput)
   }
 }
 

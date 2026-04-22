@@ -1,5 +1,6 @@
 import activityService from '../services/activity.service.js';
 import activityCleanupService from '../services/activity-cleanup.service.js';
+import activityCheckinService from '../services/activity-checkin.service.js';
 import { body, query, param, validationResult } from 'express-validator';
 
 class ActivityController {
@@ -563,12 +564,21 @@ class ActivityController {
 
       const { activityId } = req.params;
       const userId = req.user.id;
-      const checkinData = {
-        checkinCode: req.body.checkinCode,
-        location: req.body.location
-      };
+      const rawLocation = req.body.userLocation || req.body.location || null;
+      const normalizedUserLocation = rawLocation
+        ? {
+            latitude: rawLocation.latitude ?? rawLocation.lat,
+            longitude: rawLocation.longitude ?? rawLocation.lng,
+            accuracy: rawLocation.accuracy,
+            timestamp: rawLocation.timestamp
+          }
+        : null;
 
-      const result = await activityService.checkInToActivity(activityId, userId, checkinData);
+      const result = await activityCheckinService.performCheckin(activityId, userId, {
+        checkinCode: req.body.checkinCode,
+        userLocation: normalizedUserLocation,
+        deviceInfo: req.body.deviceInfo || {}
+      });
 
       if (!result.success) {
         return res.status(400).json({
@@ -583,8 +593,13 @@ class ActivityController {
       res.status(200).json({
         success: true,
         data: {
-          participation: result.participation,
-          pointsEarned: result.pointsEarned
+          participation: result.participation || null,
+          pointsEarned: result.pointsAwarded ?? 0,
+          pointsAwarded: result.pointsAwarded ?? 0,
+          checkinTime: result.checkinTime,
+          distance: result.distance,
+          locationVerified: result.locationVerified,
+          checkinRecord: result.checkinRecord
         },
         message: 'Successfully checked in to activity'
       });
@@ -905,7 +920,8 @@ export const getMyActivitiesValidation = [
 export const checkinValidation = [
   param('activityId').isUUID().withMessage('Invalid activity ID'),
   body('checkinCode').optional().isString().isLength({ min: 6, max: 6 }).withMessage('Checkin code must be 6 characters'),
-  body('location').optional().isObject().withMessage('Location must be an object with lat and lng')
+  body('location').optional().isObject().withMessage('Location must be an object with lat and lng'),
+  body('userLocation').optional().isObject().withMessage('User location must be an object')
 ];
 
 export const getHistoryActivitiesValidation = [

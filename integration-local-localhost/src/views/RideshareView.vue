@@ -17,7 +17,7 @@
       <!-- Main Booking and Ride Sections -->
       <div class="flex flex-col lg:flex-row gap-4 md:gap-8">
         <!-- Left Panel - Passenger/Driver Forms -->
-        <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-lg p-4 md:p-6 h-fit">
+        <div class="order-2 w-full lg:order-2 lg:w-1/3 bg-white rounded-xl shadow-lg p-4 md:p-6 h-fit">
           <!-- Universal Search Bar -->
           <div class="mb-4">
             <div class="relative">
@@ -167,7 +167,7 @@
         </div>
 
         <!-- Right Panel - Available Rides -->
-        <div class="w-full lg:w-2/3">
+        <div class="order-1 w-full lg:order-1 lg:w-2/3">
           <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4 md:mb-6">
             <div class="flex justify-between items-center mb-4 md:mb-6">
               <h2 class="text-lg md:text-2xl font-bold">Available Rides</h2>
@@ -178,6 +178,20 @@
                 🔄 Refresh
               </button>
             </div>
+            <div class="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 md:p-4">
+              <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p class="text-sm font-semibold text-red-900 md:text-base">Browse rides first, post only when you need to.</p>
+                  <p class="text-xs text-red-700 md:text-sm">Message the poster before booking, and find booking updates later in <strong>Messages → My Rides</strong>.</p>
+                </div>
+                <button
+                  class="inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-xs font-medium text-red-700 shadow-sm ring-1 ring-red-200 transition-all hover:bg-red-100 md:text-sm"
+                  @click="rideFilterTab = 'available'"
+                >
+                  Show Seats Available
+                </button>
+              </div>
+            </div>
             <div class="flex flex-wrap gap-2 mb-4">
               <button
                 :class="[
@@ -187,6 +201,15 @@
                 @click="rideFilterTab = 'all'"
               >
                 All ({{ filterCounts.all }})
+              </button>
+              <button
+                :class="[
+                  'px-3 py-1.5 text-xs md:text-sm rounded-full border transition-all',
+                  rideFilterTab === 'available' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                ]"
+                @click="rideFilterTab = 'available'"
+              >
+                Seats Available ({{ filterCounts.available }})
               </button>
               <button
                 :class="[
@@ -205,15 +228,6 @@
                 @click="rideFilterTab = 'request'"
               >
                 Rider Requests ({{ filterCounts.request }})
-              </button>
-              <button
-                :class="[
-                  'px-3 py-1.5 text-xs md:text-sm rounded-full border transition-all',
-                  rideFilterTab === 'available' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                ]"
-                @click="rideFilterTab = 'available'"
-              >
-                Seats Available ({{ filterCounts.available }})
               </button>
             </div>
 
@@ -315,12 +329,20 @@
                         </button>
                       </template>
                       <template v-else-if="ride.is_booked_by_user">
-                        <button
-                          class="bg-green-600 text-white py-2 px-4 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
-                          disabled
-                        >
-                          ✓ Booked
-                        </button>
+                        <div class="mt-4 space-y-2">
+                          <button
+                            class="w-full bg-green-600 text-white py-2 px-4 rounded-md font-medium cursor-not-allowed opacity-75"
+                            disabled
+                          >
+                            ✓ Booked
+                          </button>
+                          <button
+                            class="w-full border border-red-200 text-red-700 py-2 px-4 rounded-md font-medium transition-all hover:bg-red-50"
+                            @click.stop="openRideConversation(ride)"
+                          >
+                            Open Chat
+                          </button>
+                        </div>
                       </template>
                       <template v-else-if="getRemainingSeats(ride) === 0">
                         <button
@@ -331,12 +353,20 @@
                         </button>
                       </template>
                       <template v-else>
-                        <button
-                          class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium mt-4 transition-all"
-                          @click.stop="openBookingModal(ride)"
-                        >
-                          {{ getRidePrimaryActionText(ride) }}
-                        </button>
+                        <div class="mt-4 space-y-2">
+                          <button
+                            class="w-full border border-red-200 text-red-700 py-2 px-4 rounded-md font-medium transition-all hover:bg-red-50"
+                            @click.stop="openRideConversation(ride)"
+                          >
+                            {{ getRideMessageActionText(ride) }}
+                          </button>
+                          <button
+                            class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium transition-all"
+                            @click.stop="openBookingModal(ride)"
+                          >
+                            {{ getRidePrimaryActionText(ride) }}
+                          </button>
+                        </div>
                       </template>
                     </div>
                   </div>
@@ -352,6 +382,12 @@
                       <button class="w-full bg-green-600 text-white py-2 rounded-md text-sm font-medium cursor-not-allowed opacity-75" disabled>
                         ✓ Booked
                       </button>
+                      <button
+                        class="mt-2 w-full border border-red-200 text-red-700 py-2 rounded-md text-sm font-medium transition-all hover:bg-red-50"
+                        @click.stop="openRideConversation(ride)"
+                      >
+                        Open Chat
+                      </button>
                     </template>
                     <template v-else-if="getRemainingSeats(ride) === 0">
                       <button class="w-full bg-gray-400 text-white py-2 rounded-md text-sm font-medium cursor-not-allowed" disabled>
@@ -360,7 +396,13 @@
                     </template>
                     <template v-else>
                       <button
-                        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md text-sm font-medium transition-all"
+                        class="w-full border border-red-200 text-red-700 py-2 rounded-md text-sm font-medium transition-all hover:bg-red-50"
+                        @click.stop="openRideConversation(ride)"
+                      >
+                        {{ getRideMessageActionText(ride) }}
+                      </button>
+                      <button
+                        class="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md text-sm font-medium transition-all"
                         @click.stop="openBookingModal(ride)"
                       >
                         {{ getRidePrimaryActionText(ride) }}
@@ -489,6 +531,13 @@
                     View
                   </button>
                   <button
+                    v-if="booking.ride?.driver"
+                    class="px-3 py-1.5 text-xs md:text-sm border border-red-200 text-red-700 rounded-md hover:bg-red-50"
+                    @click="openBookingConversation(booking)"
+                  >
+                    Message Driver
+                  </button>
+                  <button
                     v-if="canCancelBooking(booking)"
                     class="px-3 py-1.5 text-xs md:text-sm bg-gray-700 hover:bg-gray-800 text-white rounded-md disabled:bg-gray-400"
                     :disabled="isTripActionLoading(`cancel-${booking.id}`)"
@@ -516,6 +565,21 @@
             <h3 class="font-bold mb-2">{{ getRideDisplayTitle(selectedRide) }}</h3>
             <p class="text-sm text-gray-600">{{ selectedRide.departure_location }} → {{ selectedRide.destination_location }}</p>
             <p class="text-sm text-gray-600">{{ formatDateTime(selectedRide.departure_time) }}</p>
+          </div>
+
+          <div class="rounded-lg border border-red-100 bg-red-50 p-4">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-sm font-medium text-red-900">Need to confirm details before booking?</p>
+                <p class="text-xs text-red-700 md:text-sm">Message the poster first. After booking, trip updates also appear in <strong>Messages → My Rides</strong>.</p>
+              </div>
+              <button
+                class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 transition-all hover:bg-red-100"
+                @click="openRideConversation(selectedRide)"
+              >
+                {{ getRideMessageActionText(selectedRide) }}
+              </button>
+            </div>
           </div>
 
           <div class="space-y-4">
@@ -609,6 +673,24 @@
             <p class="text-gray-700">{{ selectedRide.description }}</p>
           </div>
 
+          <div
+            v-if="!isOwnRide(selectedRide)"
+            class="border-t pt-4"
+          >
+            <div class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="font-medium text-gray-900">Questions before the trip?</p>
+                <p class="text-sm text-gray-600">Use in-app chat first so both sides keep the ride details in one place.</p>
+              </div>
+              <button
+                class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 transition-all hover:bg-red-50"
+                @click="openRideConversation(selectedRide)"
+              >
+                {{ selectedRide.is_booked_by_user ? 'Open Chat' : getRideMessageActionText(selectedRide) }}
+              </button>
+            </div>
+          </div>
+
           <template v-if="isOwnRide(selectedRide)">
             <button
               class="w-full bg-gray-500 text-white py-3 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
@@ -619,12 +701,20 @@
           </template>
           <template v-else-if="selectedRide.is_booked_by_user">
             <!-- Already booked by user -->
-            <button
-              class="w-full bg-green-600 text-white py-3 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
-              disabled
-            >
-              ✓ You Have Booked This Ride
-            </button>
+            <div class="space-y-2">
+              <button
+                class="w-full bg-green-600 text-white py-3 rounded-md font-medium mt-4 cursor-not-allowed opacity-75"
+                disabled
+              >
+                ✓ You Have Booked This Ride
+              </button>
+              <button
+                class="w-full border border-red-200 text-red-700 py-3 rounded-md font-medium transition-all hover:bg-red-50"
+                @click="openRideConversation(selectedRide)"
+              >
+                Open Chat
+              </button>
+            </div>
           </template>
           <template v-else-if="getRemainingSeats(selectedRide) === 0">
             <!-- Ride is full -->
@@ -652,7 +742,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { notification } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {
@@ -725,7 +815,7 @@ const availableRides = ref([]);
 const currentPage = ref(1);
 const pageSize = ref(20);
 const totalRides = ref(0);
-const rideFilterTab = ref('all');
+const rideFilterTab = ref('available');
 const myTripsLoading = ref(false);
 const myTripsTab = ref('driver');
 const myPostedRides = ref([]);
@@ -750,6 +840,7 @@ const driverOriginInput = ref(null);
 const driverDestInput = ref(null);
 let googleMapsLoaded = false;
 const route = useRoute();
+const router = useRouter();
 
 // Initialize Google Maps Autocomplete
 const initGoogleMaps = async () => {
@@ -1236,7 +1327,7 @@ const confirmBooking = async () => {
       showBookingModal.value = false;
       notification.success({
         message: 'Booking Confirmed!',
-        description: 'Your ride has been booked successfully. The driver will contact you.'
+        description: 'Your ride has been booked successfully. A chat thread is now available in Messages → My Rides.'
       });
 
       // Reload rides to update availability
@@ -1389,6 +1480,10 @@ const getRideDetailActionText = (ride) => {
   return isRequestRide(ride) ? 'Join This Request' : 'Book This Ride';
 };
 
+const getRideMessageActionText = (ride) => {
+  return isRequestRide(ride) ? 'Message Rider' : 'Message Driver';
+};
+
 const getDepartureCountdown = (departureTime) => {
   if (!departureTime) return 'Departure time pending';
   const departure = dayjs(departureTime);
@@ -1441,6 +1536,63 @@ const getBookedSeats = (ride) => {
 
 const getDriverName = (driver) => {
   return getPublicUserName(driver, 'Driver');
+};
+
+const buildRideMessageQuery = (user, fallbackName = 'User') => {
+  const query = {};
+
+  if (user?.id) {
+    query.userId = String(user.id);
+  }
+  if (user?.email) {
+    query.userEmail = user.email;
+  }
+  query.userName = getDriverName(user) || fallbackName;
+
+  return query;
+};
+
+const openConversationWithUser = (user, fallbackName = 'User') => {
+  const query = buildRideMessageQuery(user, fallbackName);
+
+  if (!query.userId && !query.userEmail) {
+    notification.warning({
+      message: 'Chat unavailable',
+      description: 'We could not find a valid contact record for this user.'
+    });
+    return;
+  }
+
+  router.push({
+    path: '/messages',
+    query
+  }).catch(() => {});
+};
+
+const openRideConversation = (ride) => {
+  const rideUser = ride?.driver;
+  if (!rideUser) {
+    notification.warning({
+      message: 'Chat unavailable',
+      description: 'This ride is missing poster information.'
+    });
+    return;
+  }
+
+  openConversationWithUser(rideUser, getDriverName(rideUser));
+};
+
+const openBookingConversation = (booking) => {
+  const rideUser = booking?.ride?.driver;
+  if (!rideUser) {
+    notification.warning({
+      message: 'Chat unavailable',
+      description: 'The driver information for this booking is not available yet.'
+    });
+    return;
+  }
+
+  openConversationWithUser(rideUser, getDriverName(rideUser));
 };
 
 // Handle user message from ClickableAvatar

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/database.js';
+import pointsService from './points.service.js';
 
 class ActivityCheckinService {
 
@@ -46,7 +47,10 @@ class ActivityCheckinService {
           location_verification,
           verification_radius,
           location_coordinates,
-          status
+          status,
+          reward_points,
+          organizer_id,
+          checkin_code
         `)
         .eq('id', activityId)
         .single();
@@ -193,7 +197,7 @@ class ActivityCheckinService {
   // Perform check-in
   async performCheckin(activityId, userId, checkinData) {
     try {
-      const { userLocation, deviceInfo } = checkinData;
+      const { userLocation, deviceInfo, checkinCode } = checkinData;
 
       // First check if user can check in
       const eligibilityCheck = await this.canUserCheckin(activityId, userId);
@@ -205,6 +209,13 @@ class ActivityCheckinService {
       }
 
       const { activity, participationId, requiresLocation, verificationRadius, activityLocation } = eligibilityCheck;
+
+      if (checkinCode && activity.checkin_code && activity.checkin_code !== String(checkinCode).toUpperCase()) {
+        return {
+          success: false,
+          error: 'Invalid check-in code'
+        };
+      }
 
       let locationVerified = true;
       let distance = 0;
@@ -286,10 +297,12 @@ class ActivityCheckinService {
         .from('activity_participants')
         .update({
           checked_in: true,
+          attendance_status: 'attended',
           checkin_time: checkinTime.toISOString(),
           checkin_location: userLocation || {},
           distance_from_venue: distance,
-          location_verified: locationVerified
+          location_verified: locationVerified,
+          points_earned: activity.reward_points || 10
         })
         .eq('id', participationId);
 
@@ -298,10 +311,28 @@ class ActivityCheckinService {
         // Could consider rolling back check-in record, but for simplicity we won't handle it for now
       }
 
-      // Reward points (can call points system API here)
+      let pointsAwarded = activity.reward_points || 10;
+
+      // Reward points
       try {
-        // TODO: Call points service to reward user
-        console.log(`✅ User ${userId} checked in to activity ${activityId}, awarded ${activity.reward_points || 10} points`);
+        const awardResult = await pointsService.awardPoints({
+          userId,
+          points: pointsAwarded,
+          source: 'activity',
+          reason: `活动签到获得积分: ${activity.title}`,
+          ruleType: 'activity_checkin',
+          metadata: {
+            activityId,
+            activityTitle: activity.title,
+            organizerId: activity.organizer_id
+          }
+        });
+
+        if (awardResult.success) {
+          pointsAwarded = awardResult.pointsAwarded ?? pointsAwarded;
+        } else {
+          console.warn('⚠️ Failed to award check-in points:', awardResult.error);
+        }
       } catch (pointsError) {
         console.error('❌ Points reward failed:', pointsError);
         // Points failure does not affect check-in success
@@ -315,8 +346,16 @@ class ActivityCheckinService {
         checkinTime,
         distance: Math.round(distance),
         locationVerified,
-        pointsAwarded: activity.reward_points || 10,
-        checkinRecord
+        pointsAwarded,
+        checkinRecord,
+        participation: {
+          id: participationId,
+          checked_in: true,
+          attendance_status: 'attended',
+          checkin_time: checkinTime.toISOString(),
+          points_earned: pointsAwarded,
+          location_verified: locationVerified
+        }
       };
 
     } catch (error) {

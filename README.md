@@ -10,8 +10,8 @@
 ./server-manager.sh start
 
 # 方式2：手动启动
-cd integration/campusride-backend && npm run dev &
-cd integration && npm run dev
+cd integration-local-localhost/campusride-backend && npm run dev &
+cd integration-local-localhost && npm run dev
 ```
 
 ### 2. 访问地址
@@ -23,7 +23,7 @@ cd integration && npm run dev
 
 ```
 CampusRide/
-├── integration/                  # 主项目目录
+├── integration-local-localhost/  # 当前 Git 主线目录
 │   ├── src/                     # Vue3 前端源码
 │   ├── campusride-backend/      # Node.js 后端源码
 │   ├── docs/                    # 项目文档（新增）
@@ -32,10 +32,18 @@ CampusRide/
 │   │   ├── ARCHITECTURE_OVERVIEW.md
 │   │   └── LOCALHOST_FIX_GUIDE.md
 │   └── README.md               # 技术文档
+├── integration-production/      # 生产配置快照（未被当前 Git 主线跟踪）
+├── integration_backup_local_1.2.9/ # 历史备份目录
 ├── server-manager.sh           # 服务管理脚本
 ├── start-services.sh          # 简单启动脚本
 └── README.md                  # 本文件（项目总览）
 ```
+
+## 📍 当前主线说明
+
+- **当前 Git 主线目录**: `integration-local-localhost/`
+- **`integration-production/`**: 独立的生产快照，不是当前优化主线
+- **`integration_backup_local_1.2.9/`**: 历史备份，仅用于对照，不建议继续在其上开发
 
 ## ✨ 核心功能
 

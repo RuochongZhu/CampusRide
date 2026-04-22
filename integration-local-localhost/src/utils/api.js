@@ -41,6 +41,24 @@ const isPublicAuthRoute = (path) => {
   );
 };
 
+export const normalizeActivityCheckinPayload = (data = {}) => {
+  const userLocation = data.userLocation || data.location || null;
+  const normalizedLocation = userLocation
+    ? {
+        lat: userLocation.lat ?? userLocation.latitude,
+        lng: userLocation.lng ?? userLocation.longitude,
+        accuracy: userLocation.accuracy,
+        timestamp: userLocation.timestamp
+      }
+    : undefined;
+
+  return {
+    ...data,
+    ...(userLocation ? { userLocation } : {}),
+    ...(normalizedLocation ? { location: normalizedLocation } : {})
+  };
+};
+
 // 处理token刷新后的请求重试
 const onRefreshed = (newToken) => {
   refreshSubscribers.map(callback => callback(newToken));
@@ -421,7 +439,7 @@ export const activitiesAPI = {
   leaveActivity: (id) => api.delete(`/activities/${id}/register`),
 
   // 活动签到
-  checkinActivity: (id, data) => api.post(`/activities/${id}/checkin`, data),
+  checkinActivity: (id, data) => api.post(`/activities/${id}/checkin`, normalizeActivityCheckinPayload(data)),
 
   // 生成签到码
   generateCheckinCode: (id) => api.post(`/activities/${id}/generate-code`),
@@ -459,7 +477,7 @@ export const checkinAPI = {
   checkEligibility: (activityId) => api.get(`/activities/${activityId}/checkin/eligibility`),
 
   // 执行签到
-  performCheckin: (activityId, data) => api.post(`/activities/${activityId}/checkin`, data),
+  performCheckin: (activityId, data) => api.post(`/activities/${activityId}/checkin`, normalizeActivityCheckinPayload(data)),
 
   // 获取活动签到统计
   getActivityStats: (activityId) => api.get(`/activities/${activityId}/checkin/stats`),

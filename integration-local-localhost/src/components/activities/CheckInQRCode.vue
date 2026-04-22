@@ -74,7 +74,7 @@
               <ul class="text-xs space-y-1 mt-2">
                 <li>• 签到码每30分钟自动刷新</li>
                 <li>• 参与者需要在活动时间内签到</li>
-                <li>• 参与者需要在活动地点附近（{{活动.location_verification ? '500米' : '无距离限制'}}）</li>
+                <li>• 参与者需要在活动地点附近（{{ activity?.location_verification ? '500米' : '无距离限制' }}）</li>
                 <li>• 签到成功后将获得积分奖励</li>
               </ul>
             </template>
@@ -170,7 +170,7 @@ const generateCheckinCode = async () => {
   try {
     const response = await activitiesAPI.generateCheckinCode(props.activity.id)
     if (response.data.success) {
-      checkinCode.value = response.data.data.checkin_code
+      checkinCode.value = response.data.data.checkinCode || response.data.data.checkin_code || ''
     }
   } catch (error) {
     console.error('生成签到码失败:', error)

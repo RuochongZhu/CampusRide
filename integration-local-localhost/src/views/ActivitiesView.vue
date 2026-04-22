@@ -639,6 +639,7 @@ const feedFilter = ref('all')
 const distanceFilter = ref(1000)
 const sortOption = ref('newest')
 const currentPage = ref(1)
+const viewerLocation = ref(null)
 
 // Activities data
 const activities = ref([])
@@ -790,11 +791,53 @@ const formatTimeUntil = (startTime, endTime) => {
   return `${diffMinutes}m`
 }
 
+const normalizeCoordinates = (rawCoordinates) => {
+  if (!rawCoordinates) return null
+
+  const lat = Number(rawCoordinates.lat ?? rawCoordinates.latitude)
+  const lng = Number(rawCoordinates.lng ?? rawCoordinates.longitude)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+const calculateDistanceMeters = (from, to) => {
+  if (!from || !to) return null
+
+  const earthRadius = 6371000
+  const dLat = ((to.lat - from.lat) * Math.PI) / 180
+  const dLng = ((to.lng - from.lng) * Math.PI) / 180
+  const fromLat = (from.lat * Math.PI) / 180
+  const toLat = (to.lat * Math.PI) / 180
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(fromLat) * Math.cos(toLat) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2)
+
+  return Math.round(2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+}
+
+const formatDistanceLabel = (distanceMeters) => {
+  if (!Number.isFinite(distanceMeters)) return 'Distance unavailable'
+  if (distanceMeters < 1000) return `${distanceMeters}m away`
+  return `${(distanceMeters / 1000).toFixed(1)}km away`
+}
+
 const formatActivity = (raw) => {
   const categoryKey = raw?.category || 'academic'
   const organizerName = raw?.organizer
     ? getPublicNameFromRaw(raw.organizer.first_name, raw.organizer.last_name, raw.organizer.email, 'Campus Organizer')
     : ''
+  const locationCoordinates = normalizeCoordinates(raw.location_coordinates)
+  const currentViewerLocation = viewerLocation.value
+    ? normalizeCoordinates(viewerLocation.value)
+    : null
+  const distanceMeters = Number.isFinite(Number(raw.distance_meters))
+    ? Number(raw.distance_meters)
+    : calculateDistanceMeters(currentViewerLocation, locationCoordinates)
 
   // Calculate time progress: from created_at to start_time
   let timeProgress = 0
@@ -833,7 +876,8 @@ const formatActivity = (raw) => {
     description: raw.description,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     locationLabel: raw.location || raw.location_coordinates?.address || 'Location TBD',
-    distance: raw.location_coordinates ? 'Nearby' : '—',
+    distance: formatDistanceLabel(distanceMeters),
+    distanceMeters,
     expiresIn: formatTimeUntil(raw.start_time, raw.end_time),
     participants: raw.current_participants || 0,
     successRate: raw.max_participants
@@ -860,10 +904,18 @@ const formatActivity = (raw) => {
     organizer_id: raw.organizer_id,
     view_count: raw.view_count || 0,
     created_at: raw.created_at,
-    locationCoordinates: raw.location_coordinates || null
+    locationCoordinates
   }
 
   return initialData
+}
+
+const refreshViewerLocation = async () => {
+  try {
+    viewerLocation.value = await getCurrentLocation()
+  } catch (error) {
+    viewerLocation.value = null
+  }
 }
 
 // Map data
@@ -1158,6 +1210,7 @@ const {
 } = useActivityFeed({
   feedFilter,
   sortOption,
+  distanceFilter,
   currentPage,
   activities,
   participatedActivityIds,
@@ -1194,6 +1247,7 @@ onMounted(async () => {
   await fetchMyGroups()
   await fetchAllGroups()
   await loadUserParticipation()
+  await refreshViewerLocation()
   await loadActivities()
   await fetchThoughts()
   await fetchMapThoughts()

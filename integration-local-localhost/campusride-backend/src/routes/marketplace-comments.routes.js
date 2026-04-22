@@ -6,7 +6,7 @@ import {
   unlikeComment,
   deleteComment
 } from '../controllers/marketplace-comments.controller.js';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 

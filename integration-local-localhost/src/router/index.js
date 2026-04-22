@@ -1,34 +1,31 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// 导入页面组件
-import LoginView from '@/views/LoginView.vue'
-import RegisterView from '@/views/RegisterView.vue'
-import EmailVerificationView from '@/views/EmailVerificationView.vue'
-import ResendVerificationView from '@/views/ResendVerificationView.vue'
-import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
-import ResetPasswordView from '@/views/ResetPasswordView.vue'
-import RideshareView from '@/views/RideshareView.vue'
-import ActivitiesView from '@/views/ActivitiesView.vue'
-import CreateActivityView from '@/views/CreateActivityView.vue'
-import ActivityDetailView from '@/views/ActivityDetailView.vue'
-import ParticipationHistoryView from '@/views/ParticipationHistoryView.vue'
-import MarketplaceView from '@/views/MarketplaceView.vue'
-import MyMarketplaceItems from '@/views/MyMarketplaceItems.vue'
-import MyFavoritesView from '@/views/MyFavoritesView.vue'
-import LeaderboardView from '@/views/LeaderboardView.vue'
-import GroupMapView from '@/views/GroupMapView.vue'
-import GroupDetailView from '@/views/GroupDetailView.vue'
-import MessagesView from '@/views/MessagesView.vue'
-import AvatarTestView from '@/views/AvatarTestView.vue'
-import UserProfileView from '@/views/UserProfileView.vue'
-import AdminView from '@/views/AdminView.vue'
-
-// Legal Pages
-import TermsOfServiceView from '@/views/TermsOfServiceView.vue'
-import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
-import CookiePolicyView from '@/views/CookiePolicyView.vue'
-import CarpoolDisclaimerView from '@/views/CarpoolDisclaimerView.vue'
-import DisclosuresView from '@/views/DisclosuresView.vue'
+const LoginView = () => import('@/views/LoginView.vue')
+const RegisterView = () => import('@/views/RegisterView.vue')
+const EmailVerificationView = () => import('@/views/EmailVerificationView.vue')
+const ResendVerificationView = () => import('@/views/ResendVerificationView.vue')
+const ForgotPasswordView = () => import('@/views/ForgotPasswordView.vue')
+const ResetPasswordView = () => import('@/views/ResetPasswordView.vue')
+const RideshareView = () => import('@/views/RideshareView.vue')
+const ActivitiesView = () => import('@/views/ActivitiesView.vue')
+const CreateActivityView = () => import('@/views/CreateActivityView.vue')
+const ActivityDetailView = () => import('@/views/ActivityDetailView.vue')
+const ParticipationHistoryView = () => import('@/views/ParticipationHistoryView.vue')
+const MarketplaceView = () => import('@/views/MarketplaceView.vue')
+const MyMarketplaceItems = () => import('@/views/MyMarketplaceItems.vue')
+const MyFavoritesView = () => import('@/views/MyFavoritesView.vue')
+const LeaderboardView = () => import('@/views/LeaderboardView.vue')
+const GroupMapView = () => import('@/views/GroupMapView.vue')
+const GroupDetailView = () => import('@/views/GroupDetailView.vue')
+const MessagesView = () => import('@/views/MessagesView.vue')
+const AvatarTestView = () => import('@/views/AvatarTestView.vue')
+const UserProfileView = () => import('@/views/UserProfileView.vue')
+const AdminView = () => import('@/views/AdminView.vue')
+const TermsOfServiceView = () => import('@/views/TermsOfServiceView.vue')
+const PrivacyPolicyView = () => import('@/views/PrivacyPolicyView.vue')
+const CookiePolicyView = () => import('@/views/CookiePolicyView.vue')
+const CarpoolDisclaimerView = () => import('@/views/CarpoolDisclaimerView.vue')
+const DisclosuresView = () => import('@/views/DisclosuresView.vue')
 
 const routes = [
   {
@@ -37,7 +34,7 @@ const routes = [
   },
   {
     path: '/home',
-    redirect: '/activities'
+    redirect: '/marketplace'
   },
   {
     path: '/login',

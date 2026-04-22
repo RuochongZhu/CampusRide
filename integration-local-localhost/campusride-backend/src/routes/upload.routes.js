@@ -1,6 +1,6 @@
 import express from 'express';
 import { upload, uploadImage, deleteImage } from '../controllers/upload.controller.js';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 

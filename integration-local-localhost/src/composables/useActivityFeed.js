@@ -14,12 +14,19 @@ import {
 export function useActivityFeed({
   feedFilter,
   sortOption,
+  distanceFilter,
   currentPage,
   activities,
   participatedActivityIds,
   handlers
 }) {
   const PAGE_SIZE = 10
+
+  const getDistanceMeters = (activity) => {
+    const rawDistance = activity?.distanceMeters ?? activity?.distance_meters
+    const parsed = Number(rawDistance)
+    return Number.isFinite(parsed) ? parsed : null
+  }
 
   const filteredActivities = computed(() => {
     let filtered = [...activities.value]
@@ -37,13 +44,29 @@ export function useActivityFeed({
       })
     }
 
+    if (distanceFilter?.value) {
+      filtered = filtered.filter(activity => {
+        const distanceMeters = getDistanceMeters(activity)
+        return distanceMeters === null || distanceMeters <= distanceFilter.value
+      })
+    }
+
     if (sortOption.value === 'newest') {
       filtered.sort((a, b) => new Date(b.start_time || b.created_at || 0) - new Date(a.start_time || a.created_at || 0))
     } else if (sortOption.value === 'closest') {
       filtered.sort((a, b) => {
-        const aTime = new Date(a.start_time || 0).getTime()
-        const bTime = new Date(b.start_time || 0).getTime()
-        return aTime - bTime
+        const aDistance = getDistanceMeters(a)
+        const bDistance = getDistanceMeters(b)
+
+        if (aDistance === null && bDistance === null) {
+          return new Date(a.start_time || 0).getTime() - new Date(b.start_time || 0).getTime()
+        }
+        if (aDistance === null) return 1
+        if (bDistance === null) return -1
+        if (aDistance === bDistance) {
+          return new Date(a.start_time || 0).getTime() - new Date(b.start_time || 0).getTime()
+        }
+        return aDistance - bDistance
       })
     }
 

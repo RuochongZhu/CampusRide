@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../config/database.js';
 import { AppError, ERROR_CODES } from '../middleware/error.middleware.js';
 import notificationService from '../services/notification.service.js';
 import wechatLinkService from '../services/wechat-link.service.js';
+import messageService from '../services/message.service.js';
 
 const RIDE_RATING_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
 const REQUEST_TITLE_PREFIX_REGEX = /^\s*\[REQUEST\]\s*/i;
@@ -9,6 +10,24 @@ const REQUEST_TITLE_PREFIX_REGEX = /^\s*\[REQUEST\]\s*/i;
 const getRideDisplayTitle = (title = '') => {
   if (!title) return '';
   return title.replace(REQUEST_TITLE_PREFIX_REGEX, '').trim();
+};
+
+const buildBookingConversationMessage = ({
+  rideTitle,
+  seatsBooked,
+  pickupLocation,
+  contactNumber,
+  specialRequests
+}) => {
+  const lines = [
+    `Hi, I just booked ${seatsBooked} seat(s) for "${rideTitle}".`,
+    pickupLocation ? `Pickup location: ${pickupLocation}` : null,
+    contactNumber ? `Best contact number: ${contactNumber}` : null,
+    specialRequests ? `Special requests: ${specialRequests}` : null,
+    'Reply here to coordinate the trip details.'
+  ];
+
+  return lines.filter(Boolean).join('\n');
 };
 
 // 简化地址，提取关键地点名称用于微信群推送
@@ -653,6 +672,31 @@ export const bookRide = async (req, res, next) => {
       },
       priority: 'medium'
     });
+
+    try {
+      const existingThread = await messageService.findExistingThread(userId, ride.driver_id);
+
+      if (!existingThread) {
+        await messageService.createNewThread({
+          senderId: userId,
+          receiverId: ride.driver_id,
+          subject: `Ride booking: ${rideTitleForDisplay}`,
+          content: buildBookingConversationMessage({
+            rideTitle: rideTitleForDisplay,
+            seatsBooked,
+            pickupLocation,
+            contactNumber,
+            specialRequests
+          }),
+          messageType: 'general',
+          contextType: 'ride_booking',
+          contextId: booking.id,
+          priority: 'high'
+        });
+      }
+    } catch (messageError) {
+      console.warn('Failed to create booking conversation thread:', messageError);
+    }
 
     // 评分提醒：在行程出发时间 + 2小时后，向双方发送系统消息中的5星评分入口
     const reminderAt = new Date(new Date(ride.departure_time).getTime() + RIDE_RATING_REMINDER_DELAY_MS).toISOString();

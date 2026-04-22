@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import { AppError, ERROR_CODES } from './error.middleware.js';
 import { supabaseAdmin } from '../config/database.js';
 
+const shouldLogAuthDebug = process.env.AUTH_DEBUG === 'true' && process.env.NODE_ENV !== 'test';
+
 // JWT认证中间件 - 严格模式，只允许已注册且验证的用户
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -16,15 +18,17 @@ export const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // 🔍 DEBUG: 添加详细的Token解析日志
-    console.log('🔑 Token解析成功:', {
-      userId: decoded.userId,
-      type: decoded.type,
-      iat: decoded.iat,
-      exp: decoded.exp,
-      iatTime: new Date(decoded.iat * 1000).toISOString(),
-      expTime: new Date(decoded.exp * 1000).toISOString(),
-      now: new Date().toISOString()
-    });
+    if (shouldLogAuthDebug) {
+      console.log('🔑 Token解析成功:', {
+        userId: decoded.userId,
+        type: decoded.type,
+        iat: decoded.iat,
+        exp: decoded.exp,
+        iatTime: new Date(decoded.iat * 1000).toISOString(),
+        expTime: new Date(decoded.exp * 1000).toISOString(),
+        now: new Date().toISOString()
+      });
+    }
 
     // Handle guest tokens - 游客模式仍然支持，但明确标记
     if (decoded.type === 'guest') {
@@ -43,20 +47,24 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // 验证用户是否存在 - 不再自动创建临时用户
-    console.log('🔍 查询用户:', decoded.userId);
+    if (shouldLogAuthDebug) {
+      console.log('🔍 查询用户:', decoded.userId);
+    }
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('id, email, student_id, first_name, last_name, university, role, verification_status, is_verified, points, avatar_url')
       .eq('id', decoded.userId)
       .single();
 
-    console.log('📊 用户查询结果详细:', {
-      found: !!user,
-      errorExists: !!error,
-      userValue: user,
-      errorValue: error,
-      userId: decoded.userId
-    });
+    if (shouldLogAuthDebug) {
+      console.log('📊 用户查询结果详细:', {
+        found: !!user,
+        errorExists: !!error,
+        userValue: user,
+        errorValue: error,
+        userId: decoded.userId
+      });
+    }
 
     if (error || !user) {
       console.error(`Authentication failed: User ${decoded.userId} not found in database`);
