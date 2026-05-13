@@ -138,16 +138,16 @@ export const getRides = async (req, res, next) => {
       .select(`
         *,
         driver:users!driver_id(id, first_name, last_name, university, points),
-        bookings:ride_bookings(count)
+        bookings:ride_bookings(seats_booked, status)
       `)
       .eq('status', 'active');
 
     // 添加筛选条件
     if (departure) {
-      query = query.ilike('departure_location->>address', `%${departure}%`);
+      query = query.ilike('departure_location', `%${departure}%`);
     }
     if (destination) {
-      query = query.ilike('destination_location->>address', `%${destination}%`);
+      query = query.ilike('destination_location', `%${destination}%`);
     }
     if (date) {
       const startOfDay = new Date(date);
@@ -177,11 +177,16 @@ export const getRides = async (req, res, next) => {
       throw new AppError('Failed to fetch rides', 500, ERROR_CODES.DATABASE_ERROR, error);
     }
 
-    // 计算实际可用座位数
-    const ridesWithAvailableSeats = rides.map(ride => ({
-      ...ride,
-      remaining_seats: ride.available_seats - (ride.bookings?.[0]?.count || 0)
-    }));
+    // 计算实际可用座位数 (exclude cancelled bookings)
+    const ridesWithAvailableSeats = rides.map(ride => {
+      const bookedSeats = (ride.bookings || [])
+        .filter(b => b.status !== 'cancelled')
+        .reduce((sum, b) => sum + (b.seats_booked || 0), 0);
+      return {
+        ...ride,
+        remaining_seats: ride.available_seats - bookedSeats
+      };
+    });
 
     res.json({
       success: true,
@@ -244,7 +249,17 @@ export const updateRide = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const updateData = req.body;
+    const { title, description, departureLocation, destinationLocation, departureTime, arrivalTime, availableSeats, pricePerSeat, rules } = req.body;
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (departureLocation !== undefined) updateData.departure_location = departureLocation;
+    if (destinationLocation !== undefined) updateData.destination_location = destinationLocation;
+    if (departureTime !== undefined) updateData.departure_time = departureTime;
+    if (arrivalTime !== undefined) updateData.arrival_time = arrivalTime;
+    if (availableSeats !== undefined) updateData.available_seats = availableSeats;
+    if (pricePerSeat !== undefined) updateData.price_per_seat = pricePerSeat;
+    if (rules !== undefined) updateData.rules = rules;
 
     // 检查行程是否存在且属于当前用户
     const { data: existingRide, error: fetchError } = await supabaseAdmin

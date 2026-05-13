@@ -16,18 +16,18 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const SELLERS = [
-  'e3404fe6-9b0f-4391-8a07-c70f73be7269',
-  'c5b5d25a-0457-4b71-b431-4a44702f8a18',
-  'edd6706f-4618-4cd7-b033-bce0aa351077',
-  '68214132-9714-4154-b613-a5a4070835ae',
-  'd26d2f0d-47af-48a1-a125-0c0d86c859a4',
-  'fe8f04a2-cd17-4d28-96dd-5667bbd2922d',
-  '45226263-683d-4c60-b1a0-82a60cb25d68',
-  '5f4f09a5-b5b2-4133-afa4-bd0fdd2a7f21',
-  'e4beb26d-37be-46ca-9866-7d15a5a6271a',
-  'fa98cbf3-0514-4d2c-a684-821ff9f1640c',
-  '0e6db677-2929-46ad-aac0-c6db0c466ede',
-  '08a86a2f-98ab-4205-bf19-488972c81821',
+  'f600615c-3a60-4f02-b481-bcb6768610bc', // zrc (rz469)
+  '215ca302-e56a-4eb0-a975-6cc01364e900', // Cindy (xp88)
+  '24631fad-e45c-4e21-a619-405d8e014da6', // witty (cl2822)
+  '8cf39585-5c61-4007-bc81-5c47d58f95cf', // Lucas (yj596)
+  '0fa37cd1-cd52-45a4-b64e-4d242c2e823b', // Keer Wang (kw764)
+  '66da4df1-2d07-4c16-8c8b-0ccc67bbb5f0', // Alinaaaa (zx378)
+  'da4cb849-52c0-461e-8a4a-9fe9f4258af9', // mayonaise (sh2662)
+  '0f85badd-b63b-4255-b688-beec6d6808d7', // Charlle (cls384)
+  '42bcfcd4-7fb5-4911-873f-3f9aca63b326', // Dianeth (dlt1)
+  'f74b2c19-f486-451d-be43-3040debaec29', // Marilyn (xl2259)
+  'dbfe8eb3-8d4e-4e71-9305-27abbc4e2414', // Felix (rc993)
+  'aec26317-d4a5-4f5d-91fd-69bea5b8f9e1', // Nick (nhk37)
 ];
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];

@@ -526,7 +526,7 @@ const selectedCategory = ref('All')
 const showAdvancedFilter = ref(false)
 const priceRange = ref([0, 2000])
 const condition = ref('all')
-const sortBy = ref('created_at')
+const sortBy = ref('created_at_desc')
 const showPostModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedItem = ref(null)
@@ -689,11 +689,11 @@ const conditionOptions = [
 
 // Sort options
 const sortOptions = [
-  { value: 'created_at', label: 'Latest', order: 'desc' },
-  { value: 'price', label: 'Price: Low to High', order: 'asc' },
-  { value: 'price', label: 'Price: High to Low', order: 'desc' },
-  { value: 'views_count', label: 'Most Viewed', order: 'desc' },
-  { value: 'favorites_count', label: 'Most Popular', order: 'desc' }
+  { value: 'created_at_desc', label: 'Latest', sortBy: 'created_at', order: 'desc' },
+  { value: 'price_asc', label: 'Price: Low to High', sortBy: 'price', order: 'asc' },
+  { value: 'price_desc', label: 'Price: High to Low', sortBy: 'price', order: 'desc' },
+  { value: 'views_count_desc', label: 'Most Viewed', sortBy: 'views_count', order: 'desc' },
+  { value: 'favorites_count_desc', label: 'Most Popular', sortBy: 'favorites_count', order: 'desc' }
 ];
 
 const isSelectedItemOwner = computed(() => {
@@ -764,13 +764,14 @@ const normalizeMarketplaceItem = (item = {}) => {
 const fetchItems = async () => {
   loading.value = true
   try {
+    const selectedSort = sortOptions.find(opt => opt.value === sortBy.value) || sortOptions[0]
     const params = {
       category: selectedCategory.value !== 'All' ? selectedCategory.value : undefined,
       condition: condition.value !== 'all' ? condition.value : undefined,
       minPrice: priceRange.value[0],
       maxPrice: priceRange.value[1],
-      sortBy: sortBy.value,
-      order: sortOptions.find(opt => opt.value === sortBy.value)?.order || 'desc'
+      sortBy: selectedSort.sortBy,
+      order: selectedSort.order
     }
 
     const response = await marketplaceAPI.getItems(params)
@@ -852,7 +853,7 @@ const applyFilters = () => {
 const resetFilters = () => {
   priceRange.value = [0, 2000]
   condition.value = 'all'
-  sortBy.value = 'created_at'
+  sortBy.value = 'created_at_desc'
 }
 
 const applyFiltersAndCloseDrawer = () => {

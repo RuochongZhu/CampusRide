@@ -269,7 +269,16 @@ export const updateItem = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const updateData = req.body;
+    const { title, description, category, price, condition, location, images, tags } = req.body;
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (category !== undefined) updateData.category = category;
+    if (price !== undefined) updateData.price = price;
+    if (condition !== undefined) updateData.condition = condition;
+    if (location !== undefined) updateData.location = location;
+    if (images !== undefined) updateData.images = images;
+    if (tags !== undefined) updateData.tags = tags;
 
     // 检查商品是否存在且属于当前用户
     const { data: existingItem, error: fetchError } = await supabaseAdmin
