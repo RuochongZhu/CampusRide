@@ -140,8 +140,7 @@ export const getRides = async (req, res, next) => {
         driver:users!driver_id(id, first_name, last_name, university, points),
         bookings:ride_bookings(count)
       `)
-      .eq('status', 'active')
-      .gte('departure_time', new Date().toISOString()); // 只显示未来的行程
+      .eq('status', 'active');
 
     // 添加筛选条件
     if (departure) {

@@ -87,8 +87,9 @@ async function startServer() {
         console.error('❌ Failed to initialize Socket.IO:', error);
       }
 
-      // Start cleanup service for scheduled tasks
-      cleanupService.start();
+      // Scheduled deletion of expired rides/marketplace items/activities is disabled
+      // so posts remain visible indefinitely. Re-enable by calling cleanupService.start().
+      // cleanupService.start();
     }
 
     // 优雅关闭处理
@@ -96,7 +97,7 @@ async function startServer() {
       console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
 
       try {
-        // Stop cleanup service
+        // Stop cleanup service (safe no-op if never started)
         cleanupService.stop();
 
         // 关闭服务器

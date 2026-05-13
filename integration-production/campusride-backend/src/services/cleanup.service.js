@@ -38,20 +38,13 @@ class CleanupService {
   }
 
   /**
-   * Run all cleanup tasks
+   * Run all cleanup tasks.
+   * Post auto-expiration (rides / marketplace / activities) is disabled so user
+   * content remains visible indefinitely. Only verification-token cleanup runs.
    */
   async runCleanup() {
     try {
-      console.log('🧹 Running cleanup tasks...');
-
-      await Promise.all([
-        this.cleanupExpiredRides(),
-        this.cleanupExpiredMarketplaceItems(),
-        this.cleanupExpiredActivities(),
-        this.cleanupExpiredVerificationTokens()
-      ]);
-
-      console.log('✅ Cleanup tasks completed');
+      await this.cleanupExpiredVerificationTokens();
     } catch (error) {
       console.error('❌ Cleanup error:', error);
     }
