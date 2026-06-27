@@ -47,6 +47,12 @@ const onRefreshed = (newToken) => {
   refreshSubscribers = [];
 };
 
+// 刷新失败时，通知所有排队等待的请求放弃，避免它们永久挂起（前端一直转圈）
+const onRefreshFailed = () => {
+  refreshSubscribers.forEach(callback => callback(null));
+  refreshSubscribers = [];
+};
+
 // 订阅token刷新
 const subscribeTokenRefresh = (callback) => {
   refreshSubscribers.push(callback);
@@ -87,6 +93,22 @@ api.interceptors.response.use(
         const originalRequest = error.config;
         const refreshToken = localStorage.getItem('refreshToken');
 
+        // 关键修复：如果失败的请求本身就是刷新接口，说明 refresh token 也已失效。
+        // 此时绝不能再次进入刷新流程，否则会和外层刷新调用形成死锁，
+        // 导致原始请求永远挂起（按钮一直转圈），并且 isRefreshing 永久卡死。
+        if (originalRequest?.url?.includes('/auth/refresh')) {
+          isRefreshing = false;
+          onRefreshFailed();
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+          if (currentPath !== '/login' && currentPath !== '/register' && !isPublicAuthRoute(currentPath)) {
+            const returnPath = currentPath !== '/' ? currentPath : '/home';
+            window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+          }
+          return Promise.reject(error);
+        }
+
         if (refreshToken && !isRefreshing) {
           isRefreshing = true;
 
@@ -118,7 +140,8 @@ api.interceptors.response.use(
           } catch (refreshError) {
             console.error('🔄 Token refresh failed:', refreshError);
             isRefreshing = false;
-            
+            onRefreshFailed();
+
             // 清除登录状态并跳转到登录页
             localStorage.removeItem('userToken');
             localStorage.removeItem('refreshToken');
@@ -139,8 +162,13 @@ api.interceptors.response.use(
           }
         } else if (refreshToken) {
           // 正在刷新token，将请求加入队列
-          return new Promise((resolve) => {
+          return new Promise((resolve, reject) => {
             subscribeTokenRefresh((newToken) => {
+              // 刷新失败时 newToken 为 null：拒绝排队的请求，而不是让它永远挂起
+              if (!newToken) {
+                reject(error);
+                return;
+              }
               originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
               resolve(api(originalRequest));
             });
