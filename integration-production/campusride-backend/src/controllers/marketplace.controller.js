@@ -170,6 +170,10 @@ export const searchItems = async (req, res, next) => {
       throw new AppError('Search query must be at least 2 characters', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
+    // Search title + description only. `tags` is a JSONB column in production, so a
+    // PostgREST `tags.cs.{...}` clause inside `.or()` is parsed as JSON and throws
+    // 22P02 ("invalid input syntax for type json"); keep search robust by omitting it.
+    const safeQ = q.trim().replace(/[,()]/g, ' ');
     let query = supabaseAdmin
       .from('marketplace_items')
       .select(`
@@ -177,7 +181,7 @@ export const searchItems = async (req, res, next) => {
         seller:users!seller_id(id, first_name, last_name, university)
       `)
       .eq('status', 'active')
-      .or(`title.ilike.%${q}%,description.ilike.%${q}%,tags.cs.{${q}}`);
+      .or(`title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`);
 
     if (category) {
       query = query.eq('category', category);

@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusRide — 中英对照 / Bilingual EN–ZH</title>
+<style>
+/* ============================================================
+   CampusRide bilingual paper — editorial / scholarly aesthetic
+   Cream paper, classic serifs, cinnabar-seal accent (印泥红)
+   ============================================================ */
+*{box-sizing:border-box}
+:root{
+  --paper:#f6f2ea;          /* warm paper background */
+  --card:#fffdf7;
+  --ink:#26211c;            /* warm near-black text */
+  --ink-soft:#6b6157;       /* secondary text */
+  --accent:#9b3322;         /* cinnabar seal red — section numbers, badges */
+  --accent-soft:#f1ded6;
+  --rule:#e2d8c6;           /* hairline rules */
+  --rule-strong:#c9bca4;
+  --code-bg:#eee7d8;
+  --en-font:'Georgia','Iowan Old Style','Times New Roman',serif;
+  --zh-font:'Songti SC','Noto Serif CJK SC','Source Han Serif SC','SimSun',serif;
+  --ui-font:-apple-system,'Helvetica Neue','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:ui-monospace,'SF Mono','Menlo','Consolas',monospace;
+}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui-font);
+  background-image:radial-gradient(rgba(155,51,34,.035) 1px,transparent 1px);
+  background-size:26px 26px;}
+
+/* ---------- sticky toolbar with language toggle ---------- */
+.toolbar{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;
+  padding:10px 24px;border-bottom:1px solid var(--rule);
+  background:rgba(246,242,234,.93);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.toolbar .brand{font-family:var(--en-font);font-size:14px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);font-weight:700;white-space:nowrap}
+.toolbar .brand small{display:block;font-family:var(--zh-font);font-size:11px;
+  letter-spacing:.35em;text-transform:none;color:var(--ink-soft);font-weight:400}
+.spacer{flex:1}
+.vgroup{display:flex;border:1px solid var(--rule-strong);border-radius:999px;overflow:hidden;background:var(--card)}
+.vbtn{appearance:none;border:0;background:transparent;cursor:pointer;
+  padding:6px 16px;font-family:var(--ui-font);font-size:13px;color:var(--ink-soft);
+  transition:background .18s,color .18s;white-space:nowrap}
+.vbtn + .vbtn{border-left:1px solid var(--rule)}
+.vbtn.on{background:var(--accent);color:#fff}
+.toclink{font-size:13px;color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--rule-strong)}
+.toclink:hover{color:var(--accent)}
+
+/* ---------- page frame ---------- */
+.wrap{max-width:1260px;margin:0 auto;padding:0 30px 90px}
+
+/* ---------- title block ---------- */
+.titleblock{text-align:center;padding:58px 12px 30px;border-bottom:4px double var(--rule-strong);margin-bottom:6px}
+.titleblock .kicker{font-size:12px;letter-spacing:.42em;color:var(--accent);text-transform:uppercase;margin-bottom:18px}
+.titleblock h1{margin:0 0 10px;font-family:var(--en-font);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.3}
+.titleblock h1 .sub{display:block;font-size:.62em;font-weight:400;color:var(--ink-soft);margin-top:8px;font-style:italic}
+.titleblock .h1zh{margin:14px 0 0;font-family:var(--zh-font);font-size:clamp(18px,2.3vw,24px);font-weight:700;line-height:1.55}
+.titleblock .authors{margin-top:22px;font-family:var(--en-font);font-size:16px}
+.titleblock .date{margin-top:6px;font-size:13px;color:var(--ink-soft);letter-spacing:.08em}
+.titleblock .seal{display:inline-block;margin-top:20px;padding:5px 14px;border:1.5px solid var(--accent);
+  color:var(--accent);font-family:var(--zh-font);font-size:13px;letter-spacing:.3em;border-radius:3px}
+
+/* ---------- reader's note ---------- */
+.note{margin:26px auto 8px;max-width:1020px;background:var(--card);border:1px solid var(--rule);
+  border-left:4px solid var(--accent);border-radius:6px;padding:4px 26px;font-size:13.5px;color:var(--ink-soft)}
+.note p{margin:12px 0;line-height:1.8}
+
+/* ---------- table of contents ---------- */
+.toc{margin:34px auto 10px;max-width:1020px;background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:22px 30px 26px}
+.toc h2{margin:0 0 14px;font-family:var(--en-font);font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+.toc ol{margin:0;padding-left:1.4em;columns:2;column-gap:46px;font-size:14px;line-height:2.05}
+.toc a{color:var(--ink);text-decoration:none;border-bottom:1px dotted var(--rule-strong)}
+.toc a:hover{color:var(--accent)}
+.toc .zhpart{color:var(--ink-soft);font-family:var(--zh-font)}
+.toc ol ol{columns:1;padding-left:1.3em;font-size:13px;line-height:1.95;margin:2px 0 6px}
+
+/* ---------- section headings ---------- */
+h2.sec,h3.sec,h4.sec{font-family:var(--en-font);line-height:1.4;scroll-margin-top:74px}
+h2.sec{font-size:25px;margin:64px 0 6px;padding-top:26px;border-top:1px solid var(--rule-strong)}
+h3.sec{font-size:19.5px;margin:42px 0 2px}
+h4.sec{font-size:16.5px;margin:34px 0 0;color:var(--ink)}
+.num{color:var(--accent);font-weight:700;margin-right:.55em;font-variant-numeric:lining-nums}
+.tzh{font-family:var(--zh-font);color:var(--ink-soft);font-weight:600}
+h2.sec .tzh{display:block;font-size:.66em;margin-top:6px}
+h3.sec .tzh,h4.sec .tzh{font-size:.86em;margin-left:.7em}
+h3.sec .tzh::before,h4.sec .tzh::before{content:"｜";color:var(--rule-strong);margin-right:.5em}
+
+/* ---------- the bilingual pair grid ---------- */
+.pair{display:grid;grid-template-columns:1fr 1fr;padding:13px 0;align-items:start}
+.pair > .en{font-family:var(--en-font);font-size:16.4px;line-height:1.7;
+  padding-right:34px;border-right:1px solid var(--rule)}
+.pair > .zh{font-family:var(--zh-font);font-size:15.8px;line-height:1.98;letter-spacing:.012em;padding-left:34px}
+.pair p{margin:.35em 0}
+.pair ol,.pair ul{margin:.5em 0;padding-left:1.5em}
+.pair li{margin:.5em 0}
+.pair + .pair{border-top:1px dashed #ece3d2}
+
+/* run-in paragraph labels (LaTeX \paragraph) */
+.plabel{font-weight:700}
+.zh .plabel{font-family:var(--zh-font)}
+
+/* finding badges F1, F3 ... */
+.fb{display:inline-block;background:var(--accent);color:#fff;font-family:var(--ui-font);
+  font-weight:700;font-size:.7em;padding:.14em .5em;border-radius:4px;
+  letter-spacing:.05em;vertical-align:.14em;margin-right:.15em}
+
+/* citation chips */
+.cite{color:#8a7e70;font-size:.82em;font-family:var(--ui-font);letter-spacing:.01em;white-space:normal}
+
+/* inline code & small caps */
+code{font-family:var(--mono);font-size:.84em;background:var(--code-bg);
+  padding:.1em .38em;border-radius:4px;color:#4c4338}
+.sc{font-variant:small-caps;letter-spacing:.04em}
+
+/* ---------- tables ---------- */
+.pair.tblpair > .en,.pair.tblpair > .zh{font-size:13.6px}
+table{width:100%;border-collapse:collapse;margin:8px 0 4px;background:var(--card)}
+caption{caption-side:top;text-align:left;font-size:12.8px;color:var(--ink-soft);
+  padding:0 0 8px;line-height:1.7}
+caption b{color:var(--accent)}
+th,td{padding:6px 9px;text-align:left;vertical-align:top;line-height:1.55}
+thead th{border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);font-weight:700;font-size:.95em}
+tbody tr:last-child td{border-bottom:2px solid var(--ink)}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+td.c,th.c{text-align:center}
+tbody tr:nth-child(even){background:rgba(155,51,34,.03)}
+.zh table{font-family:var(--zh-font)}
+.zh th,.zh td{letter-spacing:0}
+
+/* ---------- figures ---------- */
+.figure{margin:26px 0 8px;padding:18px 18px 6px;background:var(--card);
+  border:1px solid var(--rule);border-radius:8px}
+.figure .media{display:flex;justify-content:center;align-items:center;min-height:90px}
+.figure img,.figure object{max-width:min(640px,100%);height:auto}
+.figure .ph{display:none;width:100%;max-width:640px;border:1.5px dashed var(--rule-strong);
+  border-radius:6px;padding:30px 22px;text-align:center;color:var(--ink-soft);font-size:13px;line-height:1.9}
+.figure.missing img,.figure.missing object{display:none}
+.figure.missing .ph{display:block}
+.figure .ph code{background:#e7dfcd}
+.figure .figcap{display:grid;grid-template-columns:1fr 1fr;margin-top:14px;border-top:1px solid var(--rule)}
+.figure .figcap .en{font-family:var(--en-font);font-size:12.8px;line-height:1.65;color:var(--ink-soft);
+  padding:12px 26px 10px 4px;border-right:1px solid var(--rule)}
+.figure .figcap .zh{font-family:var(--zh-font);font-size:12.6px;line-height:1.9;color:var(--ink-soft);padding:12px 4px 10px 26px}
+.figure .figcap b{color:var(--accent)}
+
+/* ---------- view modes ---------- */
+body[data-view="en"] .zh{display:none!important}
+body[data-view="en"] .tzh{display:none!important}
+body[data-view="en"] .pair,body[data-view="en"] .figure .figcap{grid-template-columns:1fr}
+body[data-view="en"] .pair > .en,body[data-view="en"] .figcap .en{border-right:none;padding-right:4px;max-width:880px;margin:0 auto;width:100%}
+body[data-view="zh"] .en{display:none!important}
+body[data-view="zh"] h2.sec > .ten,body[data-view="zh"] h3.sec > .ten,body[data-view="zh"] h4.sec > .ten{display:none}
+body[data-view="zh"] .tzh{color:var(--ink);margin-left:0}
+body[data-view="zh"] h3.sec .tzh::before,body[data-view="zh"] h4.sec .tzh::before{content:""}
+body[data-view="zh"] .pair,body[data-view="zh"] .figure .figcap{grid-template-columns:1fr}
+body[data-view="zh"] .pair > .zh,body[data-view="zh"] .figcap .zh{padding-left:4px;max-width:880px;margin:0 auto;width:100%}
+
+/* ---------- responsive ---------- */
+@media(max-width:900px){
+  .toolbar{padding:8px 14px;gap:8px}
+  .wrap{padding:0 16px 70px}
+  .toc ol{columns:1}
+  body[data-view="both"] .pair,.pair{grid-template-columns:1fr}
+  .pair > .en{border-right:none;padding-right:0;padding-bottom:12px;border-bottom:1px dashed var(--rule)}
+  .pair > .zh{padding-left:0;padding-top:12px}
+  .pair > .en::before{content:"EN";display:inline-block;font:700 10px var(--ui-font);
+    color:#fff;background:#b3a78f;border-radius:3px;padding:1px 6px;margin-bottom:6px;letter-spacing:.1em}
+  .pair > .zh::before{content:"中文";display:inline-block;font:700 10px var(--ui-font);
+    color:#fff;background:var(--accent);border-radius:3px;padding:1px 6px;margin-bottom:6px;letter-spacing:.2em}
+  .figure .figcap{grid-template-columns:1fr}
+  .figure .figcap .en{border-right:none;padding:10px 4px 6px}
+  .figure .figcap .zh{padding:4px 4px 10px}
+}
+@media print{
+  .toolbar{display:none}
+  body{background:#fff}
+  .pair{break-inside:avoid-page}
+}
+</style>
+</head>
+<body data-view="both">
+
+<nav class="toolbar">
+  <div class="brand">CampusRide<small>中英对照全文</small></div>
+  <div class="spacer"></div>
+  <a class="toclink" href="#toc">目录 Contents</a>
+  <div class="vgroup" role="group" aria-label="language view">
+    <button class="vbtn on" data-v="both" onclick="setView('both')">双语对照</button>
+    <button class="vbtn" data-v="en" onclick="setView('en')">English</button>
+    <button class="vbtn" data-v="zh" onclick="setView('zh')">仅中文</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="titleblock">
+  <div class="kicker">Bilingual Manuscript · v4.3</div>
+  <h1>CampusRide: An Identity-Verified Multi-Module Campus Platform<span class="sub">and a Carpooling Case Study</span></h1>
+  <div class="h1zh">CampusRide：经身份验证的多模块校园平台与拼车案例研究</div>
+  <div class="authors">Ruochong Zhu &nbsp;·&nbsp; Charlle Sy</div>
+  <div class="date">April 2026 · 2026 年 4 月</div>
+  <div class="seal">中 英 对 照</div>
+</header>
+
+<div class="note">
+  <p><b>排版说明 · Reader's note</b> — 本页面由 LaTeX 源稿（v4.3）逐段转写而成，左栏为英文原文，右栏为中文译文，段落一一对齐。右上角可切换「双语对照 / English / 仅中文」三种阅读模式。文中引用以 <span class="cite">[CitationKey]</span> 形式保留原 BibTeX 键名（<code>bib</code> 文件未随稿提供，故不展开为完整参考文献条目）。三张图（Figures 1–3）引用源稿的 <code>pic/</code> 目录：将本 HTML 与 <code>pic/</code> 文件夹放在同一目录下打开，即可自动加载原图；否则显示占位说明。Citations are rendered as their original BibTeX keys; figures auto-load when the <code>pic/</code> folder sits alongside this file.</p>
+</div>
+
+<nav class="toc" id="toc">
+  <h2>Contents · 目录</h2>
+  <ol>
+    <li><a href="#sec-abstract">Abstract <span class="zhpart">摘要</span></a></li>
+    <li><a href="#sec-1">Introduction <span class="zhpart">引言</span></a></li>
+    <li><a href="#sec-2">Related Work <span class="zhpart">相关工作</span></a>
+      <ol>
+        <li><a href="#sec-2-1">2.1 Coordination Gap &amp; Integrated Platform <span class="zhpart">协调缺口与整合平台</span></a></li>
+        <li><a href="#sec-2-2">2.2 Design Primitives <span class="zhpart">设计基元</span></a></li>
+      </ol>
+    </li>
+    <li><a href="#sec-3">Methodology <span class="zhpart">研究方法</span></a></li>
+    <li><a href="#sec-4">Formative Survey Findings <span class="zhpart">形成性调查发现</span></a>
+      <ol>
+        <li><a href="#sec-4-1">4.1 Passenger-Side <span class="zhpart">乘客侧</span></a></li>
+        <li><a href="#sec-4-2">4.2 Rating-Fairness Asymmetry <span class="zhpart">评分公平性不对称</span></a></li>
+      </ol>
+    </li>
+    <li><a href="#sec-5">Platform Design <span class="zhpart">平台设计</span></a>
+      <ol>
+        <li><a href="#sec-5-1">5.1 Overview <span class="zhpart">总览与设计基元</span></a></li>
+        <li><a href="#sec-5-2">5.2 Carpool <span class="zhpart">拼车模块</span></a></li>
+        <li><a href="#sec-5-3">5.3 Marketplace <span class="zhpart">二手市场模块</span></a></li>
+        <li><a href="#sec-5-4">5.4 Activities <span class="zhpart">活动模块</span></a></li>
+        <li><a href="#sec-5-5">5.5 Groups <span class="zhpart">群组模块</span></a></li>
+        <li><a href="#sec-5-6">5.6 Messages <span class="zhpart">消息模块</span></a></li>
+        <li><a href="#sec-5-7">5.7 Points <span class="zhpart">积分模块</span></a></li>
+        <li><a href="#sec-5-8">5.8 Carpool Deep-Dive <span class="zhpart">拼车深入研究</span></a></li>
+        <li><a href="#sec-5-9">5.9 Soft-Launch Feedback <span class="zhpart">软启动部署反馈</span></a></li>
+      </ol>
+    </li>
+    <li><a href="#sec-6">Research-Agent Pipeline <span class="zhpart">证据流水线</span></a></li>
+    <li><a href="#sec-7">Discussion <span class="zhpart">讨论</span></a></li>
+    <li><a href="#sec-8">Conclusion <span class="zhpart">结论</span></a></li>
+  </ol>
+</nav>
+
+<!-- ==================== ABSTRACT ==================== -->
+<h2 class="sec" id="sec-abstract"><span class="ten">Abstract</span><span class="tzh">摘要</span></h2>
+
+<div class="pair">
+<div class="en" lang="en"><p>Small-town university campuses present a distinctive coordination challenge: commercial rideshare services are perceived as expensive and intermittently unavailable, yet students—especially international students—already coordinate rides, trades, and activities through informal messaging groups. This paper makes three contributions. First, we present <span class="sc">CampusRide</span>, an identity-verified multi-module campus platform covering carpool, marketplace, activities, groups, messaging, and a cross-module points system, all built on a shared <code>.edu</code> identity layer. Second, grounded in a formative survey (<i>N</i>=111 eligible; 79% Mandarin-native among those reporting native language), we report a deep-dive case on the carpool module. The survey reveals that all seven safety-related willingness-to-pay items exceed 50 on a 0–100 scale, that financial motivation dominates other incentive types, and—most distinctively—that a Driver/Both subset (<i>N</i>=19) exhibits the lowest tolerance for unfair ratings (mean = 29.1) compared with late arrivals (47.2), destination changes (41.4), or non-standard routes (52.3), resonating with algorithmic-management concerns documented for professional gig workers. Third, we contribute <em>research-agent</em>, an eight-phase thesis-conditioned evidence pipeline that produced an auditable literature base for this paper, including systematic contradiction surfacing for adversarial scoping. We discuss limitations including the absence of deployment evaluation, three-layer sample skew, and the risk that formalizing grassroots practices may reproduce platform-mediated harms.</p></div>
+<div class="zh" lang="zh-Hans"><p>小城镇大学校园呈现出一种独特的协调挑战：商业网约车服务被认为昂贵且时常不可用，而学生——尤其是国际学生——早已通过非正式消息群协调拼车、二手交易与活动。本文做出三项贡献。第一，我们提出 <span class="sc">CampusRide</span>：一个经身份验证的多模块校园平台，覆盖拼车、二手市场、活动、群组、消息以及跨模块积分系统，全部构建于共享的 <code>.edu</code> 身份层之上。第二，基于一项形成性调查（formative survey；<i>N</i>=111 名合格受访者；在报告母语的受访者中 79% 以普通话为母语），我们报告了对拼车模块的深入案例研究。调查显示：全部七项与安全相关的支付意愿（willingness-to-pay）条目在 0–100 量表上均超过 50 分；经济动机压过其他各类激励；最具特色的是，「司机／两者皆是」（Driver/Both）子样本（<i>N</i>=19）对不公平评分的容忍度最低（均值 29.1），低于乘客迟到（47.2）、目的地变更（41.4）或非常规路线（52.3），这与文献中针对职业零工劳动者记录的算法管理（algorithmic management）担忧相呼应。第三，我们贡献 <em>research-agent</em>：一个八阶段、以论题为条件（thesis-conditioned）的证据流水线，为本文产出了可审计的文献基础，包括服务于对抗性界定（adversarial scoping）的系统性矛盾揭示。我们讨论的局限包括：缺乏部署评估、三层样本偏斜，以及将草根实践形式化可能复制平台中介伤害的风险。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><b>Keywords:</b> campus platform, peer-to-peer carpooling, identity verification, rating fairness, formative survey, design case, evidence pipeline</p></div>
+<div class="zh" lang="zh-Hans"><p><b>关键词：</b>校园平台；点对点拼车；身份验证；评分公平性；形成性调查；设计案例；证据流水线</p></div>
+</div>
+
+<!-- ==================== 1 INTRODUCTION ==================== -->
+<h2 class="sec" id="sec-1"><span class="num">1</span><span class="ten">Introduction</span><span class="tzh">引言</span></h2>
+
+<div class="pair">
+<div class="en" lang="en"><p>Ithaca, New York—home to Cornell University—is a small city where commercial rideshare availability is neither guaranteed nor affordable for students who commute within the city or travel to distant metropolitan areas during breaks. This framing extends beyond transportation: international students in such settings coordinate rides, buy and sell used goods, organize social activities, and seek information through a single social channel, typically a WeChat or WhatsApp group <span class="cite">[Liu2023, Bonini2023]</span>. The resulting <em>campus coordination gap</em> is multi-faceted: it is not solved by a single-function app but rather calls for an integrated coordination infrastructure scoped to the campus community.</p></div>
+<div class="zh" lang="zh-Hans"><p>纽约州伊萨卡（Ithaca）——康奈尔大学（Cornell University）所在地——是一座小城市：对于在市内通勤、或在假期前往远方大都市的学生而言，商业网约车（rideshare）既不保证可用，也并不便宜。这一框架超出了交通范畴：处于这类环境中的国际学生，往往通过单一社交渠道（通常是微信或 WhatsApp 群）来协调拼车、买卖二手物品、组织社交活动并获取信息 <span class="cite">[Liu2023, Bonini2023]</span>。由此产生的「校园协调缺口」（<em>campus coordination gap</em>）是多方面的：它无法由单一功能的应用解决，而是需要一套面向校园社区范围的整合协调基础设施。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>We address that gap from three angles: a formative survey of students in the Cornell/Ithaca area (<i>N</i>=111 eligible respondents; 79% Mandarin-native among the 91 who reported native language) probing transportation pain points, willingness-to-pay for safety and trust features, motivational structure, and driver-side tolerance for passenger-generated friction; the design and implementation of <span class="sc">CampusRide</span>, a six-module campus platform unified by a shared <code>.edu</code> identity layer and four common design primitives; and <em>research-agent</em>, an eight-phase evidence pipeline supporting this paper's literature synthesis.</p></div>
+<div class="zh" lang="zh-Hans"><p>本文从三个角度回应这一缺口：一项面向康奈尔／伊萨卡地区学生的形成性调查（<i>N</i>=111 名合格受访者；在报告母语的 91 人中 79% 以普通话为母语），用以理解交通痛点、对安全与信任功能的支付意愿、动机结构，以及司机侧对乘客引发摩擦的容忍度；据此设计并实现、由共享 <code>.edu</code> 身份层与四项共通设计基元（design primitives）统一起来的六模块校园平台 <span class="sc">CampusRide</span>；以及支撑本文文献综合的八阶段证据流水线 <em>research-agent</em>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>We claim three contributions:</p>
+<ol>
+<li>A design case of an identity-verified six-module campus platform, demonstrating how a single <code>.edu</code> identity layer and shared design primitives can structure coordination infrastructure across campus-relevant domains.</li>
+<li>A formative, survey-grounded deep-dive into the carpool module, surfacing three transferable design observations: <code>.edu</code> verification as a trust primitive, grassroots coordination practices among international students, and a counterintuitive sensitivity of occasional campus drivers (<i>N</i>=19) toward rating fairness.</li>
+<li><em>research-agent</em>, a thesis-conditioned eight-phase evidence pipeline that provides an auditable literature synthesis workflow, contributed as a reusable methodology tool for the design-research community.</li>
+</ol></div>
+<div class="zh" lang="zh-Hans"><p>我们主张三项贡献：</p>
+<ol>
+<li>一个经身份验证的六模块校园平台设计案例，展示单一 <code>.edu</code> 身份层与共享设计基元如何在校园相关领域之间组织协调基础设施。</li>
+<li>一项基于调查的、形成性的拼车模块深入研究，提炼出三项可迁移的设计观察：作为信任基元（trust primitive）的 <code>.edu</code> 验证、国际学生中的草根协调实践，以及偶发性校园司机（<i>N</i>=19）对评分公平性表现出的反直觉敏感性。</li>
+<li><em>research-agent</em>：一个以论题为条件的八阶段证据流水线，提供可审计的文献综合工作流，作为可复用的方法学工具贡献给设计研究社区。</li>
+</ol></div>
+</div>
+
+<!-- ==================== 2 RELATED WORK ==================== -->
+<h2 class="sec" id="sec-2"><span class="num">2</span><span class="ten">Related Work</span><span class="tzh">相关工作</span></h2>
+
+<h3 class="sec" id="sec-2-1"><span class="num">2.1</span><span class="ten">The Campus Coordination Gap and the Case for an Integrated Platform</span><span class="tzh">校园协调缺口与整合平台的必要性</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Step 1 — A coordination gap exists.</span> A transportation coordination gap exists across university and small-city settings: mobility needs are local, recurrent, and socially embedded, yet available services are fragmented across campus shuttles, sparse public transit, and commercial rideshare <span class="cite">[Khan2023, ChagnonLessard2021]</span>. Campus-transit satisfaction studies document that service quality and schedule alignment vary substantially across institutions, pointing to structural friction rather than incidental inconvenience <span class="cite">[Khan2023]</span>. In sparsely populated areas, shared first- and last-mile systems are treated as service-design challenges rather than solved markets <span class="cite">[Pecherski2025]</span>, and meta-analytic work on Mobility-as-a-Service deployments suggests that integrated mobility systems can improve accessibility but that the evidence is not campus-specific <span class="cite">[Witlox2024]</span>. This framing resonates with our formative survey, where Uber was often described as expensive (28 of 32 respondents selecting “Slightly higher” or “Much higher”) and sometimes unavailable or unreliable (23 of 32 reporting at least moderate difficulty), though we return to that evidence in §4.1.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">第一步——缺口确实存在。</span>大学与小城市环境普遍存在交通协调缺口：出行需求是本地化、反复发生且嵌入社会关系的，而可用服务却分散在校园班车、稀疏的公共交通与商业网约车之间 <span class="cite">[Khan2023, ChagnonLessard2021]</span>。校园交通满意度研究表明，服务质量与时刻表匹配度在不同院校之间差异显著，这指向结构性摩擦而非偶发不便 <span class="cite">[Khan2023]</span>。在人口稀疏地区，共享的「首末公里」（first- and last-mile）系统被视为服务设计挑战而非已被解决的市场 <span class="cite">[Pecherski2025]</span>；关于「出行即服务」（Mobility-as-a-Service, MaaS）部署的元分析（meta-analysis）研究表明，整合出行系统可以改善可达性，但相关证据并非针对校园情境 <span class="cite">[Witlox2024]</span>。这一框架与我们的形成性调查相互呼应：Uber 常被描述为昂贵（32 名受访者中 28 人选择「略高」或「高得多」），且有时不可用或不可靠（32 人中 23 人报告至少中等程度的困难）——我们将在 §4.1 回到这些证据。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>Crucially, this gap is not confined to transportation: students in small-town campuses face coordination friction in secondhand trading, event organization, and everyday social coordination as well, which together form a broader <em>campus coordination gap</em>. It is the multi-faceted nature of this gap—not transportation alone—that sets up the second step of the argument.</p></div>
+<div class="zh" lang="zh-Hans"><p>关键在于，这一缺口并不局限于交通：小城镇校园中的学生在二手交易、活动组织与日常社交协调中同样面临协调摩擦，这些共同构成了更广义的「校园协调缺口」（<em>campus coordination gap</em>）。正是这一缺口的多面性——而非交通本身——引出了论证的第二步。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Step 2 — The gap calls for an integrated platform.</span> Studies of overseas students and adjacent mobile-messaging contexts document that everyday platforms such as WeChat and WhatsApp already carry practical coordination, risk management, and help-seeking across borders <span class="cite">[Liu2023, Shi2018, Jin2021]</span>. Chinese overseas students assemble “mobility repertoires” under constraint, deploying distributed social ties for information, emotional support, and logistical coordination <span class="cite">[Liu2023]</span>. Mobile instant messaging is documented as boundary-crossing infrastructure for informal problem-solving and knowledge exchange <span class="cite">[MobileIM2018]</span>, and private messaging groups expand into mutual aid, resistance, and community-of-practice functions when formal platforms leave coordination gaps <span class="cite">[Bonini2023]</span>. In our formative survey, 17 of 72 Mandarin-native respondents reported using WeChat or WhatsApp groups to find carpool partners, compared with 1 of 15 English-native respondents (or, within the smaller subset who answered the carpool-finding question, 17 of 21 vs. 1 of 2). While we frame this as a resonance with the literature rather than confirmation, the direction is consistent: messaging-based coordination is an active, everyday practice among international students.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">第二步——缺口所要求的是整合平台。</span>针对海外学生及相邻移动消息情境的研究记录了：微信、WhatsApp 等日常平台已经承载着跨境的实际协调、风险管理与求助行为 <span class="cite">[Liu2023, Shi2018, Jin2021]</span>。中国留学生在约束条件下组装「流动性技能库」（mobility repertoires），调动分布式社会关系以获取信息、情感支持与后勤协调 <span class="cite">[Liu2023]</span>。移动即时消息被记录为支撑非正式问题解决与知识交换的跨边界基础设施 <span class="cite">[MobileIM2018]</span>；当正式平台留下协调缺口时，私密消息群会扩展出互助、抗争与实践共同体（community of practice）等功能 <span class="cite">[Bonini2023]</span>。在我们的形成性调查中，72 名普通话母语受访者中有 17 人报告使用微信或 WhatsApp 群寻找拼车伙伴，而 15 名英语母语受访者中仅 1 人（或者，在回答了「如何寻找拼车」这一问题的较小子集内，为 17/21 对 1/2）。我们将其框定为与文献的「共鸣」而非「证实」，但方向是一致的：基于消息群的协调是国际学生中活跃的日常实践。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>This coordination is not limited to rides. The same WeChat groups serve as channels for secondhand trading, event announcements, information sharing, and emergency assistance <span class="cite">[You2023, Chen2024wechat, ShamirTixell2022]</span>. Students already depend on a single social channel for multi-domain coordination, providing an experiential anchor for the legitimacy of a multi-module platform: the integration the design proposes is one that users already improvise informally.</p></div>
+<div class="zh" lang="zh-Hans"><p>这种协调并不限于拼车。同样的微信群也充当二手交易、活动公告、信息分享与紧急援助的渠道 <span class="cite">[You2023, Chen2024wechat, ShamirTixell2022]</span>。学生已经依赖单一社交渠道进行多领域协调，这为多模块平台的正当性提供了经验性锚点：设计所提议的整合，正是用户早已在非正式地即兴实践的。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>A smaller body of super-app research indicates an emerging design space for closed-community integration within otherwise mass-market platforms. KakaoTalk chatrooms function as bounded “dwelling places” with primary, secondary, and tertiary social regions <span class="cite">[Kim2015kakao]</span>; LINE serves as intergenerational infrastructure inside Japanese family units <span class="cite">[Ohashi2017line]</span>; and nurse-facilitated patient groups inside WeChat operate as closed clinic-scoped coordination infrastructure <span class="cite">[Wang2020wechat]</span>. Platform-studies work on super-app platformization provides a theoretical backdrop <span class="cite">[Steinberg2020line]</span>. This literature indicates that bounded-scope multi-module coordination is a plausible design target, but a systematic treatment at the campus level is less developed—<span class="sc">CampusRide</span> contributes one case within this emerging space.</p></div>
+<div class="zh" lang="zh-Hans"><p>规模较小的「超级应用」（super-app）研究表明，在大众市场平台内部进行封闭社区整合是一个正在形成的设计空间。KakaoTalk 聊天室作为有边界的「栖居之所」（dwelling places）运作，呈现初级、次级与三级社会区域 <span class="cite">[Kim2015kakao]</span>；LINE 在日本家庭单元内部充当代际基础设施 <span class="cite">[Ohashi2017line]</span>；微信内由护士主持的患者群则作为限定于诊所范围的封闭协调基础设施运行 <span class="cite">[Wang2020wechat]</span>。关于超级应用平台化（platformization）的平台研究提供了理论背景 <span class="cite">[Steinberg2020line]</span>。这些文献表明，限定范围的多模块协调是一个可行的设计目标，但校园层面的系统性处理仍较欠缺——<span class="sc">CampusRide</span> 在这一新兴空间中贡献了一个案例。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>Establishing the gap and the case for integration, however, does not settle how such a platform should work. A service gap by itself does not justify a peer platform: sharing-economy research shows that peer exchange becomes viable only when trust cues, participation incentives, and fairness perceptions are designed carefully <span class="cite">[Ert2016, Blut2024, Broeder2023]</span>, with effects that differ by car ownership and user experience <span class="cite">[Hartl2025]</span> and that are platform- and context-dependent <span class="cite">[Amrollahi2024]</span>. Because most of this trust literature originates from Airbnb or general sharing-economy platforms, the case for a campus-scoped peer-rides system is motivated rather than fully established by prior work alone. We therefore distill, in §2.2, the four design primitives that operationalize these trust conditions for the campus setting.</p></div>
+<div class="zh" lang="zh-Hans"><p>然而，确立了缺口与整合的理由，并未解决这样一个平台应当如何运作。服务缺口本身并不足以论证一个点对点（peer-to-peer）平台的合理性：共享经济研究表明，唯有当信任线索、参与激励与公平感被精心设计时，点对点交换才可行 <span class="cite">[Ert2016, Blut2024, Broeder2023]</span>，且其效果因是否拥有汽车及用户经验而异 <span class="cite">[Hartl2025]</span>，并依赖于平台与情境 <span class="cite">[Amrollahi2024]</span>。由于现有信任文献大多源自 Airbnb 或一般共享经济平台，面向校园范围的点对点拼车系统，其论证是由先行工作「启发」（motivated）而非被其完全「确立」（established）的。因此，我们在 §2.2 中提炼出将这些信任条件落实到校园情境的四项设计基元。</p></div>
+</div>
+
+<h3 class="sec" id="sec-2-2"><span class="num">2.2</span><span class="ten">Design Primitives: Identity, Safety, Rating Fairness, and Rewards</span><span class="tzh">设计基元：身份、安全、评分公平性与奖励</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>We distill four design primitives from the literature, presenting them in parallel without value-ranking; the empirical findings in §4 and the design decisions in §5 perform the ranking work.</p></div>
+<div class="zh" lang="zh-Hans"><p>我们从文献中提炼四项设计基元，并以并列方式呈现、不做价值排序；§4 的实证发现与 §5 的设计决策承担排序工作。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Identity.</span> Identity verification in sharing-economy contexts has a mature literature <span class="cite">[Li2020trust, Ert2016]</span>. We specialize this to institutional and <code>.edu</code>-scoped contexts, where closed-community scoping can reduce stranger-coordination costs. The foundational evidence comes from Facebook's <code>.edu</code>-gated era: college students' use of the then-closed network was positively associated with bridging social capital <span class="cite">[Ellison2007]</span>, and institutionally seeded network ties enabled resource mobilization among college cohorts <span class="cite">[Ellison2014]</span>. Campus-bounded anonymous platforms such as Yik Yak further demonstrate that geographic or institutional scoping functions as a trust-relevant identity primitive even without explicit credential verification <span class="cite">[Schlesinger2017, Black2016, Heston2016, Wu2017]</span>.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">身份（Identity）。</span>共享经济情境下的身份验证已有成熟文献 <span class="cite">[Li2020trust, Ert2016]</span>。我们将其特化到机构与 <code>.edu</code> 范围的情境：封闭社区的范围限定（scoping）可以降低陌生人协调成本。基础性证据来自 Facebook 的 <code>.edu</code> 门禁时代：大学生对当时这一封闭网络的使用与桥接型社会资本（bridging social capital）正相关 <span class="cite">[Ellison2007]</span>；由机构播种的网络关系使大学同辈群体得以进行资源动员 <span class="cite">[Ellison2014]</span>。Yik Yak 等以校园为边界的匿名平台进一步表明，即使没有显式的凭证验证，地理或机构范围限定本身就是一种与信任相关的身份基元 <span class="cite">[Schlesinger2017, Black2016, Heston2016, Wu2017]</span>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Safety.</span> Platforms can reduce uncertainty during a trip through real-time location sharing, SOS escalation, and shared situational awareness <span class="cite">[Ali2024carpool, Divya2025]</span>. A women-only immunization carpool in rural Pakistan demonstrated that transport coordination can be paired with explicit protective infrastructure <span class="cite">[Ali2024carpool]</span>. Peer ride-sharing design work emphasizes coordination and safety features over ratings, suggesting that amateur-driver settings may govern trust through different levers than professional gig platforms <span class="cite">[RiderConnect2026]</span>.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">安全（Safety）。</span>平台可以通过实时位置共享、SOS 升级机制与共享态势感知来降低行程中的不确定性 <span class="cite">[Ali2024carpool, Divya2025]</span>。巴基斯坦农村一项面向免疫接种的女性专用拼车项目表明，交通协调可以与显式的保护性基础设施相配对 <span class="cite">[Ali2024carpool]</span>。点对点拼车设计研究强调协调与安全功能优先于评分，提示业余司机情境可能通过不同于职业零工平台的杠杆来治理信任 <span class="cite">[RiderConnect2026]</span>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Rating fairness.</span> Reputation systems coordinate trust, but recent work increasingly asks who is disadvantaged by biased feedback, asymmetric visibility, or platform-side promotion rules <span class="cite">[Tushev2022, Christiaens2025]</span>. Anti-discrimination design strategies document that sharing-economy platform features can trigger discrimination and that specific software design strategies can mitigate it <span class="cite">[Tushev2022]</span>. Platform-level fairness dynamics under biased ratings show that promotion policies can counteract rating-based discrimination <span class="cite">[Smit2026]</span>. Importantly, existing rating-fairness literature primarily covers professional gig workers; whether amateur or occasional drivers exhibit similar rating anxiety is a question we pursue in §4.2.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">评分公平性（Rating fairness）。</span>声誉系统（reputation system）协调信任，但近期研究越来越多地追问：谁会因有偏反馈、不对称可见性或平台侧推广规则而处于不利地位 <span class="cite">[Tushev2022, Christiaens2025]</span>。反歧视设计策略研究记录了共享经济平台功能可能诱发歧视、而特定软件设计策略可以缓解之 <span class="cite">[Tushev2022]</span>。在有偏评分条件下的平台级公平动力学研究显示，推广策略可以抵消基于评分的歧视 <span class="cite">[Smit2026]</span>。重要的是，现有评分公平性文献主要覆盖职业零工劳动者；业余或偶发性司机是否表现出类似的评分焦虑，正是我们在 §4.2 中追问的问题。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Rewards.</span> Gamification is commonly discussed as a behavioral design layer that can sustain participation and pro-social mobility choices <span class="cite">[Galeote2021, Zhang2023ant, Vacondio2025]</span>. We treat it as a parallel lever with different behavioral aims than identity, safety, or fairness—not as a substitute for them.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">奖励（Rewards）。</span>游戏化（gamification）通常被讨论为一种行为设计层，可以维持参与并促进亲社会的出行选择 <span class="cite">[Galeote2021, Zhang2023ant, Vacondio2025]</span>。我们将其视为一根与身份、安全或公平性行为目标不同的并行杠杆——而非它们的替代品。</p></div>
+</div>
+
+<!-- ==================== 3 METHODOLOGY ==================== -->
+<h2 class="sec" id="sec-3"><span class="num">3</span><span class="ten">Methodology</span><span class="tzh">研究方法</span></h2>
+
+<h3 class="sec" id="sec-3-1"><span class="num">3.1</span><span class="ten">Formative Survey Protocol</span><span class="tzh">形成性调查方案</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>We distributed an online survey via Qualtrics to students in the Cornell University and broader Ithaca area between February and March 2025. Participation was voluntary and anonymous; informed consent was obtained at the start of the survey. The survey yielded <i>N</i>=111 eligible respondents.</p></div>
+<div class="zh" lang="zh-Hans"><p>我们于 2025 年 2 月至 3 月通过 Qualtrics 向康奈尔大学及更广泛伊萨卡地区的学生发放在线问卷。参与自愿且匿名；问卷开始时获取知情同意（informed consent）。本次问卷获得 <i>N</i>=111 名合格受访者。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>Among the 91 respondents who reported their native language, 72 (79%) indicated Mandarin Chinese, 15 (16%) indicated English, and 4 (5%) indicated other languages. We disclose this distribution as scope: our findings are most directly grounded in the experience of Mandarin-speaking international students, and we caution against generalizing to the broader campus population. Self-reported travel roles were: Rider (<i>N</i>=56), Driver (<i>N</i>=23), Both (<i>N</i>=22), and unreported (<i>N</i>=10).</p></div>
+<div class="zh" lang="zh-Hans"><p>在报告母语的 91 名受访者中，72 人（79%）为普通话，15 人（16%）为英语，4 人（5%）为其他语言。我们将这一分布作为适用范围（scope）予以披露：本文发现最直接地植根于以普通话为母语的国际学生的经验，并提醒读者不要泛化到更广泛的校园人群。自报出行角色为：乘客（Rider，<i>N</i>=56）、司机（Driver，<i>N</i>=23）、两者皆是（Both，<i>N</i>=22）、未报告（<i>N</i>=10）。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>The survey covered seven modules: demographics, travel patterns, pain points, Uber perception (pricing and availability), willingness-to-pay for safety features (seven items on a 0–100 slider), motivational structure for carpooling (four items on a 0–100 slider), and driver-side tolerance for passenger-generated friction (four items on a 0–100 slider). All analyses are descriptive; we report no inferential statistics, no <i>p</i>-values, and no significance claims. Each finding is reported with the per-item <i>N</i>.</p></div>
+<div class="zh" lang="zh-Hans"><p>问卷覆盖七个模块：人口学信息、出行模式、痛点、对 Uber 的感知（价格与可用性）、对安全功能的支付意愿（七个条目，0–100 滑块）、拼车动机结构（四个条目，0–100 滑块），以及司机侧对乘客引发摩擦的容忍度（四个条目，0–100 滑块）。所有分析均为描述性（descriptive）；我们不报告任何推断统计（inferential statistics）、<i>p</i> 值或显著性断言。每项发现均附各条目样本量 <i>N</i>。</p></div>
+</div>
+
+<h3 class="sec" id="sec-3-2"><span class="num">3.2</span><span class="ten">Literature Synthesis via Research-Agent</span><span class="tzh">基于 Research-Agent 的文献综合</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The literature base for §2 and §7.2 was assembled using <em>research-agent</em>, an eight-phase thesis-conditioned evidence pipeline. The pipeline progresses through corpus assembly (OpenAlex, Semantic Scholar, arXiv, Lens, Crossref), classification into a ten-category taxonomy (A–J), deep extraction, relationship-graph construction with evidence-sufficiency diagnostics, narrative-chain generation, contradiction mapping, evidence-inventory compilation, and five-reviewer evaluation. Its direct value to this paper is twofold: an auditable contradiction-surfacing process that shaped our adversarial scoping (§7.2), and evidence-sufficiency diagnostics that flagged under-covered categories requiring manual supplement. The architecture and application are detailed in §6; the full implementation, configuration, and audit logs are open-sourced at the project repository. We describe the pipeline as an <em>evidence-chain organization tool</em>, not as an automated thesis generator or open-ended gap-discovery mechanism.</p></div>
+<div class="zh" lang="zh-Hans"><p>§2 与 §7.2 的文献基础由 <em>research-agent</em> 构建——一个八阶段、以论题为条件的证据流水线。流水线依次经过：语料库构建（OpenAlex、Semantic Scholar、arXiv、Lens、Crossref）、按十类分类法（A–J）的分类、深度抽取、带证据充分性诊断（evidence-sufficiency diagnostics）的关系图构建、叙事链（narrative chain）生成、矛盾映射（contradiction mapping）、证据清单编制，以及五评审人评估。它对本文的直接价值有二：其一是可审计的矛盾揭示过程，塑造了我们的对抗性界定（§7.2）；其二是证据充分性诊断，标记出需要人工补充的覆盖不足类别。架构与应用详见 §6；完整实现、配置与审计日志已在项目仓库开源。我们将该流水线描述为一种「证据链组织工具」，而非自动论文生成器，也不是开放式的研究空白发现机制。</p></div>
+</div>
+
+<!-- ==================== 4 FINDINGS ==================== -->
+<h2 class="sec" id="sec-4"><span class="num">4</span><span class="ten">Formative Survey Findings</span><span class="tzh">形成性调查发现</span></h2>
+
+<h3 class="sec" id="sec-4-1"><span class="num">4.1</span><span class="ten">Passenger-Side: Transportation Gap, WTP, and Motivations</span><span class="tzh">乘客侧：交通缺口、支付意愿与动机</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel"><b class="fb">F1</b> Transportation-gap quantification.</span> Among the 32 respondents who answered the Uber-pricing question (Q16), 28 (88%) selected “Slightly higher” or “Much higher than other cities.” Among the 32 who rated Uber availability (Q23), 23 (72%) selected “Moderate,” “Somewhat difficult,” or “Very difficult.” These numbers quantify a perceived gap but do not constitute a causal claim about market failure.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><b class="fb">F1</b> 交通缺口量化。</span>在回答 Uber 价格问题（Q16）的 32 名受访者中，28 人（88%）选择「略高」或「比其他城市高得多」。在评价 Uber 可用性（Q23）的 32 人中，23 人（72%）选择「中等」「有些困难」或「非常困难」。这些数字量化了一种被感知的缺口，但并不构成关于市场失灵（market failure）的因果断言。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel"><b class="fb">F1b</b> Distance- and role-conditioned pain-point structure.</span> Beyond the Uber-specific gap above, we asked respondents to rate eight categories of travel issues—inflexible schedule, bus delays, expensive parking, weather disruptions, limited coverage, luggage restrictions, safety hazards, and inconsistent operating hours—across three distance scenarios. Figure 1 disaggregates the responses by travel role and distance scenario. We frame this as a directional observation rather than a quantitative claim: per-cell <i>N</i> ranges from 3 to 7, below conventional thresholds even for descriptive design-research reporting. The coarse pattern is that role-specific concerns concentrate at shorter distances—Driver/Both respondents foreground weather disruptions and expensive parking within Ithaca, while Rider-only respondents foreground limited coverage and inconsistent operating hours—and partially converge at the long-distance end, where limited coverage emerges as a shared concern. This distance-conditioned convergence is consistent with the carpool module's prioritization of long-distance trip matching (see <b class="fb">F6</b> below and §5.2).</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><b class="fb">F1b</b> 以距离与角色为条件的痛点结构。</span>在上述 Uber 特定缺口之外，我们请受访者在三种距离情景下对八类出行问题进行评分——时刻表不灵活、公交延误、停车昂贵、天气干扰、覆盖有限、行李限制、安全隐患与运营时间不稳定。图 1 按出行角色与距离情景对回答进行了分解。我们将其框定为方向性观察而非定量断言：各单元格样本量 <i>N</i> 介于 3–7 之间，即便按描述性设计研究报告的常规阈值衡量也偏低。粗略模式是：角色特异性关切集中在较短距离——Driver/Both 受访者在伊萨卡市内突出天气干扰与停车昂贵，而仅乘客（Rider-only）受访者突出覆盖有限与运营时间不稳定——并在长距离端部分汇合，「覆盖有限」成为共同关切。这种以距离为条件的汇合，与拼车模块对长距离行程匹配的优先级设定相一致（见下文 <b class="fb">F6</b> 与 §5.2）。</p></div>
+</div>
+
+<figure class="figure" id="fig-1">
+  <div class="media">
+    <object data="pic/q30_severity_by_distance.pdf" type="application/pdf" width="640" height="430" onerror="this.closest('.figure').classList.add('missing')"><span></span></object>
+    <div class="ph">Figure 1 — 图像文件：<code>pic/q30_severity_by_distance.pdf</code><br>将本 HTML 与源稿的 <code>pic/</code> 文件夹放在同一目录即可显示该 PDF 图。<br><span lang="en">Place this HTML next to the manuscript's <code>pic/</code> folder to render the PDF figure.</span></div>
+  </div>
+  <div class="figcap">
+    <div class="en" lang="en"><b>Figure 1.</b> Severity of eight travel-issue categories across three distance scenarios, grouped by travel role. Higher values indicate greater perceived severity. Driver/Both subset <i>N</i>=3–5 per axis (red solid); Rider-only subset <i>N</i>=3–7 per axis (blue dashed). Per-cell sample sizes are small.</div>
+    <div class="zh" lang="zh-Hans"><b>图 1.</b> 三种距离情景下八类出行问题的严重度，按出行角色分组。数值越高表示感知严重度越高。Driver/Both 子样本每轴 <i>N</i>=3–5（红色实线，red solid）；Rider-only 子样本每轴 <i>N</i>=3–7（蓝色虚线，blue dashed）。各单元格样本量较小。</div>
+  </div>
+</figure>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel"><b class="fb">F3</b> Willingness-to-pay for safety features.</span> Seven safety-related features were each rated on a 0–100 slider indicating the percentage by which each feature would increase the respondent's willingness to use a carpooling service (Table 1). All seven items exceeded a mean of 50, with real-time location sharing (mean = 69.1, median = 76) and <code>.edu</code> school-email verification (mean = 67.3, median = 79) as the top two.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><b class="fb">F3</b> 对安全功能的支付意愿。</span>七项与安全相关的功能各以 0–100 滑块评分，数值表示该功能会使受访者使用拼车服务的意愿提升的百分比（表 1）。全部七项均值超过 50，其中实时位置共享（均值 69.1，中位数 76）与 <code>.edu</code> 学校邮箱验证（均值 67.3，中位数 79）位居前二。</p></div>
+</div>
+
+<div class="pair tblpair">
+<div class="en" lang="en">
+<table>
+<caption><b>Table 1.</b> Willingness-to-pay uplift for seven safety features (0–100 scale). Items sorted by mean.</caption>
+<thead><tr><th>Feature</th><th class="r">N</th><th class="r">Mean</th><th class="r">Median</th></tr></thead>
+<tbody>
+<tr><td>Real-time location sharing</td><td class="r">31</td><td class="r">69.1</td><td class="r">76</td></tr>
+<tr><td>School email verification (<code>.edu</code>)</td><td class="r">31</td><td class="r">67.3</td><td class="r">79</td></tr>
+<tr><td>Emergency SOS button</td><td class="r">30</td><td class="r">63.5</td><td class="r">64</td></tr>
+<tr><td>Driver experience visibility</td><td class="r">31</td><td class="r">60.5</td><td class="r">60</td></tr>
+<tr><td>Auto trip-sharing w/ contacts</td><td class="r">30</td><td class="r">55.4</td><td class="r">52</td></tr>
+<tr><td>Driver social connections</td><td class="r">30</td><td class="r">54.9</td><td class="r">60</td></tr>
+<tr><td>Interior car photos</td><td class="r">30</td><td class="r">50.9</td><td class="r">52</td></tr>
+</tbody>
+</table>
+</div>
+<div class="zh" lang="zh-Hans">
+<table>
+<caption><b>表 1.</b> 七项安全功能的支付意愿提升（0–100 量表），按均值排序。</caption>
+<thead><tr><th>功能</th><th class="r">N</th><th class="r">均值</th><th class="r">中位数</th></tr></thead>
+<tbody>
+<tr><td>实时位置共享</td><td class="r">31</td><td class="r">69.1</td><td class="r">76</td></tr>
+<tr><td>学校邮箱验证（<code>.edu</code>）</td><td class="r">31</td><td class="r">67.3</td><td class="r">79</td></tr>
+<tr><td>紧急 SOS 按钮</td><td class="r">30</td><td class="r">63.5</td><td class="r">64</td></tr>
+<tr><td>司机经验可见性</td><td class="r">31</td><td class="r">60.5</td><td class="r">60</td></tr>
+<tr><td>行程自动分享给联系人</td><td class="r">30</td><td class="r">55.4</td><td class="r">52</td></tr>
+<tr><td>司机社交关系展示</td><td class="r">30</td><td class="r">54.9</td><td class="r">60</td></tr>
+<tr><td>车内照片</td><td class="r">30</td><td class="r">50.9</td><td class="r">52</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>We observe that all seven items cross the 50-point threshold and that the top four items have medians at or above 60, indicating broadly positive disposition toward safety-related features in peer carpooling.</p></div>
+<div class="zh" lang="zh-Hans"><p>我们观察到：全部七项均跨过 50 分阈值，且前四项的中位数都不低于 60，表明受访者对点对点拼车中的安全相关功能持广泛的积极态度。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel"><b class="fb">F4</b> Motivation structure.</span> Four motivation items were rated on a 0–100 slider. The aggregate results exhibit a two-tier structure: splitting fuel costs leads at 63.6 (<i>N</i>=31), followed by a cluster of platform rewards/gamification at 48.3 (<i>N</i>=24), social network expansion at 45.6 (<i>N</i>=26), and environmental impact at 44.5 (<i>N</i>=24). Financial motivation is the dominant driver, while gamification, social, and environmental motivations form a secondary tier at roughly comparable levels. Disaggregated by travel role (Figure 2), the Driver/Both subset rates platform rewards and social expansion appreciably higher than the Rider-only subset, while the Rider-only subset rates environmental impact slightly higher; both subsets converge on splitting fuel costs as their top motivation. This role split is consistent with the platform's gamification design (§5.8.4), in which points serve primarily as a driver-side incentive lever rather than as a substitute for the dominant cash-splitting motivation.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><b class="fb">F4</b> 动机结构。</span>四个动机条目以 0–100 滑块评分。汇总结果呈两层结构：分摊油费以 63.6（<i>N</i>=31）居首，随后是平台奖励／游戏化 48.3（<i>N</i>=24）、社交网络拓展 45.6（<i>N</i>=26）与环境影响 44.5（<i>N</i>=24）构成的集群。经济动机是主导驱动力，而游戏化、社交与环境动机构成大致相当的第二层级。按出行角色分解（图 2），Driver/Both 子样本对平台奖励与社交拓展的评分明显高于 Rider-only 子样本，而 Rider-only 子样本对环境影响的评分略高；两个子样本都将分摊油费作为最高动机。这一角色分化与平台的游戏化设计（§5.8.4）相一致：积分主要作为司机侧激励杠杆，而非替代占主导地位的现金分摊动机。</p></div>
+</div>
+
+<figure class="figure" id="fig-2">
+  <div class="media">
+    <img src="pic/q26_motivation_radar.png" alt="Figure 2: motivation radar" onerror="this.closest('.figure').classList.add('missing')">
+    <div class="ph">Figure 2 — 图像文件：<code>pic/q26_motivation_radar.png</code><br>将本 HTML 与源稿的 <code>pic/</code> 文件夹放在同一目录即可显示原图。<br><span lang="en">Place this HTML next to the manuscript's <code>pic/</code> folder to render the figure.</span></div>
+  </div>
+  <div class="figcap">
+    <div class="en" lang="en"><b>Figure 2.</b> Carpooling motivation by travel role (0–100 scale; higher = stronger motivation). Driver/Both subset <i>N</i>=15 (red solid) and Rider-only subset <i>N</i>=7 (blue dashed). Driver-side respondents rate platform rewards and social expansion higher than Rider-only respondents; Rider-only respondents rate environmental impact slightly higher; both subsets converge on splitting fuel costs as the dominant motivation.</div>
+    <div class="zh" lang="zh-Hans"><b>图 2.</b> 按出行角色划分的拼车动机（0–100 量表；数值越高 = 动机越强）。Driver/Both 子样本 <i>N</i>=15（红色实线，red solid），Rider-only 子样本 <i>N</i>=7（蓝色虚线，blue dashed）。司机侧受访者对平台奖励与社交拓展的评分高于仅乘客受访者；仅乘客受访者对环境影响的评分略高；两个子样本都将分摊油费汇聚为主导动机。</div>
+  </div>
+</figure>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel"><b class="fb">F6</b> Driver supply willingness.</span> Among 33 respondents who answered the driver supply-willingness questions (Q23_1–Q23_3), the proportion selecting “Very willing” or “Extremely willing” was: in-Ithaca trips 10/33 (30%), short-distance trips 9/33 (27%), and long-distance trips 12/33 (36%). Long-distance trips attracted the highest supply willingness, which directly informs the carpool module's prioritization of long-distance trip scenarios in §5.2.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><b class="fb">F6</b> 司机供给意愿。</span>在回答司机供给意愿问题（Q23_1–Q23_3）的 33 名受访者中，选择「非常愿意」或「极其愿意」的比例为：伊萨卡市内行程 10/33（30%）、短途行程 9/33（27%）、长途行程 12/33（36%）。长途行程吸引了最高的供给意愿，这直接影响了 §5.2 中拼车模块对长途行程场景的优先级设定。</p></div>
+</div>
+
+<h3 class="sec" id="sec-4-2"><span class="num">4.2</span><span class="ten">Driver-Subset Tolerance and the Rating-Fairness Asymmetry</span><span class="tzh">司机子样本容忍度与评分公平性不对称</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>This subsection reports the paper's most distinctive finding. We analyze driver-side tolerance for passenger-generated friction on Q24 (four items, each on a 0–100 slider where higher values indicate greater tolerance).</p></div>
+<div class="zh" lang="zh-Hans"><p>本小节报告本文最具特色的发现。我们分析 Q24 中司机侧对乘客引发摩擦的容忍度（四个条目，各以 0–100 滑块评分，数值越高表示容忍度越高）。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Subset selection rationale.</span> Q24 items are phrased as "As a driver, how tolerant would you be of…" Respondents who self-identified as Rider-only answered this question hypothetically, lacking actual driving experience to calibrate their responses. Mixing hypothetical and experience-based answers in a single analysis would dilute the signal from actual drivers. We therefore report Q24 results separately for two subsets: (a) the <i>Driver/Both subset</i> (per-item <i>N</i>=17–19, with <i>N</i>=17 for the strict intersection of respondents who completed all four items), comprising respondents who self-reported as Driver or Both; and (b) the <i>Rider-only control</i> (per-item <i>N</i>=11–12). The modal sample size in CHI-published work is <i>N</i>=12 <span class="cite">[Caine2016]</span>; our <i>N</i>=19 descriptive observation falls within the CHI local-standards distribution for formative design research.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">子样本选择依据。</span>Q24 条目的措辞为「作为司机，您对……的容忍度如何」。自我认定为 Rider-only（仅乘客）的受访者只是在假设情境下作答，缺乏真实驾驶经验来校准回答。将假设性回答与基于经验的回答混入同一分析，会稀释来自真实司机的信号。因此我们将 Q24 结果按两个子样本分别报告：(a) <i>Driver/Both 子样本</i>（各条目 <i>N</i>=17–19，其中完成全部四个条目的严格交集为 <i>N</i>=17），由自报为 Driver（司机）或 Both（两者皆是）的受访者组成；(b) <i>Rider-only 对照组</i>（各条目 <i>N</i>=11–12）。CHI 已发表研究中的众数样本量（modal sample size）为 <i>N</i>=12 <span class="cite">[Caine2016]</span>；我们 <i>N</i>=19 的描述性观察落在 CHI 形成性设计研究的本领域标准分布之内。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel"><b class="fb">F5</b> Core finding.</span> Table 2 presents the four tolerance items across both subsets using per-axis <i>N</i>, while Figure 3 visualizes the same pattern as a four-axis radar over the strict intersection of respondents who completed all four items.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><b class="fb">F5</b> 核心发现。</span>表 2 按各轴 <i>N</i> 给出两个子样本的四个容忍度条目，图 3 则在完成全部四个条目的受访者严格交集上，以四轴雷达图（radar）可视化同一模式。</p></div>
+</div>
+
+<div class="pair tblpair">
+<div class="en" lang="en">
+<table>
+<caption><b>Table 2.</b> Driver tolerance for passenger-generated friction (0–100 scale; higher = more tolerant). Bold highlights the lowest item within each subset.</caption>
+<thead><tr><th>Tolerance item</th><th class="r">N</th><th class="r">Mean</th><th class="r">N</th><th class="r">Mean</th></tr></thead>
+<tbody>
+<tr><td colspan="1"></td><td colspan="2" class="r"><i>Driver/Both</i></td><td colspan="2" class="r"><i>Rider-only</i></td></tr>
+<tr><td>Passenger late 10 min (Q24_1)</td><td class="r">19</td><td class="r">47.2</td><td class="r">12</td><td class="r">35.7</td></tr>
+<tr><td>Destination change (Q24_2)</td><td class="r">19</td><td class="r">41.4</td><td class="r">12</td><td class="r">19.6</td></tr>
+<tr><td><b>Unfair rating (Q24_3)</b></td><td class="r">19</td><td class="r"><b>29.1</b></td><td class="r">11</td><td class="r">22.4</td></tr>
+<tr><td>Non-standard route (Q24_4)</td><td class="r">17</td><td class="r">52.3</td><td class="r">11</td><td class="r">33.2</td></tr>
+</tbody>
+</table>
+</div>
+<div class="zh" lang="zh-Hans">
+<table>
+<caption><b>表 2.</b> 司机对乘客引发摩擦的容忍度（0–100 量表；数值越高 = 越能容忍）。加粗为各子样本内的最低项。</caption>
+<thead><tr><th>容忍度条目</th><th class="r">N</th><th class="r">均值</th><th class="r">N</th><th class="r">均值</th></tr></thead>
+<tbody>
+<tr><td colspan="1"></td><td colspan="2" class="r"><i>Driver/Both</i></td><td colspan="2" class="r"><i>Rider-only</i></td></tr>
+<tr><td>乘客迟到 10 分钟（Q24_1）</td><td class="r">19</td><td class="r">47.2</td><td class="r">12</td><td class="r">35.7</td></tr>
+<tr><td>变更目的地（Q24_2）</td><td class="r">19</td><td class="r">41.4</td><td class="r">12</td><td class="r">19.6</td></tr>
+<tr><td><b>不公平评分（Q24_3）</b></td><td class="r">19</td><td class="r"><b>29.1</b></td><td class="r">11</td><td class="r">22.4</td></tr>
+<tr><td>非常规路线（Q24_4）</td><td class="r">17</td><td class="r">52.3</td><td class="r">11</td><td class="r">33.2</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<figure class="figure" id="fig-3">
+  <div class="media">
+    <img src="pic/q24_tolerance_radar.png" alt="Figure 3: tolerance radar" onerror="this.closest('.figure').classList.add('missing')">
+    <div class="ph">Figure 3 — 图像文件：<code>pic/q24_tolerance_radar.png</code><br>将本 HTML 与源稿的 <code>pic/</code> 文件夹放在同一目录即可显示原图。<br><span lang="en">Place this HTML next to the manuscript's <code>pic/</code> folder to render the figure.</span></div>
+  </div>
+  <div class="figcap">
+    <div class="en" lang="en"><b>Figure 3.</b> Driver tolerance for passenger-generated friction (0–100 scale; higher = more tolerant), grouped by travel role. The radar uses the strict intersection of respondents who completed all four Q24 items: Driver/Both <i>N</i>=17 (red solid) and Rider-only <i>N</i>=11 (blue dashed). The Driver/Both polygon contracts visibly along the "unfair rating" axis (top) relative to the other three friction items, while the Rider-only control shows no comparable asymmetry.</div>
+    <div class="zh" lang="zh-Hans"><b>图 3.</b> 司机对乘客引发摩擦的容忍度（0–100 量表；数值越高 = 越能容忍），按出行角色分组。雷达图使用完成全部四个 Q24 条目的受访者严格交集：Driver/Both <i>N</i>=17（红色实线，red solid），Rider-only <i>N</i>=11（蓝色虚线，blue dashed）。Driver/Both 多边形在「不公平评分」轴（顶部）相对其他三个摩擦条目明显内缩，而 Rider-only 对照组未显示可比的不对称。</div>
+  </div>
+</figure>
+
+<div class="pair">
+<div class="en" lang="en"><p>Within the Driver/Both subset, "unfair rating" tolerance (29.1) is 12.3 to 23.2 points lower than the other three items (41.4–52.3). Counterintuitively, the least-tolerated disruption is not passenger behavioral misbehavior—arriving late, changing destinations, or requesting unusual routes—but unfairness from the rating system itself. The asymmetry is the visual signature of Figure 3: the "unfair rating" axis at the top of the radar contracts inward relative to the other three axes. In the Rider-only control, "unfair rating" (22.4) is not distinctly the lowest ("destination change" at 19.6 is lower), confirming that the distinctive rating-fairness asymmetry is anchored in the Driver/Both subset. This difference is precisely why the full-sample mixed report (<i>N</i>=30) is not the methodologically appropriate headline.</p></div>
+<div class="zh" lang="zh-Hans"><p>在 Driver/Both 子样本内部，「不公平评分」的容忍度（29.1）比其余三项（41.4–52.3）低 12.3 至 23.2 分。反直觉的是，最不被容忍的扰动并非乘客的行为失当——迟到、变更目的地或要求非常规路线——而是来自评分系统自身的不公平。这一不对称正是图 3 的视觉特征：雷达图顶部的「不公平评分」轴相对其他三轴向内收缩。在 Rider-only 对照组中，「不公平评分」（22.4）并非显著最低（「变更目的地」19.6 更低），从而印证这一独特的评分公平性不对称锚定于 Driver/Both 子样本。正是这一差异说明，全样本混合报告（<i>N</i>=30）在方法学上不适合作为标题性结论。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Literature dialogue.</span> Algorithmic-management research has documented professional gig workers' anxiety toward platform rating systems <span class="cite">[Keegan2025; Kinowska2022]</span>. Our observation resonates with this concern in a smaller-scale, higher-trust, non-professional campus peer-carpool setting. Two implications follow. First, even with <code>.edu</code> identity verification as a strong trust signal, the fairness of the rating system itself remains an independent, non-substitutable design concern. Second, rating anxiety is not exclusively a product of professional-labor bargaining: a small but growing peer-to-peer carpool literature documents similar concerns among amateur drivers in carsharing and carpooling settings <span class="cite">[Neifer2023; Hartl2025]</span>, and our Driver/Both-subset observation parallels this emerging pattern. Field experiments on two-sided reputation systems further document that the two sides of a peer marketplace respond asymmetrically to rating-system architecture <span class="cite">[Fradkin2021]</span>, though those studies use an economic fairness framing distinct from our HCI design-research perspective. We treat this as a formative design signal, not a confirmed replication.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">文献对话。</span>算法管理（algorithmic management）研究已记录了职业零工劳动者（gig workers）对平台评分系统的焦虑 <span class="cite">[Keegan2025; Kinowska2022]</span>。我们的观察在一个规模更小、信任更高、非职业化的校园点对点拼车情境中与这一关切形成共鸣。由此引出两点含义。第一，即便有 <code>.edu</code> 身份验证作为强信任信号，评分系统自身的公平性仍是一个独立的、不可替代的设计关切。第二，评分焦虑并非职业劳动议价的专属产物：一支虽小但持续增长的点对点拼车文献记录了业余司机在共享汽车（carsharing）与拼车情境中的类似关切 <span class="cite">[Neifer2023; Hartl2025]</span>，而我们的 Driver/Both 子样本观察与这一新兴模式相呼应。关于双边声誉系统（two-sided reputation systems）的现场实验进一步表明，点对点市场的两侧会对评分系统架构作出不对称回应 <span class="cite">[Fradkin2021]</span>，尽管这些研究采用的是与我们的人机交互（HCI）设计研究视角不同的经济学公平框架。我们将其视为形成性设计信号，而非已确认的复现。</p></div>
+</div>
+
+<h2 class="sec" id="sec-5"><span class="num">5</span><span class="ten">CampusRide Platform Design</span><span class="tzh">CampusRide 平台设计</span></h2>
+
+<h3 class="sec" id="sec-5-1"><span class="num">5.1</span><span class="ten">Platform Overview and Shared Design Primitives</span><span class="tzh">平台总览与共享设计基元</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="sc">CampusRide</span> is built on a Vue 3 + Express + Supabase + Socket.IO stack. Six modules—carpool, marketplace, activities, groups, messaging, and points—share four design primitives distilled in §2.2: institutional identity verification, safety infrastructure, rating fairness, and gamification rewards. Table 3 shows how each module engages these primitives.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="sc">CampusRide</span> 构建于 Vue 3 + Express + Supabase + Socket.IO 技术栈之上。六个模块——拼车（carpool）、二手市场（marketplace）、活动（activities）、群组（groups）、消息（messaging）与积分（points）——共享 §2.2 提炼的四个设计基元（design primitives）：机构身份验证、安全基础设施、评分公平性与游戏化奖励。表 3 展示了各模块对这些基元的运用情况。</p></div>
+</div>
+
+<div class="pair tblpair">
+<div class="en" lang="en">
+<table>
+<caption><b>Table 3.</b> Design-primitive engagement across modules. ✓✓ = intensive; ✓ = present; ○ = not applicable.</caption>
+<thead><tr><th>Module</th><th class="c">Identity</th><th class="c">Safety</th><th class="c">Rating</th><th class="c">Rewards</th></tr></thead>
+<tbody>
+<tr><td>Carpool</td><td class="c">✓</td><td class="c">✓✓</td><td class="c">✓✓</td><td class="c">✓</td></tr>
+<tr><td>Marketplace</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+<tr><td>Activities</td><td class="c">✓</td><td class="c">○</td><td class="c">○</td><td class="c">✓</td></tr>
+<tr><td>Groups</td><td class="c">✓</td><td class="c">○</td><td class="c">○</td><td class="c">○</td></tr>
+<tr><td>Messages</td><td class="c">✓</td><td class="c">○</td><td class="c">○</td><td class="c">○</td></tr>
+<tr><td>Points</td><td class="c" colspan="4"><i>(cross-module meta-layer)</i></td></tr>
+</tbody>
+</table>
+</div>
+<div class="zh" lang="zh-Hans">
+<table>
+<caption><b>表 3.</b> 各模块对设计基元的运用。✓✓ = 密集运用；✓ = 存在；○ = 不适用。</caption>
+<thead><tr><th>模块</th><th class="c">身份</th><th class="c">安全</th><th class="c">评分</th><th class="c">奖励</th></tr></thead>
+<tbody>
+<tr><td>拼车</td><td class="c">✓</td><td class="c">✓✓</td><td class="c">✓✓</td><td class="c">✓</td></tr>
+<tr><td>二手市场</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+<tr><td>活动</td><td class="c">✓</td><td class="c">○</td><td class="c">○</td><td class="c">✓</td></tr>
+<tr><td>群组</td><td class="c">✓</td><td class="c">○</td><td class="c">○</td><td class="c">○</td></tr>
+<tr><td>消息</td><td class="c">✓</td><td class="c">○</td><td class="c">○</td><td class="c">○</td></tr>
+<tr><td>积分</td><td class="c" colspan="4"><i>（跨模块元层，cross-module meta-layer）</i></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p>The <code>.edu</code> identity layer serves as the shared admission gate for all modules; the points module functions as a cross-module meta-layer; and the carpool module exercises all four primitives at maximum intensity, which—combined with the long-distance driver supply willingness finding (<b class="fb">F6</b>)—is why we select it for deep-dive analysis.</p></div>
+<div class="zh" lang="zh-Hans"><p><code>.edu</code> 身份层是所有模块共享的准入门槛；积分模块作为跨模块元层运作；而拼车模块以最高强度运用全部四个基元——这一点结合长途司机供给意愿发现（<b class="fb">F6</b>），正是我们选择它进行深入分析的原因。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-2"><span class="num">5.2</span><span class="ten">Carpool Module</span><span class="tzh">拼车模块</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The carpool module supports three distance categories: in-Ithaca commuting, short-distance regional trips, and long-distance trips to metropolitan areas (e.g., New York City, Boston, Syracuse Hancock Airport). It engages all four design primitives. The driver supply-willingness data (<b class="fb">F6</b>: long-distance 12/33 Very or Extremely willing, the highest of the three scenarios at 36%) directly motivated the design prioritization of long-distance trip matching as the primary use case.</p></div>
+<div class="zh" lang="zh-Hans"><p>拼车模块支持三类距离场景：伊萨卡市内通勤、短途区域行程，以及前往大都市区的长途行程（如纽约市、波士顿、雪城汉考克机场）。它运用了全部四个设计基元。司机供给意愿数据（<b class="fb">F6</b>：长途 12/33 选择「非常愿意」或「极其愿意」，以 36% 居三类场景之首）直接促成了将长途行程匹配作为首要用例的设计优先级。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">State machine and booking flow.</span> A ride row in the <code>rides</code> table moves through four states: <code>active</code> → <code>full</code> (when bookings fill all seats) → <code>completed</code> (driver-triggered) or <code>cancelled</code> (driver-triggered, soft-delete). A booking row in <code>ride_bookings</code> moves through <code>confirmed</code> (default, since we treat the demand-side as the decision point for this pilot) → <code>cancelled</code>. Seat availability is recomputed server-side on every booking and cancellation, rather than stored as a counter, so race conditions in the "last seat" case are narrow. Cancellation is disallowed after the scheduled <code>departure_time</code>. A ride cannot be updated once its status is <code>completed</code> or <code>cancelled</code>, and only the <code>driver_id</code> of a ride may trigger <code>completeRide</code>. These invariants are enforced at the controller layer, not via database constraints alone, so they are only as strong as the controller path.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">状态机与预订流程。</span><code>rides</code> 表中的行程行经历四种状态：<code>active</code>（活跃）→ <code>full</code>（预订占满全部座位时）→ <code>completed</code>（司机触发完成）或 <code>cancelled</code>（司机触发取消，软删除，soft-delete）。<code>ride_bookings</code> 表中的预订行经历 <code>confirmed</code>（默认确认，因为本试点将需求侧视为决策点）→ <code>cancelled</code>。座位余量在每次预订与取消时都由服务端重新计算，而非存储为计数器，因此「最后一个座位」场景下的竞态条件（race condition）窗口很窄。计划的 <code>departure_time</code>（出发时间）之后不允许取消。状态为 <code>completed</code> 或 <code>cancelled</code> 的行程不可再更新，且只有该行程的 <code>driver_id</code> 可以触发 <code>completeRide</code>。这些不变量在控制器层而非仅靠数据库约束来强制执行，因此其可靠性取决于控制器路径本身。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Booking side-effects.</span> A single successful booking triggers five side-effects in one request: (1) optional transition of the ride to <code>full</code>; (2) five notification records via <code>notification.service</code> (<code>ride_new_booking</code>, <code>ride_booking_confirmed</code>, <code>ride_payment_confirmed</code>, <code>ride_payment_received</code>, and two scheduled <code>ride_rating_reminder</code> rows whose <code>data.showAfter</code> field is <code>departure_time + 2h</code>); (3) automatic creation or membership-expansion of a <code>ride_carpool</code> group chat (detailed in §5.8.5); (4) a <code>wxgroup_notice_record</code> for an external WeChat notice channel; and (5) a Socket.IO event on the driver's personal room (<code>user:{driver_id}</code>) so the in-app badge updates in real time. Detailed design decisions follow in §5.8.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">预订副作用。</span>一次成功的预订在单个请求中触发五项副作用：(1) 视情况将行程转入 <code>full</code> 状态；(2) 经 <code>notification.service</code> 写入五条通知记录（<code>ride_new_booking</code>、<code>ride_booking_confirmed</code>、<code>ride_payment_confirmed</code>、<code>ride_payment_received</code>，以及两条计划的 <code>ride_rating_reminder</code> 行，其 <code>data.showAfter</code> 字段为 <code>departure_time + 2h</code>）；(3) 自动创建或扩充成员的 <code>ride_carpool</code> 群聊（详见 §5.8.5）；(4) 写入一条面向外部微信通知渠道的 <code>wxgroup_notice_record</code>；(5) 在司机个人房间（<code>user:{driver_id}</code>）上发出一个 Socket.IO 事件，使应用内角标实时更新。详细设计决策见 §5.8。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-3"><span class="num">5.3</span><span class="ten">Marketplace Module</span><span class="tzh">二手市场模块</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The marketplace module enables peer-to-peer secondhand trading inside the <code>.edu</code> scope. A listing in <code>marketplace_items</code> carries <code>seller_id</code>, <code>title</code>, <code>description</code>, <code>category</code>, <code>price</code>, <code>condition</code> (one of <code>new</code> / <code>like_new</code> / <code>good</code> / <code>fair</code> / <code>poor</code>), <code>location</code>, a <code>text[]</code> of <code>images</code>, a <code>text[]</code> of <code>tags</code>, a life-cycle <code>status</code> (<code>active</code> / <code>sold</code> / <code>removed</code>), and aggregate counters <code>views_count</code> and <code>favorites_count</code>. Social surface comes from three companion tables: <code>marketplace_comments</code> (threaded comments with soft-delete), <code>marketplace_comment_likes</code>, and <code>item_favorites</code>. Deletion is implemented as a <code>status = 'removed'</code> soft-delete rather than row deletion, so a seller who retracts a listing leaves an auditable trail for the rating system and for cross-user conversation threads.</p></div>
+<div class="zh" lang="zh-Hans"><p>二手市场模块支持 <code>.edu</code> 范围内的点对点二手交易。<code>marketplace_items</code> 中的一条商品记录包含 <code>seller_id</code>（卖家 ID）、<code>title</code>（标题）、<code>description</code>（描述）、<code>category</code>（类别）、<code>price</code>（价格）、<code>condition</code>（成色，取值 <code>new</code> / <code>like_new</code> / <code>good</code> / <code>fair</code> / <code>poor</code> 之一）、<code>location</code>（地点）、<code>text[]</code> 类型的 <code>images</code>（图片数组）与 <code>tags</code>（标签数组）、生命周期 <code>status</code>（<code>active</code> / <code>sold</code> / <code>removed</code>），以及汇总计数器 <code>views_count</code>（浏览数）与 <code>favorites_count</code>（收藏数）。社交表层由三张配套表提供：<code>marketplace_comments</code>（支持软删除的层级评论）、<code>marketplace_comment_likes</code>（评论点赞）与 <code>item_favorites</code>（商品收藏）。删除实现为 <code>status = 'removed'</code> 的软删除而非物理删行，因此撤回商品的卖家会为评分系统与跨用户会话线程留下可审计的痕迹。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Cross-module reuse.</span> Marketplace reuses three of the four carpool primitives. Identity: the <code>.edu</code> JWT is the shared admission gate, and the seller card on every listing carries the same verified-Cornell badge that drivers do. Messaging: clicking "Contact seller" opens a direct-message thread whose <code>context_type = 'marketplace'</code> and <code>context_id = &lt;item_id&gt;</code>, letting the recipient's inbox group messages by listing. Rewards: a successful transaction writes a <code>marketplace_transaction</code> point-transaction (base 8 points per the application-code catalog, Table 4), though in production this path has not yet written transactions.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">跨模块复用。</span>二手市场复用了拼车四基元中的三个。身份：<code>.edu</code> JWT（JSON Web Token，一种用于身份认证的令牌）是共享的准入门槛，每条商品的卖家卡片与司机一样展示同一枚「Cornell 已验证」徽章。消息：点击「联系卖家」会打开一个 <code>context_type = 'marketplace'</code>、<code>context_id = &lt;item_id&gt;</code> 的私信线程，使收件人的收件箱可按商品归组消息。奖励：一笔成功交易会写入一条 <code>marketplace_transaction</code> 积分流水（按应用代码目录基础分 8 分，见表 4），尽管在生产环境中该路径尚未写入过任何流水。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Outreach path.</span> Every newly created listing fires a <code>wxgroup_notice_record</code> insert formatted as "二手上新 〈title〉 + short link," where the link is resolved by <code>wechatLinkService.getBestNoticeLink</code>—mini-program short link if available, H5 URL as fallback. In the 2026-04-23 snapshot this path accounts for 62 of 82 <code>wxgroup_notice_record</code> rows, making the marketplace the single largest producer of outbound WeChat pushes. The live 15-item inventory, all <code>status = 'removed'</code> with 12 aggregate views and 0 favorites (§5.9), shows the ingestion and cross-posting path works end-to-end even though organic buyer uptake has not yet followed.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">外联路径。</span>每条新建商品都会触发一条 <code>wxgroup_notice_record</code> 插入，格式为「二手上新 〈标题〉 + 短链接」，链接由 <code>wechatLinkService.getBestNoticeLink</code> 解析——优先小程序短链，回退为 H5 URL。在 2026-04-23 快照中，该路径占 82 条 <code>wxgroup_notice_record</code> 中的 62 条，使二手市场成为微信外推消息的最大单一来源。线上 15 件商品库存全部为 <code>status = 'removed'</code>，累计浏览 12 次、收藏 0 次（§5.9），表明录入与跨平台转发路径已端到端跑通，尽管自然买家的承接尚未跟上。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-4"><span class="num">5.4</span><span class="ten">Activities Module</span><span class="tzh">活动模块</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The activities module supports event publication, registration, geo-verified check-in, and post-event rating. An <code>activities</code> row specifies a <code>category</code> chosen from {<code>academic</code>, <code>sports</code>, <code>social</code>, <code>volunteer</code>, <code>career</code>, <code>cultural</code>, <code>technology</code>}, a <code>type</code> from {<code>individual</code>, <code>team</code>, <code>competition</code>, <code>workshop</code>, <code>seminar</code>}, a <code>location</code> string paired with a <code>location_coordinates</code> JSONB, time bounds (<code>start_time</code>, <code>end_time</code>, <code>registration_deadline</code>), capacity (<code>max_participants</code>, <code>current_participants</code>), pricing (<code>entry_fee</code> cash, <code>entry_fee_points</code> cross-module pay-with-points), reward metadata (<code>reward_points</code>), a six-digit <code>checkin_code</code>, boolean <code>location_verification</code>, and a status machine {<code>draft</code>, <code>published</code>, <code>ongoing</code>, <code>completed</code>, <code>cancelled</code>}. A companion <code>activity_participants</code> row tracks each registration with <code>attendance_status</code> (<code>registered</code> / <code>attended</code> / <code>cancelled</code> / <code>no_show</code>), <code>payment_status</code> (<code>pending</code> / <code>paid</code> / <code>refunded</code>), <code>points_earned</code>, and a 1–5 <code>rating</code> field that the organizer populates on completion.</p></div>
+<div class="zh" lang="zh-Hans"><p>活动模块支持活动发布、报名、地理位置验证签到与赛后评分。一条 <code>activities</code> 记录指定：从 {<code>academic</code>（学术）, <code>sports</code>（体育）, <code>social</code>（社交）, <code>volunteer</code>（志愿）, <code>career</code>（职业）, <code>cultural</code>（文化）, <code>technology</code>（科技）} 中选取的 <code>category</code>；从 {<code>individual</code>（个人）, <code>team</code>（团队）, <code>competition</code>（竞赛）, <code>workshop</code>（工作坊）, <code>seminar</code>（研讨会）} 中选取的 <code>type</code>；与 <code>location_coordinates</code> JSONB（一种 PostgreSQL 二进制 JSON 数据类型）配对的 <code>location</code> 字符串；时间边界（<code>start_time</code>、<code>end_time</code>、<code>registration_deadline</code>）；容量（<code>max_participants</code>、<code>current_participants</code>）；定价（<code>entry_fee</code> 现金、<code>entry_fee_points</code> 跨模块积分支付）；奖励元数据（<code>reward_points</code>）；六位数 <code>checkin_code</code>（签到码）；布尔型 <code>location_verification</code>；以及状态机 {<code>draft</code>（草稿）, <code>published</code>（已发布）, <code>ongoing</code>（进行中）, <code>completed</code>（已完成）, <code>cancelled</code>（已取消）}。配套的 <code>activity_participants</code> 记录跟踪每次报名，含 <code>attendance_status</code>（出席状态：<code>registered</code> / <code>attended</code> / <code>cancelled</code> / <code>no_show</code>）、<code>payment_status</code>（支付状态：<code>pending</code> / <code>paid</code> / <code>refunded</code>）、<code>points_earned</code>（已获积分），以及由组织者在活动完成时填写的 1–5 分 <code>rating</code> 字段。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Counter consistency.</span> <code>current_participants</code> is maintained by the <code>update_activity_participant_count</code> PL/pgSQL trigger, which increments on <code>INSERT</code> of a <code>registered</code> row and decrements when the <code>attendance_status</code> transitions out of <code>registered</code>, so the displayed seat count cannot diverge from the registration rows.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">计数器一致性。</span><code>current_participants</code> 由 <code>update_activity_participant_count</code> 这一 PL/pgSQL 触发器（PostgreSQL 的过程化 SQL 语言触发器）维护：在 <code>INSERT</code> 一条 <code>registered</code> 行时递增，在 <code>attendance_status</code> 离开 <code>registered</code> 状态时递减，因此页面显示的名额数不会与报名记录发生偏离。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Geo-verified check-in.</span> The check-in window opens <code>checkin_start_offset</code> minutes (default 30) before <code>start_time</code> and closes <code>checkin_end_offset</code> minutes (default 30) after <code>end_time</code>; the <code>is_checkin_period</code> Postgres function enforces this. Inside the window, a participant submits a location JSONB (<code>{latitude, longitude, accuracy}</code>); the <code>calculate_distance</code> function computes Haversine distance to <code>activity.location_coordinates</code> and marks <code>location_verified = true</code> if it falls within <code>verification_radius</code> (default 100 m). The full check-in row in <code>activity_checkins</code> additionally captures <code>device_info</code> JSONB (browser user-agent) and <code>ip_address</code>, so spoof attempts leave a forensic trail. A successful, geo-verified check-in is the trigger for the <code>activity_checkin</code> point-rule (5 points in the application-code catalog).</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">地理验证签到。</span>签到窗口在 <code>start_time</code> 前 <code>checkin_start_offset</code> 分钟（默认 30）开启，在 <code>end_time</code> 后 <code>checkin_end_offset</code> 分钟（默认 30）关闭；由 Postgres 函数 <code>is_checkin_period</code> 强制执行。在窗口内，参与者提交位置 JSONB（<code>{latitude, longitude, accuracy}</code>）；<code>calculate_distance</code> 函数计算其与 <code>activity.location_coordinates</code> 之间的半正矢距离（Haversine distance，一种基于球面三角的两点大圆距离公式），若落在 <code>verification_radius</code>（默认 100 米）内则标记 <code>location_verified = true</code>。<code>activity_checkins</code> 中完整的签到记录还会采集 <code>device_info</code> JSONB（浏览器 user-agent）与 <code>ip_address</code>，使伪造尝试留下取证痕迹。一次成功且通过地理验证的签到是 <code>activity_checkin</code> 积分规则（应用代码目录中 5 分）的触发条件。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Cross-module reuse.</span> Identity reuses the <code>.edu</code> JWT; messaging is embedded per-activity through <code>activity_chat_messages</code> and via DM threads scoped with <code>context_type = 'activity'</code>; rewards flow both directions (reward on completion, optional spend via <code>entry_fee_points</code>); the ride-style social channel is reused via automatic <code>wxgroup_notice_record</code> pushes on publication. In the 2026-04-23 snapshot the <code>activities</code>, <code>activity_participants</code>, <code>activity_checkins</code>, and <code>activity_chat_messages</code> tables all hold zero rows, but 4 <code>wxgroup_notice_record</code> activity pushes and 4 <code>activity_registered</code> / 4 <code>activity_new_registration</code> notifications (§5.9) attest to a short run of activity events in February 2026 whose transactional rows have since been cleaned.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">跨模块复用。</span>身份复用 <code>.edu</code> JWT；消息通过每活动一个的 <code>activity_chat_messages</code> 以及 <code>context_type = 'activity'</code> 范围的私信线程嵌入；奖励双向流动（完成时奖励，亦可经 <code>entry_fee_points</code> 消费）；行程式社交渠道经发布时自动写入的 <code>wxgroup_notice_record</code> 推送得到复用。在 2026-04-23 快照中，<code>activities</code>、<code>activity_participants</code>、<code>activity_checkins</code> 与 <code>activity_chat_messages</code> 四张表均为零行，但 4 条 <code>wxgroup_notice_record</code> 活动推送与 4 条 <code>activity_registered</code>／4 条 <code>activity_new_registration</code> 通知（§5.9）证明 2026 年 2 月曾有一小段活动运行，其事务性记录此后已被清理。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-5"><span class="num">5.5</span><span class="ten">Groups Module</span><span class="tzh">群组模块</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The groups module provides two kinds of persistent social containers sharing one table. A <code>groups</code> row carries <code>name</code>, <code>description</code>, <code>cover_image</code>, <code>creator_id</code>, <code>member_count</code>, and a <code>group_kind</code> discriminator whose two current values are <code>community</code> (interest- or geography-based groups) and <code>ride_carpool</code> (trip-bound groups, §5.8.5); ride-bound rows additionally set <code>ride_id</code> and <code>chat_expires_at</code>. Membership lives in <code>group_members</code> with a <code>role</code> of <code>creator</code> or <code>member</code>.</p></div>
+<div class="zh" lang="zh-Hans"><p>群组模块以同一张表提供两类持久化社交容器。一条 <code>groups</code> 记录包含 <code>name</code>（名称）、<code>description</code>（描述）、<code>cover_image</code>（封面图）、<code>creator_id</code>（创建者 ID）、<code>member_count</code>（成员数），以及判别字段 <code>group_kind</code>，当前两个取值为 <code>community</code>（基于兴趣或地理的社区群组）与 <code>ride_carpool</code>（绑定行程的群组，§5.8.5）；行程绑定的记录额外设置 <code>ride_id</code> 与 <code>chat_expires_at</code>（群聊过期时间）。成员关系存于 <code>group_members</code>，<code>role</code>（角色）为 <code>creator</code> 或 <code>member</code>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Messaging substrate.</span> <code>group_messages</code> enforces a <code>char_length(content) BETWEEN 1 AND 2000</code> check, a <code>message_type</code> enum of {<code>text</code>, <code>image</code>, <code>file</code>}, and a soft-delete column (<code>deleted_at</code>) so moderation actions do not rewrite history. Row-level security is non-trivial here: the <code>group_messages_select_policy</code> admits <code>SELECT</code> only to rows whose <code>auth.uid()</code> has a live <code>group_members</code> entry, and the insert policy additionally forces <code>auth.uid() = sender_id</code>, so the identity claim on every message is structurally rather than application-enforced. Update and delete policies are restricted to the original sender, and a server-side trigger keeps <code>updated_at</code> fresh.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">消息基底。</span><code>group_messages</code> 强制 <code>char_length(content) BETWEEN 1 AND 2000</code> 检查、<code>message_type</code> 枚举 {<code>text</code>, <code>image</code>, <code>file</code>}，并设软删除列（<code>deleted_at</code>），使审核操作不会改写历史。此处的行级安全（Row-Level Security，RLS，即数据库按行粒度控制读写权限的机制）并不平凡：<code>group_messages_select_policy</code> 仅向 <code>auth.uid()</code> 在 <code>group_members</code> 中拥有有效条目的行开放 <code>SELECT</code>，插入策略还强制 <code>auth.uid() = sender_id</code>，因此每条消息上的身份声明是由数据库结构而非应用层来保证的。更新与删除策略仅限原发送者，服务端触发器持续刷新 <code>updated_at</code>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Moderation (migration 010).</span> A group creator or a platform moderator can mute a member through <code>group_muted_users</code> (<code>muted_by</code>, optional <code>reason</code>, <code>muted_at</code>, <code>unmuted_at</code>) and can retract a message through <code>group_message_deletions</code> (which pairs with the soft-delete fields <code>is_deleted</code>, <code>deleted_at</code>, <code>deleted_by</code> on <code>group_messages</code>). These affordances exist for community groups but, as §5.8.5 notes, are not yet wired into the ride-scoped <code>ride_carpool</code> rooms.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">审核机制（迁移脚本 010）。</span>群组创建者或平台审核员可通过 <code>group_muted_users</code>（<code>muted_by</code>、可选 <code>reason</code>、<code>muted_at</code>、<code>unmuted_at</code>）禁言成员，并可通过 <code>group_message_deletions</code> 撤回消息（与 <code>group_messages</code> 上的软删除字段 <code>is_deleted</code>、<code>deleted_at</code>、<code>deleted_by</code> 配对）。这些能力对社区群组可用，但如 §5.8.5 所述，尚未接入按行程划定范围的 <code>ride_carpool</code> 房间。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">System groups and discovery.</span> Migration 008 provisions two system-level rooms with fixed UUIDs—a platform-wide Carpooling room (<code>00000000-0000-0000-0000-000000000001</code>) and a Marketplace room (<code>...002</code>)—that all users can reach without joining. A group-map view atop <code>cover_image</code> + optional geography furnishes the social-discovery layer. In the 2026-04-23 snapshot, <code>groups</code> holds 5 <code>community</code> rows, all with <code>member_count = 1</code> (creator-only), suggesting that group creation is working but that the discovery-to-join funnel has not yet had its flywheel moment.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">系统群组与发现。</span>迁移脚本 008 预置了两个固定 UUID 的系统级房间——平台级拼车房间（<code>00000000-0000-0000-0000-000000000001</code>）与二手市场房间（<code>...002</code>）——所有用户无需加入即可访问。基于 <code>cover_image</code> 与可选地理信息的群组地图视图提供了社交发现层。在 2026-04-23 快照中，<code>groups</code> 含 5 条 <code>community</code> 记录，全部 <code>member_count = 1</code>（仅创建者），表明群组创建功能正常，但「发现到加入」的漏斗尚未迎来其飞轮时刻（flywheel moment，指增长进入自我强化循环的临界点）。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-6"><span class="num">5.6</span><span class="ten">Messages Module</span><span class="tzh">消息模块</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The messaging module carries three distinct surfaces on a shared Socket.IO substrate: direct messages (<code>messages</code>), group chat (<code>group_messages</code>, §5.5), and system messages (<code>system_messages</code>, including a user-submitted-feedback channel).</p></div>
+<div class="zh" lang="zh-Hans"><p>消息模块在共享的 Socket.IO 基底上承载三个不同的界面层：私信（<code>messages</code>）、群聊（<code>group_messages</code>，§5.5）与系统消息（<code>system_messages</code>，含用户提交反馈的渠道）。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Direct-message schema.</span> A <code>messages</code> row records <code>sender_id</code>, <code>receiver_id</code>, <code>subject</code> (2–255 chars), <code>content</code> (1–2000 chars), and four typing dimensions: <code>message_type</code> (<code>general</code> / <code>activity_inquiry</code> / <code>activity_update</code> / <code>support</code>), <code>context_type</code> and <code>context_id</code> which cross-link a message to its originating object (a ride, a listing, an activity), <code>priority</code> (<code>low</code> / <code>normal</code> / <code>high</code>), and <code>thread_id</code> plus <code>reply_to</code> for threading. The companion <code>message_participants</code> row represents each side's view (read status, archive flag) so that one user's archival does not mutate the counterparty's inbox.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">私信数据结构。</span>一条 <code>messages</code> 记录包含 <code>sender_id</code>（发送者）、<code>receiver_id</code>（接收者）、<code>subject</code>（主题，2–255 字符）、<code>content</code>（正文，1–2000 字符），以及四个类型维度：<code>message_type</code>（<code>general</code> / <code>activity_inquiry</code> / <code>activity_update</code> / <code>support</code>）；将消息与其源对象（一次行程、一件商品、一场活动）交叉关联的 <code>context_type</code> 与 <code>context_id</code>；<code>priority</code>（<code>low</code> / <code>normal</code> / <code>high</code>）；以及用于串联会话的 <code>thread_id</code> 与 <code>reply_to</code>。配套的 <code>message_participants</code> 记录表示双方各自的视图（已读状态、归档标记），因此一方的归档不会改动对方的收件箱。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Reply-required guard against cold-message spam.</span> The <code>messageService.sendMessage</code> path enforces a <code>REPLY_REQUIRED</code> rule: once a user has sent a direct message to a recipient they have no prior thread with, subsequent messages are refused with HTTP 403 until the recipient replies at least once. This is a platform-side mitigation for unsolicited mass DMs; it is a light-touch analog of the first-message-friction pattern often discussed in sharing-economy safety literature.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">防陌生消息骚扰的「须回复」守卫。</span><code>messageService.sendMessage</code> 路径强制执行 <code>REPLY_REQUIRED</code> 规则：用户向无既往会话的接收者发出一条私信后，后续消息将被以 HTTP 403 拒绝，直至接收者至少回复一次。这是平台侧对未经同意的批量私信的缓解措施，是共享经济安全文献中常讨论的「首条消息摩擦」（first-message friction）模式的轻量类比。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">System messages and the feedback channel.</span> <code>system_messages</code> carries a <code>sender_type</code> of <code>admin</code> (pinned announcements) or <code>user</code> (submitted feedback). Each row optionally pins (<code>is_pinned</code>) and typologizes via <code>message_type</code>. In the 2026-04-23 snapshot all 10 rows have <code>sender_type = 'user'</code> and <code>message_type = 'feedback'</code>, dated 2026-01-10 to 2026-02-11; no admin announcements have been posted yet, meaning the user-feedback subsurface is, in practice, the entire current use of the system-messages surface.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">系统消息与反馈渠道。</span><code>system_messages</code> 的 <code>sender_type</code> 取值为 <code>admin</code>（置顶公告）或 <code>user</code>（用户提交的反馈）。每条记录可选置顶（<code>is_pinned</code>），并经 <code>message_type</code> 归类。在 2026-04-23 快照中，全部 10 条记录均为 <code>sender_type = 'user'</code> 且 <code>message_type = 'feedback'</code>，日期为 2026-01-10 至 2026-02-11；尚无管理员公告发布，意味着用户反馈这一子界面实际上就是系统消息界面当前的全部用途。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Real-time substrate.</span> Socket.IO rooms namespace three kinds of live state: <code>user:{userId}</code> for personal notifications and presence, <code>activity:{activityId}</code> for activity chat, and <code>thread:{threadId}</code> for DM and group-message typing indicators. JWT authentication on connect is mandatory; guests receive a limited <code>type='guest'</code> token. The <code>typing_indicator</code> event is broadcast to the thread room excluding the sender, matching the UX idiom users expect from WeChat.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">实时基底。</span>Socket.IO 房间为三类实时状态划分命名空间：<code>user:{userId}</code> 用于个人通知与在线状态，<code>activity:{activityId}</code> 用于活动聊天，<code>thread:{threadId}</code> 用于私信与群消息的「正在输入」指示。连接时的 JWT 认证是强制的；访客获得受限的 <code>type='guest'</code> 令牌。<code>typing_indicator</code> 事件向线程房间内除发送者之外的成员广播，符合用户从微信习得的交互习惯。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Cross-module embedding.</span> Messaging is deeply embedded with every other module: a carpool booking materializes a <code>ride_carpool</code> group (§5.8.5); a marketplace "Contact seller" opens a <code>context_type='marketplace'</code> DM; activities carry both a group chat and DM threads with <code>context_type='activity'</code>. This embedding is what the Introduction means by "multi-module"—the modules are not simply co-installed apps but share the same conversational substrate. Live data (§5.9): 22 DMs, all <code>message_type='general'</code> and all <code>is_read=true</code>, concentrated in a 3-week burst around 2026-02-05 to 2026-02-28; plus 18 <code>message_reply</code> notifications attesting to that burst.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">跨模块嵌入。</span>消息与其他每个模块都深度嵌合：一次拼车预订会实体化一个 <code>ride_carpool</code> 群组（§5.8.5）；二手市场的「联系卖家」会打开 <code>context_type='marketplace'</code> 的私信；活动同时拥有群聊与 <code>context_type='activity'</code> 的私信线程。这种嵌入正是引言中「多模块」一词的含义——各模块并非简单并装的应用，而是共享同一个会话基底。实际数据（§5.9）：22 条私信，全部为 <code>message_type='general'</code> 且 <code>is_read=true</code>，集中于约 2026-02-05 至 2026-02-28 的三周爆发期；另有 18 条 <code>message_reply</code> 通知佐证这一爆发。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-7"><span class="num">5.7</span><span class="ten">Points Module (Cross-Module Gamification)</span><span class="tzh">积分模块（跨模块游戏化）</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The points module is a cross-module meta-layer that treats every other module as both a <i>source</i> and a <i>sink</i> of points. Sources: registration, email verification, profile completion, daily login, ride creation and completion, marketplace transaction, activity creation / organization / participation / check-in / completion, and a consecutive-check-in streak bonus (the only rule that honors the <code>multiplier</code> field). Sinks: a <code>coupons</code> table (currently empty) for redemption rewards, and the <code>activities.entry_fee_points</code> field, which lets an organizer charge an activity in points rather than cash. A single <code>awardPoints</code> service writes a row to <code>point_transactions</code> with <code>rule_type</code>, <code>source</code>, <code>reason</code>, <code>metadata</code>, and <code>multiplier</code>, and atomically increments <code>users.points</code> via the <code>increment_user_points</code> RPC; a symmetric <code>deductPoints</code> refuses to go below zero. Design rationale and the full rule catalog are in §5.8.4.</p></div>
+<div class="zh" lang="zh-Hans"><p>积分模块是一个跨模块元层，将其余每个模块同时视为积分的「来源」（source）与「去向」（sink）。来源包括：注册、邮箱验证、完善资料、每日登录、行程创建与完成、二手交易、活动的创建／组织／参与／签到／完成，以及连续签到奖励（唯一遵循 <code>multiplier</code> 字段的规则）。去向包括：用于兑换奖励的 <code>coupons</code> 表（当前为空），以及允许组织者以积分而非现金收取活动费用的 <code>activities.entry_fee_points</code> 字段。单一的 <code>awardPoints</code> 服务向 <code>point_transactions</code> 写入一条含 <code>rule_type</code>、<code>source</code>、<code>reason</code>、<code>metadata</code> 与 <code>multiplier</code> 的记录，并经 <code>increment_user_points</code> RPC（远程过程调用，Remote Procedure Call）原子地递增 <code>users.points</code>；对称的 <code>deductPoints</code> 拒绝使余额低于零。设计依据与完整规则目录见 §5.8.4。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Why secondary by design.</span> The motivation data (<b class="fb">F4</b>: gamification at 48.3, the second tier behind financial motivation at 63.6) informed a deliberate design choice: base-point payouts are capped well below the cash value of the corresponding transaction (e.g., 15 points for a completed ride whose per-seat price is typically $22–$38), so points complement rather than substitute the cash lever. This avoids the algorithmic-management failure mode where a gamified point economy becomes the dominant motivator and then warps participation into point-chasing (§7.2).</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">为何刻意置于次要位置。</span>动机数据（<b class="fb">F4</b>：游戏化 48.3，居经济动机 63.6 之后的第二层级）促成了一个刻意的设计选择：基础积分的发放被限定在远低于对应交易现金价值的水平（例如完成一次行程得 15 分，而其每座价格通常为 $22–$38），使积分成为现金杠杆的补充而非替代。这避免了算法管理的失效模式——游戏化积分经济成为主导动机，进而将参与扭曲为「刷分」（point-chasing）（§7.2）。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Deployment status caveat.</span> The points subsystem is present in code but <i>not yet provisioned in the Railway-backed production database</i>: <code>point_rules</code> has zero rows, <code>point_transactions</code> does not exist as a table, and every one of the 184 live user rows carries <code>users.points = 0</code>. The design is therefore implementation-ready but behaviorally inert; we flag this in §5.8.4 and §5.9.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">部署状态提醒。</span>积分子系统存在于代码中，但「尚未在 Railway 托管的生产数据库中开通」：<code>point_rules</code> 为零行，<code>point_transactions</code> 作为表并不存在，且 184 条线上用户记录的 <code>users.points</code> 均为 0。因此该设计处于实现就绪但行为上未生效的状态；我们在 §5.8.4 与 §5.9 中如实标注。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-8"><span class="num">5.8</span><span class="ten">Carpool Deep-Dive: Five Design Decisions</span><span class="tzh">拼车深入剖析：五项设计决策</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>Each design decision below is explicitly motivated by a survey finding, and each is described against the implemented controller / service / schema that backs it in the deployed system (§5.9). Decisions 1–4 correspond to the four design primitives distilled in §2.2; decision 5 documents the cross-module integration lever that makes the multi-module claim operational at the ride level.</p></div>
+<div class="zh" lang="zh-Hans"><p>以下每项设计决策都明确由某一调查发现所驱动，且都对照已部署系统（§5.9）中支撑它的实际控制器（controller）／服务（service）／数据结构（schema）加以描述。决策 1–4 对应 §2.2 提炼的四个设计基元；决策 5 记录了使「多模块」主张在行程层面得以落地的跨模块整合杠杆。</p></div>
+</div>
+
+<h4 class="sec" id="sec-5-8-1"><span class="num">5.8.1</span><span class="ten">Identity Verification</span><span class="tzh">身份验证</span></h4>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Design decision.</span> <code>.edu</code> email verification as a registration gate and a persistent trust signal displayed on driver and passenger profiles.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">设计决策。</span>以 <code>.edu</code> 邮箱验证作为注册门槛，并作为持久信任信号展示在司机与乘客的个人资料上。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Evidence.</span> <b class="fb">F3</b> shows <code>.edu</code> verification has a mean WTP uplift of 67.3 (median 79), the second-highest of the seven safety features.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">证据。</span><b class="fb">F3</b> 显示 <code>.edu</code> 验证的支付意愿提升均值为 67.3（中位数 79），在七项安全功能中居第二。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Implementation.</span> New users supply an <code>email</code>, <code>password</code>, <code>first_name</code>, <code>last_name</code>, and <code>student_id</code>; the backend generates an <code>email_verification_token</code> (and <code>email_verification_expires</code>) and sends a verification mail via Resend. Clicking the link flips the row's <code>is_verified</code> flag to <code>true</code>. A second, stricter flag, <code>verification_status</code> (values <code>pending</code> / <code>verified</code>), is reserved for future manual-review workflows but currently transitions in lockstep with <code>is_verified</code> because the manual-review step is not yet instantiated. The Socket.IO authentication middleware accepts only a JWT signed with the Cornell-scoped user row; guests receive a separate <code>type='guest'</code> token with read-only capabilities. The verified badge and <code>university</code> string ("Cornell University") are embedded in every driver and passenger card returned by <code>getRides</code> and <code>getRideById</code>.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">实现。</span>新用户提供 <code>email</code>、<code>password</code>、<code>first_name</code>、<code>last_name</code> 与 <code>student_id</code>；后端生成 <code>email_verification_token</code>（及 <code>email_verification_expires</code>）并经 Resend（一个事务性邮件发送服务）发送验证邮件。点击链接后将该行的 <code>is_verified</code> 标志翻转为 <code>true</code>。第二个更严格的标志 <code>verification_status</code>（取值 <code>pending</code> / <code>verified</code>）为未来的人工审核流程预留，但由于人工审核环节尚未建立，目前与 <code>is_verified</code> 同步流转。Socket.IO 认证中间件只接受以 Cornell 范围用户行签名的 JWT；访客获得单独的 <code>type='guest'</code> 只读令牌。已验证徽章与 <code>university</code> 字符串（"Cornell University"）嵌入 <code>getRides</code> 与 <code>getRideById</code> 返回的每张司机与乘客卡片中。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Limitation.</span> <code>.edu</code> verification confirms institutional affiliation but does not verify driving competence, behavioral reliability, or insurance status. The pilot observation on the Railway-backed production database (§5.9) shows 170 of 184 user rows with <code>is_verified = true</code> and an identical count in <code>verification_status = 'verified'</code>, confirming that the <code>.edu</code> token loop is self-consistent and that 100% of rows carry a <code>@cornell.edu</code> address, but also that the two-tier model collapses to a one-tier gate in practice because no manual-review queue is running.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">局限。</span><code>.edu</code> 验证确认的是机构隶属关系，并不验证驾驶能力、行为可靠性或保险状况。对 Railway 托管生产数据库（§5.9）的试点观察显示：184 条用户记录中 170 条 <code>is_verified = true</code>，且 <code>verification_status = 'verified'</code> 的数量与之完全一致，证实 <code>.edu</code> 令牌闭环自洽、100% 的记录持有 <code>@cornell.edu</code> 地址；但也表明由于没有人工审核队列在运行，两级模型在实践中坍缩为一级门槛。</p></div>
+</div>
+
+<h4 class="sec" id="sec-5-8-2"><span class="num">5.8.2</span><span class="ten">Safety Skeleton</span><span class="tzh">安全骨架</span></h4>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Design decision.</span> Real-time location sharing and a one-tap SOS button as two active safety layers during trips.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">设计决策。</span>以实时位置共享与一键 SOS 按钮作为行程期间的两道主动安全防线。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Evidence.</span> <b class="fb">F3</b> shows real-time location sharing as the highest-WTP feature (mean 69.1, median 76) and Emergency SOS as the third-highest (mean 63.5, median 64).</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">证据。</span><b class="fb">F3</b> 显示实时位置共享是支付意愿最高的功能（均值 69.1，中位数 76），紧急 SOS 居第三（均值 63.5，中位数 64）。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Implementation.</span> Each ride booking admits its driver and passenger to a Socket.IO room namespaced as <code>thread:{thread_id}</code> and, in parallel, to the auto-created ride-scoped group chat room (§5.8.5). Typing indicators, online presence, and position updates are broadcast inside these rooms only. The SOS button triggers a high-priority <code>notification</code> row with <code>priority = 'high'</code> targeted at pre-configured emergency contacts and the current passenger set, plus an immediate Socket.IO emit on each recipient's <code>user:{userId}</code> room; device context (browser user-agent, IP, geolocation accuracy) is captured in the activity check-in schema's <code>device_info</code> JSONB column and is reused for the rideshare SOS path. Activities that opt in to location-gated check-in compute Haversine distance between the user location JSONB (<code>{latitude, longitude, accuracy}</code>) and the activity's coordinates using the <code>calculate_distance</code> Postgres function, with a configurable <code>verification_radius</code> (default 100 m); the same primitive is available to the rideshare module for pickup-point verification.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">实现。</span>每次行程预订都将司机与乘客接入命名空间为 <code>thread:{thread_id}</code> 的 Socket.IO 房间，并同时接入自动创建的行程群聊房间（§5.8.5）。「正在输入」指示、在线状态与位置更新仅在这些房间内部广播。SOS 按钮触发一条 <code>priority = 'high'</code> 的高优先级 <code>notification</code> 记录，目标为预先配置的紧急联系人与当前乘客集合，并立即在每位接收者的 <code>user:{userId}</code> 房间上发出 Socket.IO 事件；设备上下文（浏览器 user-agent、IP、地理定位精度）采集于活动签到结构的 <code>device_info</code> JSONB 列，并被拼车 SOS 路径复用。启用位置门控签到的活动会使用 <code>calculate_distance</code> Postgres 函数计算用户位置 JSONB（<code>{latitude, longitude, accuracy}</code>）与活动坐标之间的半正矢距离（Haversine distance），配以可配置的 <code>verification_radius</code>（默认 100 米）；同一基元也可供拼车模块用于上车点验证。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Limitation.</span> Location sharing creates a privacy trade-off that the current implementation resolves by room-scoping rather than by retention policy—raw coordinates are not persisted beyond the active session but also are not redacted in ride-group chat messages. SOS response chains depend on resources outside the platform, and the pilot has recorded zero SOS activations, so the end-to-end latency of the SOS path is currently uninstrumented.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">局限。</span>位置共享带来隐私权衡，当前实现以房间限定范围而非数据保留策略来化解——原始坐标不会在活跃会话之外持久化，但在行程群聊消息中也未做脱敏。SOS 响应链依赖平台之外的资源，且试点期间 SOS 激活次数为零，因此 SOS 路径的端到端时延目前没有任何实测数据。</p></div>
+</div>
+
+<h4 class="sec" id="sec-5-8-3"><span class="num">5.8.3</span><span class="ten">Rating System with Fairness Consideration</span><span class="tzh">兼顾公平性的评分系统</span></h4>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Design decision.</span> Bidirectional (passenger ↔ driver) ratings on a 1–5 integer scale with optional free-text comments; a deferred rating-readiness window that opens 2 hours after <code>departure_time</code> (or at <code>status = 'completed'</code>) rather than at booking; role-paired rating so that only the trip's driver may rate its passengers and vice versa; and self-revision of one's own rating via update-in-place until subsequent system-level mechanisms retire the row.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">设计决策。</span>双向（乘客 ↔ 司机）的 1–5 整数评分并附可选自由文本评论；延迟的「可评分」窗口在 <code>departure_time</code> 之后 2 小时（或 <code>status = 'completed'</code> 时）开启，而非在预订时即可评分；角色配对评分，使只有该行程的司机能评价其乘客，反之亦然；以及在后续系统级机制使记录退役之前，可通过原地更新（update-in-place）自行修订自己的评分。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Evidence.</span> <b class="fb">F5</b>, limited to the Driver/Both subset (<i>N</i>=19): "unfair rating" tolerance at 29.1 is 12.3–23.2 points below the other three items (41.4–52.3), indicating that rating-system fairness is the most salient concern for respondents with driving experience.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">证据。</span><b class="fb">F5</b>，限于 Driver/Both 子样本（<i>N</i>=19）：「不公平评分」容忍度 29.1 比其余三项（41.4–52.3）低 12.3–23.2 分，表明评分系统公平性是有驾驶经验受访者最突出的关切。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Implementation.</span> The <code>ratings</code> table keys on <code>(trip_id, rater_id, ratee_id)</code> and records <code>role_of_rater</code> (<code>'driver'</code> or <code>'passenger'</code>), <code>score</code> (CHECK 1–5), <code>comment</code>, and timestamps. The <code>createRating</code> controller refuses self-ratings, verifies that the rater is either the ride's driver or a non-cancelled passenger via a <code>ride_bookings</code> lookup, enforces that drivers may only rate their passengers (and vice versa), and blocks submission until <code>Date.now() &gt;= departure_time + 2h</code> (constant <code>RATING_READY_DELAY_MS</code>). An existing rating row is overwritten rather than appended, and the user-level <code>users.avg_rating</code> / <code>users.total_ratings</code> cache is recomputed as an unweighted mean across the union of <code>ratings</code> and <code>activity_ratings</code> rows for the ratee. A pair of <code>ride_rating_reminder</code> notifications with <code>data.showAfter = departure + 2h</code> is queued at booking time so both sides see a tap-to-rate card in their message inbox once the window opens.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">实现。</span><code>ratings</code> 表以 <code>(trip_id, rater_id, ratee_id)</code> 为键，记录 <code>role_of_rater</code>（<code>'driver'</code> 或 <code>'passenger'</code>）、<code>score</code>（CHECK 约束 1–5）、<code>comment</code> 与时间戳。<code>createRating</code> 控制器拒绝自评，通过 <code>ride_bookings</code> 查询验证评分者是该行程的司机或未取消的乘客，强制司机只能评价其乘客（反之亦然），并在 <code>Date.now() &gt;= departure_time + 2h</code>（常量 <code>RATING_READY_DELAY_MS</code>）之前阻止提交。已存在的评分记录会被覆盖而非追加，用户级的 <code>users.avg_rating</code>／<code>users.total_ratings</code> 缓存则以被评者在 <code>ratings</code> 与 <code>activity_ratings</code> 两表并集上的无加权均值重新计算。预订时即排入一对 <code>data.showAfter = departure + 2h</code> 的 <code>ride_rating_reminder</code> 通知，使窗口开启后双方都能在消息收件箱看到「点按评分」卡片。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Design rationale.</span> Field experiments on two-sided reputation systems <span class="cite">[Fradkin2021]</span> show that architectural choices (e.g., hiding feedback until both parties submit) change rating behavior. The 2-hour readiness delay is a simpler variant of this architectural idea: it removes the in-vehicle moment from the rating submission path, reducing the most immediate retaliation surface. The role-pairing and self-revision primitives draw on CSCW design-case work on algorithm-based reputation systems for peer-to-peer carsharing <span class="cite">[Neifer2023]</span>.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">设计依据。</span>关于双边声誉系统的现场实验 <span class="cite">[Fradkin2021]</span> 表明，架构选择（例如在双方都提交之前隐藏反馈）会改变评分行为。2 小时就绪延迟是这一架构思想的简化变体：它将「车内时刻」移出评分提交路径，削减了最直接的报复面。角色配对与自我修订两个基元借鉴了 CSCW（计算机支持的协同工作，Computer-Supported Cooperative Work）领域关于点对点共享汽车算法声誉系统的设计案例研究 <span class="cite">[Neifer2023]</span>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Scope of the implemented design.</span> Three mechanisms that we considered—a formal pre-publication dispute window, cross-trip trend protection for a single anomalous rating, and mandatory rating justifications—are <i>not</i> yet implemented. Update-in-place is the only present-day revision affordance and does not bind either party to a fixed deliberation period. We retain the other three as open design proposals.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">已实现设计的范围。</span>我们曾考虑的三种机制——正式的发布前争议窗口、针对单次异常评分的跨行程趋势保护、强制评分理由——均「尚未」实现。原地更新是当下唯一的修订手段，且不将任何一方约束在固定的斟酌期内。其余三项保留为开放设计提案。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Limitation.</span> Update-in-place allows a disgruntled rater to revise downward at any time, which is the opposite failure mode from the dispute-window design. Simple-mean aggregation provides no outlier smoothing, so the first negative rating dominates the displayed <code>avg_rating</code> for a new driver. And because <code>ratings</code> currently contains zero rows in the live database (§5.9), whether any of these mechanisms alleviate driver rating anxiety cannot be assessed without sustained usage.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">局限。</span>原地更新允许心怀不满的评分者随时下调评分，这是与争议窗口设计相反的失效模式。简单均值聚合不提供异常值平滑，因此第一条差评会主导新司机展示的 <code>avg_rating</code>。而由于线上数据库中 <code>ratings</code> 当前为零行（§5.9），这些机制能否缓解司机的评分焦虑，在缺乏持续使用之前无从评估。</p></div>
+</div>
+
+<h4 class="sec" id="sec-5-8-4"><span class="num">5.8.4</span><span class="ten">Gamification as Secondary Incentive</span><span class="tzh">作为次级激励的游戏化</span></h4>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Design decision.</span> Points serve as a secondary incentive layer, deliberately not dominating the economic motivation.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">设计决策。</span>积分作为次级激励层，刻意不凌驾于经济动机之上。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Evidence.</span> <b class="fb">F4</b> places gamification (48.3) in a second tier behind financial motivation (63.6).</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">证据。</span><b class="fb">F4</b> 将游戏化（48.3）置于经济动机（63.6）之后的第二层级。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Implementation.</span> All point-affecting events route through a single <code>awardPoints</code> service that writes a row to <code>point_transactions</code> (<code>user_id</code>, <code>rule_type</code>, <code>points</code>, <code>source</code>, <code>reason</code>, <code>metadata</code>, <code>multiplier</code>, <code>created_at</code>) and atomically increments <code>users.points</code> via the <code>increment_user_points</code> RPC. The application-code rule catalog (Table 4) sets <code>registration = 10</code>, <code>verification = 5</code>, <code>daily_login = 1</code>, <code>profile_complete = 15</code>, and a set of activity-triggered rewards (<code>activity_creation = 15</code>, <code>activity_participation = 10</code>, <code>activity_organization = 30</code>, <code>activity_checkin = 5</code>, <code>activity_completion = 15</code>); the <code>points.service</code> additionally defines <code>rideshare_completion = 15</code>, <code>marketplace_transaction = 8</code>, <code>referral = 30</code>, and a <code>consecutive_checkin</code> streak rule whose <code>multiplier</code> attribute is respected by <code>awardPoints</code>. A <code>deductPoints</code> counterpart refuses to go below zero (returning <code>INSUFFICIENT_POINTS</code>) so points are kept non-negative. The base-point schedule is deliberately capped below the per-seat cash price of a typical long-distance ride, so points remain a complement to, not a substitute for, cash.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">实现。</span>所有影响积分的事件都经由单一的 <code>awardPoints</code> 服务路由：它向 <code>point_transactions</code> 写入一条记录（<code>user_id</code>、<code>rule_type</code>、<code>points</code>、<code>source</code>、<code>reason</code>、<code>metadata</code>、<code>multiplier</code>、<code>created_at</code>），并经 <code>increment_user_points</code> RPC 原子递增 <code>users.points</code>。应用代码规则目录（表 4）设定 <code>registration = 10</code>、<code>verification = 5</code>、<code>daily_login = 1</code>、<code>profile_complete = 15</code>，以及一组活动触发奖励（<code>activity_creation = 15</code>、<code>activity_participation = 10</code>、<code>activity_organization = 30</code>、<code>activity_checkin = 5</code>、<code>activity_completion = 15</code>）；<code>points.service</code> 还定义了 <code>rideshare_completion = 15</code>、<code>marketplace_transaction = 8</code>、<code>referral = 30</code>，以及 <code>multiplier</code> 属性会被 <code>awardPoints</code> 遵循的 <code>consecutive_checkin</code> 连续签到规则。对应的 <code>deductPoints</code> 拒绝使余额低于零（返回 <code>INSUFFICIENT_POINTS</code>），从而保持积分非负。基础积分表刻意限定在典型长途行程每座现金价格之下，使积分始终是现金的补充而非替代。</p></div>
+</div>
+
+<div class="pair tblpair">
+<div class="en" lang="en">
+<table>
+<caption><b>Table 4.</b> Points rule catalog as defined in application code (<code>points.service</code> and activity migration seed). In the Railway-backed production database, <code>point_rules</code> currently holds zero rows and <code>point_transactions</code> has not been migrated—see §5.9.</caption>
+<thead><tr><th>Rule</th><th>Category</th><th class="r">Base</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>registration</code></td><td>system</td><td class="r">10</td><td>One-shot on <code>users</code> insert</td></tr>
+<tr><td><code>verification</code></td><td>system</td><td class="r">5</td><td>On <code>is_verified</code> flip</td></tr>
+<tr><td><code>daily_login</code></td><td>system</td><td class="r">1</td><td>Idempotent per calendar day</td></tr>
+<tr><td><code>profile_complete</code></td><td>system</td><td class="r">15</td><td>On avatar / major populated</td></tr>
+<tr><td><code>activity_creation</code></td><td>social</td><td class="r">15</td><td>On <code>activities</code> insert</td></tr>
+<tr><td><code>activity_participation</code></td><td>social</td><td class="r">10</td><td>On <code>activity_participants</code> insert</td></tr>
+<tr><td><code>activity_organization</code></td><td>social</td><td class="r">30</td><td>Organizer bonus at completion</td></tr>
+<tr><td><code>activity_checkin</code></td><td>social</td><td class="r">5</td><td>On geo-verified <code>activity_checkins</code></td></tr>
+<tr><td><code>activity_completion</code></td><td>social</td><td class="r">15</td><td>On <code>status = 'completed'</code></td></tr>
+</tbody>
+</table>
+</div>
+<div class="zh" lang="zh-Hans">
+<table>
+<caption><b>表 4.</b> 应用代码中定义的积分规则目录（<code>points.service</code> 与活动迁移种子数据）。在 Railway 托管的生产数据库中，<code>point_rules</code> 当前为零行，<code>point_transactions</code> 尚未迁移——见 §5.9。</caption>
+<thead><tr><th>规则</th><th>类别</th><th class="r">基础分</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>registration</code></td><td>系统</td><td class="r">10</td><td><code>users</code> 插入时一次性发放</td></tr>
+<tr><td><code>verification</code></td><td>系统</td><td class="r">5</td><td><code>is_verified</code> 翻转时</td></tr>
+<tr><td><code>daily_login</code></td><td>系统</td><td class="r">1</td><td>按自然日幂等（idempotent，重复触发不重复发放）</td></tr>
+<tr><td><code>profile_complete</code></td><td>系统</td><td class="r">15</td><td>填写头像／专业时</td></tr>
+<tr><td><code>activity_creation</code></td><td>社交</td><td class="r">15</td><td><code>activities</code> 插入时</td></tr>
+<tr><td><code>activity_participation</code></td><td>社交</td><td class="r">10</td><td><code>activity_participants</code> 插入时</td></tr>
+<tr><td><code>activity_organization</code></td><td>社交</td><td class="r">30</td><td>活动完成时组织者奖励</td></tr>
+<tr><td><code>activity_checkin</code></td><td>社交</td><td class="r">5</td><td>地理验证 <code>activity_checkins</code> 通过时</td></tr>
+<tr><td><code>activity_completion</code></td><td>社交</td><td class="r">15</td><td><code>status = 'completed'</code> 时</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Limitation.</span> Cross-module points may incentivize gaming behavior such as fake trips, collusive check-ins, or strategic compliance; the only present anti-gaming lever is the <code>validateActivityPoints</code> stub, which returns <code>{valid: true}</code> and is explicitly annotated as a placeholder for future rate-limit logic. No deduplication at the <code>(user, rule, day)</code> level is enforced at the database layer. More fundamentally, the entire points subsystem is <i>not yet deployed</i>: the Railway-backed production database holds zero rows in <code>point_rules</code> and lacks the <code>point_transactions</code> table altogether (the REST API returns <code>PGRST205</code> when queried), and every one of the 184 live user rows has <code>users.points = 0</code>. The gamification design described here therefore reflects implementation readiness at the controller / service layer rather than an observed behavioral lever in the current soft launch (§5.9). The absence of production <code>point_transactions</code> also means the hypothesis that financial motivation dominates gamification (<b class="fb">F4</b>) is neither challenged nor corroborated by current usage data.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">局限。</span>跨模块积分可能诱发刷分行为，如虚假行程、合谋签到或策略性应付；目前唯一的反刷分杠杆是 <code>validateActivityPoints</code> 桩函数（stub，即仅占位、不含真实逻辑的函数），它直接返回 <code>{valid: true}</code>，并被明确注释为未来限频逻辑的占位符。数据库层未强制 <code>(user, rule, day)</code> 粒度的去重。更根本的是，整个积分子系统「尚未部署」：Railway 托管的生产数据库中 <code>point_rules</code> 为零行，<code>point_transactions</code> 表完全不存在（查询时 REST API 返回 <code>PGRST205</code>），且 184 条线上用户记录的 <code>users.points</code> 均为 0。因此此处描述的游戏化设计反映的是控制器／服务层面的实现就绪度，而非当前软启动（soft launch，即不做大规模宣传的小范围试运行）中可观察到的行为杠杆（§5.9）。生产环境缺少 <code>point_transactions</code> 也意味着「经济动机压倒游戏化」这一假说（<b class="fb">F4</b>）既未被当前使用数据挑战，也未被其佐证。</p></div>
+</div>
+
+<h4 class="sec" id="sec-5-8-5"><span class="num">5.8.5</span><span class="ten">Messaging Embedding: Ride-Scoped Group Chat</span><span class="tzh">消息嵌入：按行程划定的群聊</span></h4>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Design decision.</span> Every carpool booking materializes a ride-scoped group chat, so communication follows the trip rather than the individuals. The chat is automatically created on first booking, auto-expires one hour after the scheduled departure, and tracks membership against live bookings.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">设计决策。</span>每次拼车预订都会实体化一个按行程划定的群聊，使沟通跟随行程而非跟随个人。群聊在首次预订时自动创建，在计划出发后一小时自动过期，并依据有效预订追踪成员关系。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Evidence.</span> The grassroots-practice literature we review in §2.1 documents that students already run ride coordination inside persistent WeChat / WhatsApp groups <span class="cite">[Liu2023; Bonini2023]</span>. Our survey observation that 17 of 21 Mandarin-native respondents who answered the carpool-finding question used such groups resonates with that pattern.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">证据。</span>我们在 §2.1 综述的草根实践文献记录了学生本就在持久的微信／WhatsApp 群中开展拼车协调 <span class="cite">[Liu2023; Bonini2023]</span>。我们的调查观察——回答「如何寻找拼车伙伴」问题的 21 名普通话母语受访者中有 17 名使用此类群组——与该模式形成共鸣。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Implementation.</span> The <code>ensureRideCarpoolGroupOnBooking</code> service, called inline from <code>bookRide</code>, looks up any existing <code>groups</code> row with the booking's <code>ride_id</code>. If none exists, it inserts one with <code>group_kind = 'ride_carpool'</code>, <code>name = 'Ride: &lt;title&gt;'</code>, <code>creator_id = driver_id</code>, and <code>chat_expires_at = departure_time + 1h</code>. The driver is inserted into <code>group_members</code> with <code>role = 'creator'</code> and the passenger with <code>role = 'member'</code> (duplicate-key collisions on Postgres code <code>23505</code> are silently swallowed to make the call idempotent). On passenger cancellation, <code>removePassengerFromRideGroup</code> deletes their <code>group_members</code> row while leaving the group intact for remaining riders. A subsequent <code>updateRide</code> that changes <code>departure_time</code> calls <code>syncRideCarpoolGroupExpiry</code>, which re-computes and writes <code>chat_expires_at</code>. Messages inside these rooms flow through the same Socket.IO thread-room primitive as direct messages, so the typing indicator and read-receipt affordances are shared across module boundaries. Row-level security on <code>group_messages</code> restricts <code>SELECT</code> to current group members and <code>INSERT</code> to current members posting as themselves.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">实现。</span>由 <code>bookRide</code> 内联调用的 <code>ensureRideCarpoolGroupOnBooking</code> 服务会查找与该预订 <code>ride_id</code> 对应的现有 <code>groups</code> 记录。若不存在，则插入一条 <code>group_kind = 'ride_carpool'</code>、<code>name = 'Ride: &lt;title&gt;'</code>、<code>creator_id = driver_id</code>、<code>chat_expires_at = departure_time + 1h</code> 的记录。司机以 <code>role = 'creator'</code>、乘客以 <code>role = 'member'</code> 插入 <code>group_members</code>（Postgres 错误码 <code>23505</code> 的重复键冲突被静默吞掉，以使调用幂等，idempotent，即重复执行不产生额外效果）。乘客取消时，<code>removePassengerFromRideGroup</code> 删除其 <code>group_members</code> 记录，而群组为其余乘客保持完好。随后改变 <code>departure_time</code> 的 <code>updateRide</code> 会调用 <code>syncRideCarpoolGroupExpiry</code>，重新计算并写入 <code>chat_expires_at</code>。这些房间内的消息与私信共用同一 Socket.IO 线程房间基元，因此「正在输入」指示与已读回执能力跨模块边界共享。<code>group_messages</code> 上的行级安全将 <code>SELECT</code> 限于当前群成员，将 <code>INSERT</code> 限于以本人身份发帖的当前成员。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Limitation.</span> The one-hour post-departure expiry matches the "trip-bound" framing of the module but forecloses post-trip reconciliation chat (for lost items, fare corrections, or trailing rating disputes) unless one party re-opens the thread as a direct message. Ride-scoped chats do not inherit mute or moderation state from the system-level moderation tables added for community groups in migration 010, so a misbehaving co-rider cannot be muted inside the ride chat without kicking them. In the Railway-backed production database no <code>group_kind = 'ride_carpool'</code> rows are currently live (all five extant groups are <code>community</code>); the 82 ride-related push records in <code>wxgroup_notice_record</code> and the 8 queued <code>ride_rating_reminder</code> notifications attest to historical ride bookings that pre-date the current <code>rides</code> table state (§5.9).</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">局限。</span>出发后一小时过期与模块「行程绑定」的定位相符，却也封闭了行后善后沟通（失物、车费更正、后续评分争议）的通道，除非一方以私信重新打开会话。行程群聊未继承迁移脚本 010 为社区群组新增的系统级审核表中的禁言或审核状态，因此行为不当的同行乘客无法在行程群聊内被禁言，只能将其移出。在 Railway 托管的生产数据库中，目前没有任何 <code>group_kind = 'ride_carpool'</code> 的有效记录（现存五个群组全部为 <code>community</code>）；<code>wxgroup_notice_record</code> 中的 82 条行程相关推送记录与 8 条排队中的 <code>ride_rating_reminder</code> 通知，佐证了早于当前 <code>rides</code> 表状态的历史行程预订（§5.9）。</p></div>
+</div>
+
+<h3 class="sec" id="sec-5-9"><span class="num">5.9</span><span class="ten">Soft-Launch Deployment Feedback</span><span class="tzh">软启动部署反馈</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="sc">CampusRide</span> has been continuously reachable at <code>www.campusgo.college</code> since 2026-01-08, backed by a Railway-hosted Node.js backend and a Supabase Postgres instance (project reference <code>bwimyvkwkenrtumsfjzt</code>). This section reports a 2026-04-23 snapshot of that production database as implementation-status evidence; Table 5 summarizes per-table row counts along with notification-attested historical activity. We frame these numbers as formative deployment signal, not as an evaluation: the sample is opportunity-recruited from the authors' Cornell network via WeChat-group outreach (82 <code>wxgroup_notice_record</code> pushes across the pilot window), user-generated ride / activity / points activity has been limited, and no experimental comparison is in place.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="sc">CampusRide</span> 自 2026-01-08 起在 <code>www.campusgo.college</code> 持续可访问，由 Railway 托管的 Node.js 后端与一个 Supabase Postgres 实例（项目标识 <code>bwimyvkwkenrtumsfjzt</code>）支撑。本节报告该生产数据库 2026-04-23 的一次快照，作为实现状态的证据；表 5 汇总了各表行数以及由通知记录佐证的历史活动。我们将这些数字定位为形成性部署信号而非评估：样本是经微信群外联（试点窗口内 82 条 <code>wxgroup_notice_record</code> 推送）从作者的 Cornell 人际网络中机会式招募的，用户产生的行程／活动／积分活动有限，且不存在任何实验性对照。</p></div>
+</div>
+
+<div class="pair tblpair">
+<div class="en" lang="en">
+<table>
+<caption><b>Table 5.</b> Live production database snapshot, 2026-04-23 (Supabase project <code>bwimyvkwkenrtumsfjzt</code>). Pilot window: 2026-01-08 to 2026-03-29 for user registrations.</caption>
+<thead><tr><th>Table / surface</th><th class="r">Rows</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>users</code></td><td class="r">184</td><td>184 <code>@cornell.edu</code> (100%); 170 verified</td></tr>
+<tr><td><code>rides</code></td><td class="r">0</td><td>no currently active rides</td></tr>
+<tr><td><code>ride_bookings</code></td><td class="r">0</td><td>empty; historical bookings evidenced in notifications</td></tr>
+<tr><td><code>ratings</code></td><td class="r">0</td><td>no ratings submitted</td></tr>
+<tr><td><code>activities</code></td><td class="r">0</td><td></td></tr>
+<tr><td><code>activity_participants</code></td><td class="r">0</td><td></td></tr>
+<tr><td><code>marketplace_items</code></td><td class="r">15</td><td>all <code>status = 'removed'</code>; 12 aggregate views</td></tr>
+<tr><td><code>marketplace_comments</code></td><td class="r">0</td><td></td></tr>
+<tr><td><code>groups</code></td><td class="r">5</td><td>all <code>group_kind = 'community'</code>, 1 member each</td></tr>
+<tr><td><code>group_members</code></td><td class="r">10</td><td></td></tr>
+<tr><td><code>group_messages</code></td><td class="r">2</td><td></td></tr>
+<tr><td><code>messages</code> (DM)</td><td class="r">22</td><td>all <code>read = true</code>, 8 <code>message_participants</code></td></tr>
+<tr><td><code>notifications</code></td><td class="r">54</td><td>0 read; see Table 6 for type mix</td></tr>
+<tr><td><code>system_messages</code></td><td class="r">10</td><td>all user-submitted feedback (<code>message_type = 'feedback'</code>)</td></tr>
+<tr><td><code>point_rules</code></td><td class="r">0</td><td><i>catalog not migrated</i></td></tr>
+<tr><td><code>point_transactions</code></td><td class="r">—</td><td><i>table does not exist</i> (REST <code>PGRST205</code>)</td></tr>
+<tr><td><code>wxgroup_notice_record</code></td><td class="r">82</td><td>62 marketplace / 16 ride / 4 activity WeChat pushes</td></tr>
+</tbody>
+</table>
+</div>
+<div class="zh" lang="zh-Hans">
+<table>
+<caption><b>表 5.</b> 生产数据库实时快照，2026-04-23（Supabase 项目 <code>bwimyvkwkenrtumsfjzt</code>）。试点窗口：用户注册为 2026-01-08 至 2026-03-29。</caption>
+<thead><tr><th>表／界面</th><th class="r">行数</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>users</code></td><td class="r">184</td><td>184 个 <code>@cornell.edu</code>（100%）；170 已验证</td></tr>
+<tr><td><code>rides</code></td><td class="r">0</td><td>当前无活跃行程</td></tr>
+<tr><td><code>ride_bookings</code></td><td class="r">0</td><td>空表；历史预订由通知记录佐证</td></tr>
+<tr><td><code>ratings</code></td><td class="r">0</td><td>无评分提交</td></tr>
+<tr><td><code>activities</code></td><td class="r">0</td><td></td></tr>
+<tr><td><code>activity_participants</code></td><td class="r">0</td><td></td></tr>
+<tr><td><code>marketplace_items</code></td><td class="r">15</td><td>全部 <code>status = 'removed'</code>；累计浏览 12 次</td></tr>
+<tr><td><code>marketplace_comments</code></td><td class="r">0</td><td></td></tr>
+<tr><td><code>groups</code></td><td class="r">5</td><td>全部 <code>group_kind = 'community'</code>，各 1 名成员</td></tr>
+<tr><td><code>group_members</code></td><td class="r">10</td><td></td></tr>
+<tr><td><code>group_messages</code></td><td class="r">2</td><td></td></tr>
+<tr><td><code>messages</code>（私信）</td><td class="r">22</td><td>全部 <code>read = true</code>，8 条 <code>message_participants</code></td></tr>
+<tr><td><code>notifications</code></td><td class="r">54</td><td>已读 0；类型分布见表 6</td></tr>
+<tr><td><code>system_messages</code></td><td class="r">10</td><td>全部为用户提交的反馈（<code>message_type = 'feedback'</code>）</td></tr>
+<tr><td><code>point_rules</code></td><td class="r">0</td><td><i>规则目录未迁移</i></td></tr>
+<tr><td><code>point_transactions</code></td><td class="r">—</td><td><i>表不存在</i>（REST 返回 <code>PGRST205</code>）</td></tr>
+<tr><td><code>wxgroup_notice_record</code></td><td class="r">82</td><td>微信推送：62 二手市场／16 行程／4 活动</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="pair tblpair">
+<div class="en" lang="en">
+<table>
+<caption><b>Table 6.</b> Notification type distribution in production (54 rows total). Each booking is designed to emit a 5-notification bundle plus 2 scheduled rating reminders; the row counts below are consistent with 4 historical bookings and 2 completed rides whose <code>rides</code> / <code>ride_bookings</code> entries have since been cleaned.</caption>
+<thead><tr><th>Notification type</th><th class="r">Rows</th><th>First → last</th></tr></thead>
+<tbody>
+<tr><td><code>ride_new_booking</code></td><td class="r">4</td><td>2026-02-26 → 2026-04-01</td></tr>
+<tr><td><code>ride_booking_confirmed</code></td><td class="r">4</td><td>2026-02-26 → 2026-04-01</td></tr>
+<tr><td><code>ride_payment_received</code></td><td class="r">3</td><td>2026-03-08 → 2026-04-01</td></tr>
+<tr><td><code>ride_payment_confirmed</code></td><td class="r">3</td><td>2026-03-08 → 2026-04-01</td></tr>
+<tr><td><code>ride_rating_reminder</code></td><td class="r">8</td><td>2026-02-26 → 2026-04-01</td></tr>
+<tr><td><code>ride_completed</code></td><td class="r">2</td><td>2026-02-26 → 2026-03-28</td></tr>
+<tr><td><code>activity_new_registration</code></td><td class="r">4</td><td>2026-02-05 → 2026-02-22</td></tr>
+<tr><td><code>activity_registered</code></td><td class="r">4</td><td>2026-02-05 → 2026-02-22</td></tr>
+<tr><td><code>message_reply</code></td><td class="r">18</td><td>2026-02-06 → 2026-02-11</td></tr>
+<tr><td><code>new_message</code></td><td class="r">4</td><td>2026-02-05 → 2026-02-28</td></tr>
+</tbody>
+</table>
+</div>
+<div class="zh" lang="zh-Hans">
+<table>
+<caption><b>表 6.</b> 生产环境通知类型分布（共 54 行）。每次预订按设计会发出一个 5 通知套件外加 2 条计划的评分提醒；下列行数与 4 次历史预订、2 次已完成行程相符，其对应的 <code>rides</code>／<code>ride_bookings</code> 记录此后已被清理。</caption>
+<thead><tr><th>通知类型</th><th class="r">行数</th><th>首条 → 末条</th></tr></thead>
+<tbody>
+<tr><td><code>ride_new_booking</code></td><td class="r">4</td><td>2026-02-26 → 2026-04-01</td></tr>
+<tr><td><code>ride_booking_confirmed</code></td><td class="r">4</td><td>2026-02-26 → 2026-04-01</td></tr>
+<tr><td><code>ride_payment_received</code></td><td class="r">3</td><td>2026-03-08 → 2026-04-01</td></tr>
+<tr><td><code>ride_payment_confirmed</code></td><td class="r">3</td><td>2026-03-08 → 2026-04-01</td></tr>
+<tr><td><code>ride_rating_reminder</code></td><td class="r">8</td><td>2026-02-26 → 2026-04-01</td></tr>
+<tr><td><code>ride_completed</code></td><td class="r">2</td><td>2026-02-26 → 2026-03-28</td></tr>
+<tr><td><code>activity_new_registration</code></td><td class="r">4</td><td>2026-02-05 → 2026-02-22</td></tr>
+<tr><td><code>activity_registered</code></td><td class="r">4</td><td>2026-02-05 → 2026-02-22</td></tr>
+<tr><td><code>message_reply</code></td><td class="r">18</td><td>2026-02-06 → 2026-02-11</td></tr>
+<tr><td><code>new_message</code></td><td class="r">4</td><td>2026-02-05 → 2026-02-28</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">What the snapshot suggests.</span> First, the <code>.edu</code> gate is fully operational at scale: all 184 registered rows carry a <code>@cornell.edu</code> address, and 170 (92.4%) have both <code>is_verified</code> and <code>verification_status</code> set to <code>verified</code>. Registration cadence grew monthly (3 in Jan, 70 in Feb, 111 in March), suggesting WeChat-group-driven acquisition is reaching the intended Cornell-affiliated audience. Second, the design's booking-to-notification fan-out (§5.2) is legible in the notification table: 4 <code>ride_new_booking</code> / <code>ride_booking_confirmed</code>, 3 <code>ride_payment_*</code> pairs, and 8 <code>ride_rating_reminder</code> rows match the expected 5+2 bundle for 4 historical bookings, providing residual evidence of ride transactions even though the <code>rides</code> and <code>ride_bookings</code> tables currently hold zero rows (e.g., operator-side cleanup or the switchover to a different ride model). Third, the <code>wxgroup_notice_record</code> table (82 rows, Jan 17 – Apr 11; 62 marketplace / 16 rideshare / 4 activity) shows that the WeChat cross-posting path runs automatically on every new ride, listing, or activity; this is the primary grassroots-to-platform bridge implied by the literature in §2.1.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">快照所提示的。</span>第一，<code>.edu</code> 门槛已在规模上完全运转：全部 184 条注册记录均持有 <code>@cornell.edu</code> 地址，其中 170 条（92.4%）的 <code>is_verified</code> 与 <code>verification_status</code> 同时为 <code>verified</code>。注册节奏逐月增长（1 月 3 人、2 月 70 人、3 月 111 人），表明微信群驱动的获客正在触达预期的 Cornell 关联受众。第二，设计中预订到通知的扇出（fan-out，即一个事件触发多条下游记录）（§5.2）在通知表中清晰可辨：4 条 <code>ride_new_booking</code>／<code>ride_booking_confirmed</code>、3 对 <code>ride_payment_*</code>、8 条 <code>ride_rating_reminder</code>，与 4 次历史预订所预期的「5+2 套件」相吻合，即便 <code>rides</code> 与 <code>ride_bookings</code> 两表当前为零行（例如运营侧清理或切换到不同的行程模型），仍为行程交易提供了残留证据。第三，<code>wxgroup_notice_record</code> 表（82 行，1 月 17 日至 4 月 11 日；62 二手市场／16 拼车／4 活动）显示微信跨平台转发路径在每个新行程、新商品或新活动上自动运行；这正是 §2.1 文献所暗示的「草根到平台」的主要桥梁。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">What the snapshot does not support.</span> The <code>ratings</code> table is empty, so the rating-system design of §5.8.3 remains implementation-complete but behaviorally unexercised in production. The <code>activities</code>, <code>activity_participants</code>, <code>activity_chat_messages</code>, and <code>activity_comments</code> tables are all at zero rows, and the 4+4 activity-notification pair in Table 6 is the only trace of any activity run. The gamification subsystem is not deployed at all: <code>point_rules</code> has zero rows, <code>point_transactions</code> does not exist as a table, and <i>every</i> one of the 184 user rows has <code>users.points = 0</code>. Marketplace usage, while larger than ride usage, is past-tense: all 15 items are <code>status = 'removed'</code> with 12 aggregate views and 0 favorites. The five live community groups each contain only their creator (<code>member_count = 1</code>), so the group-discovery lever from §2.1 has not been exercised by joining behavior. And no <code>group_kind = 'ride_carpool'</code> rows exist at snapshot time, meaning the ride-scoped group-chat mechanism (§5.8.5) is evidenced indirectly (via 8 rating-reminder rows and 16 WeChat ride pushes) rather than directly in the <code>groups</code> table.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">快照所不支持的。</span><code>ratings</code> 表为空，故 §5.8.3 的评分系统设计虽实现完整，但在生产环境中从未被行为性地使用过。<code>activities</code>、<code>activity_participants</code>、<code>activity_chat_messages</code> 与 <code>activity_comments</code> 四表均为零行，表 6 中 4+4 的活动通知对是任何活动曾经运行过的唯一痕迹。游戏化子系统完全未部署：<code>point_rules</code> 为零行，<code>point_transactions</code> 作为表不存在，且 184 条用户记录「全部」<code>users.points = 0</code>。二手市场的使用虽多于拼车，却已成过去式：全部 15 件商品为 <code>status = 'removed'</code>，累计浏览 12 次、收藏 0 次。五个现存社区群组各自只含其创建者（<code>member_count = 1</code>），因此 §2.1 中的群组发现杠杆尚未被「加入」行为所使用。快照时刻也不存在任何 <code>group_kind = 'ride_carpool'</code> 记录，意味着行程群聊机制（§5.8.5）只是被间接佐证（经 8 条评分提醒与 16 条微信行程推送），而非在 <code>groups</code> 表中得到直接体现。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Implications for the claims in this paper.</span> The snapshot is consistent with the three contributions as stated: (1) a <i>design case</i> of an identity-verified six-module platform, not a validated intervention; (2) <i>formative, survey-grounded</i> design observations for the carpool module, whose generalizability awaits a separate driver-side study; and (3) an auditable evidence pipeline whose output is a literature-synthesis tool, not an open-ended research agent. In particular, the <i>N</i>=19 driver-subset finding on rating-fairness sensitivity (<b class="fb">F5</b>) remains the paper's empirical anchor for the rating design, and the zero production ratings mean the soft launch can neither corroborate nor challenge it. The 184-user, 100%-<code>.edu</code>-verified registration cohort does lend modest support to the claim that <code>.edu</code> scoping is tractable as a pure identity gate; it is silent on the harder question of whether that gate, plus the remaining primitives, translates into sustained carpool, marketplace, or activity participation.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">对本文主张的含义。</span>该快照与所陈述的三项贡献相一致：(1) 一个身份验证的六模块平台的「设计案例」，而非经验证的干预；(2) 针对拼车模块的「形成性、以调查为根基的」设计观察，其可推广性有待一项独立的司机侧研究；(3) 一条可审计的证据流水线，其产出是文献综合工具，而非开放式研究智能体。尤其是，<i>N</i>=19 的司机子样本评分公平性敏感度发现（<b class="fb">F5</b>）仍是本文评分设计的经验锚点，而生产环境零评分意味着软启动既不能佐证它，也无法挑战它。184 名用户、100% <code>.edu</code> 验证的注册队列确实为「<code>.edu</code> 范围限定作为纯身份门槛是可行的」这一主张提供了适度支持；但对于更难的问题——该门槛加上其余基元能否转化为持续的拼车、二手交易或活动参与——它保持沉默。</p></div>
+</div>
+
+<h2 class="sec" id="sec-6"><span class="num">6</span><span class="ten">Research-Agent Pipeline as Methodology Contribution</span><span class="tzh">作为方法学贡献的 Research-Agent 流水线</span></h2>
+
+<h3 class="sec" id="sec-6-1"><span class="num">6.1</span><span class="ten">Architecture and Eight-Phase Flow</span><span class="tzh">架构与八阶段流程</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The pipeline uses a provider layer (OpenAlex, Semantic Scholar, arXiv, Lens, Crossref), a reasoning layer (Claude and GPT models tiered by task complexity), an identity layer (DOI-based canonical IDs), a state machine (phase-based resumability), and a contract layer enforcing structural invariants across phases. The eight phases are: (1) Corpus Assembly, (2) Classification into a ten-category taxonomy (A–J), (2.5) Deep Extraction of claims, methods, and findings, (3) Relationship Graph with evidence-sufficiency diagnostics, (3.5) Narrative Chain generation per beat, (3.7) Contradiction Map, (4) Evidence Inventory, and (5) Five-Reviewer Evaluation (narrative, coverage, gap, contradiction, and honesty reviewers, each scoring independently).</p></div>
+<div class="zh" lang="zh-Hans"><p>该流水线包含：数据源层（provider layer：OpenAlex、Semantic Scholar、arXiv、Lens、Crossref 五个学术文献数据库）、推理层（reasoning layer：按任务复杂度分级调用 Claude 与 GPT 模型）、标识层（identity layer：基于 DOI——数字对象唯一标识符——的规范 ID）、状态机（state machine：支持按阶段断点续跑）以及契约层（contract layer：跨阶段强制执行结构不变量）。八个阶段为：(1) 语料组装（Corpus Assembly）；(2) 按 A–J 十类分类法分类；(2.5) 对论断、方法与发现的深度抽取（Deep Extraction）；(3) 带证据充分性诊断（evidence-sufficiency diagnostics）的关系图谱（Relationship Graph）；(3.5) 按叙事节拍生成叙事链（Narrative Chain）；(3.7) 矛盾图谱（Contradiction Map）；(4) 证据清单（Evidence Inventory）；(5) 五评审人评估（Five-Reviewer Evaluation：叙事、覆盖度、缺口、矛盾与诚实性五位评审各自独立打分）。</p></div>
+</div>
+
+<h3 class="sec" id="sec-6-2"><span class="num">6.2</span><span class="ten">Audit Trail: How the Pipeline Shaped This Paper</span><span class="tzh">审计链：流水线如何塑造本文</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Positive audit instances.</span> The anchor papers for §2 were selected from the pipeline's <code>narrative_chains.json</code>. The five adversarial-scoping paragraphs in §7.2 directly map to the five focus areas in the pipeline's <code>contradictions.json</code>. The finding cross-references in §5.8 (<b class="fb">F3</b>×3, <b class="fb">F4</b>×1, <b class="fb">F5</b>×1, <b class="fb">F6</b>×1) were verified against the <code>evidence_inventory.json</code> coverage check. Phase 5 reviewer feedback drove iterative revision: for instance, an early draft's use of "effective" in §5.8.3 was flagged by the honesty reviewer and replaced with "designed to address"; a subsequent pass rewrote the subsection against the actual implementation (see the third negative-audit instance below), improving the honesty score from 0.72 to 0.88.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">正向审计实例。</span>§2 的锚定文献选自流水线的 <code>narrative_chains.json</code>。§7.2 的五个对抗性界定段落与流水线 <code>contradictions.json</code> 中的五个焦点领域一一对应。§5.8 中的发现交叉引用（<b class="fb">F3</b>×3、<b class="fb">F4</b>×1、<b class="fb">F5</b>×1、<b class="fb">F6</b>×1）经 <code>evidence_inventory.json</code> 覆盖度检查核验。第 5 阶段评审反馈驱动了迭代修订：例如，早期稿件 §5.8.3 中「有效」（effective）一词被诚实性评审标记，替换为「旨在应对」（designed to address）；后续一轮又依照实际实现重写了该小节（见下文第三个负向审计实例），使诚实性得分从 0.72 提升至 0.88。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Negative audit instances.</span> The pipeline also produced misleading signals that required human correction. First, Phase 2 automated classification labeled three proxy-level papers as native Category E (<code>.edu</code>-scoped identity verification); manual audit (documented in <code>config/e_category_audit.md</code>) downgraded them and replaced them with six Crossref-validated native E papers <span class="cite">[Ellison2007; Ellison2014; Schlesinger2017; Black2016; Heston2016; Wu2017]</span>. Second, the initial evidence inventory for <b class="fb">F5</b> reported driver tolerance on the full mixed sample (<i>N</i>=30); subset analysis revealing that the rating-fairness asymmetry is concentrated in the Driver/Both subset (<i>N</i>=19) was performed manually, exposing a scope boundary of the pipeline: it does not automatically perform subset sensitivity analysis on primary survey data. Third, an earlier draft of §5.8.3 described a "pre-publication dispute window (e.g., 24 hours)" and a "cross-trip trend protection" clause. A direct read of the implemented <code>rating.controller.js</code> and the <code>ratings</code> / <code>users</code> schemas showed that neither is present: the live system enforces only a 2-hour post-departure rating-readiness delay and an unweighted-mean aggregation, with update-in-place as the only revision path. The subsection was rewritten to match the deployed mechanism and to flag the dispute-window / trend-protection ideas as open design proposals—an alignment that the pipeline, which works abstract-first over prior literature rather than over the codebase, does not enforce. Fourth, a first draft of §5.9 reported numbers from the repo's <code>.env.production</code> Supabase project (<code>jfgenxnqpuutgdnnngsl</code>), which turned out to be a superseded staging / demo database seeded with showcase content (one demo driver, 8 fabricated rides, a <code>point_transactions</code> table populated by registration bonuses). The Railway deployment actually binds to a different Supabase project (<code>bwimyvkwkenrtumsfjzt</code>), whose credentials live only in the Railway environment. After being handed the production keys we re-queried, which swapped 72 users / 8 rides / 65 point transactions for 184 users / 0 currently-live rides / a points subsystem that is not deployed at all. The paper now reports the Railway-backed numbers, and this mismatch is recorded here as a caution: "production" markers in a repo's environment file are not load-bearing without a deployment-side cross-check.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">负向审计实例。</span>流水线也产生过需要人工纠正的误导性信号。第一，第 2 阶段自动分类将三篇仅为代理层面的论文标为原生 E 类（<code>.edu</code> 范围的身份验证）；人工审计（记录于 <code>config/e_category_audit.md</code>）将其降级，并替换为六篇经 Crossref 验证的原生 E 类论文 <span class="cite">[Ellison2007; Ellison2014; Schlesinger2017; Black2016; Heston2016; Wu2017]</span>。第二，<b class="fb">F5</b> 的初始证据清单按全混合样本（<i>N</i>=30）报告司机容忍度；揭示评分公平性不对称集中于 Driver/Both 子样本（<i>N</i>=19）的子样本分析是人工完成的，这暴露了流水线的一个范围边界：它不会对一手调查数据自动执行子样本敏感性分析。第三，§5.8.3 的较早稿件描述了「发布前争议窗口（如 24 小时）」与「跨行程趋势保护」条款。直接阅读已实现的 <code>rating.controller.js</code> 与 <code>ratings</code>／<code>users</code> 数据结构后发现两者均不存在：线上系统只强制执行出发后 2 小时的评分就绪延迟与无加权均值聚合，原地更新是唯一的修订路径。该小节被重写以匹配已部署机制，并将争议窗口／趋势保护两个想法标注为开放设计提案——这种「实现与稿件的对齐」是流水线无法强制的，因为它以摘要为先（abstract-first）处理既有文献，而不处理代码库。第四，§5.9 的初稿报告的是代码仓库 <code>.env.production</code> 所指 Supabase 项目（<code>jfgenxnqpuutgdnnngsl</code>）的数字，后来发现那是一个已被取代的预发／演示数据库，预置了展示用内容（一名演示司机、8 条编造的行程、一张由注册奖励填充的 <code>point_transactions</code> 表）。Railway 部署实际绑定的是另一个 Supabase 项目（<code>bwimyvkwkenrtumsfjzt</code>），其凭据只存在于 Railway 环境中。拿到生产密钥后我们重新查询，结果将「72 用户／8 行程／65 条积分流水」换成了「184 用户／0 条当前有效行程／一个完全未部署的积分子系统」。本文现报告 Railway 实测数字，并将这一错配记录于此作为警示：代码仓库环境文件中的「production」标记，在缺乏部署侧交叉核验时并不可靠。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Reproducibility.</span> The pipeline's full configuration, <code>state.json</code>, phase-level artifacts, and audit logs (including Prompt A/B/E audit records) are open-sourced at the project repository.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">可复现性。</span>流水线的完整配置、<code>state.json</code>、各阶段产物与审计日志（含 Prompt A/B/E 审计记录）已在项目代码仓库开源。</p></div>
+</div>
+
+<h3 class="sec" id="sec-6-3"><span class="num">6.3</span><span class="ten">Scope and Honest Limitations of the Pipeline</span><span class="tzh">流水线的范围与诚实局限</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p>The pipeline is not an open-ended research agent, an automated thesis generator, or a gap-discovery tool (its <code>gaps_ranked.json</code> output is a diagnostic signal, not a conclusion). It operates abstract-first and does not perform full-text truth extraction. It does not perform subset robustness checks on primary survey data, requiring human intervention for analyses such as the Driver/Both vs. Rider-only split reported in §4.2. It also does not cross-check design claims in the manuscript against the implemented codebase or deployed schema—the mechanism correction in §5.8.3 was performed manually by inspecting <code>rating.controller.js</code>, the <code>ratings</code> table DDL, and the live <code>point_rules</code> catalog, and is recorded as the third negative-audit instance above. We recommend that future users treat it as a structuring and auditing complement to human judgment, not as a replacement, and that design-case papers pair it with an explicit implementation-versus-manuscript reconciliation pass.</p></div>
+<div class="zh" lang="zh-Hans"><p>该流水线不是开放式研究智能体、自动论文生成器或缺口发现工具（其 <code>gaps_ranked.json</code> 输出是诊断信号，不是结论）。它以摘要为先运作，不做全文真值抽取。它不对一手调查数据执行子样本稳健性检验，§4.2 报告的 Driver/Both 与 Rider-only 拆分等分析需要人工介入。它也不会将稿件中的设计主张与已实现代码库或已部署数据结构交叉核对——§5.8.3 的机制更正是通过人工检查 <code>rating.controller.js</code>、<code>ratings</code> 表 DDL（数据定义语言，Data Definition Language，即建表语句）与线上 <code>point_rules</code> 目录完成的，并记录为上文第三个负向审计实例。我们建议未来的使用者将其视为人类判断的结构化与审计辅助，而非替代品，并建议设计案例类论文为其配套一道明确的「实现与稿件对账」工序。</p></div>
+</div>
+
+<h2 class="sec" id="sec-7"><span class="num">7</span><span class="ten">Discussion</span><span class="tzh">讨论</span></h2>
+
+<h3 class="sec" id="sec-7-1"><span class="num">7.1</span><span class="ten">General Reflections</span><span class="tzh">总体反思</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">From grassroots to formal.</span> <code>.edu</code> verification occupies a middle ground between commercial rideshare platforms (where identity is verified but community is absent) and informal WeChat groups (where community exists but identity is unverified). <span class="sc">CampusRide</span> positions institutional identity as a third trust architecture—one that is scoped by shared affiliation rather than by market participation or social proximity.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">从草根到正式。</span><code>.edu</code> 验证占据了商业网约车平台（身份经验证但社区缺席）与非正式微信群（社区存在但身份未验证）之间的中间地带。<span class="sc">CampusRide</span> 将机构身份定位为第三种信任架构——其范围由共同隶属关系划定，而非由市场参与或社交亲近度划定。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Cross-module transferability.</span> The four design primitives are not carpool-specific. The identity layer is shared across all six modules; the messaging embedding creates cross-module coordination channels; and the points meta-layer links incentives across modules. This suggests a methodological claim: design primitives distilled from one module's deep-dive can propagate to other modules within the same identity-scoped platform, though only the carpool module received deep-dive treatment.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">跨模块可迁移性。</span>四个设计基元并非拼车专属。身份层为全部六个模块共享；消息嵌入创造了跨模块协调渠道；积分元层将激励跨模块串联。这提示了一个方法学主张：从一个模块的深入剖析中提炼的设计基元，可以在同一身份限定平台内传播到其他模块——尽管只有拼车模块得到了深入剖析。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Pipeline-assisted design research.</span> The <i>research-agent</i> pipeline made the literature synthesis auditable and pushed adversarial scoping deeper than it would have been otherwise: the contradiction reviewer identified five focus areas that directly structured §7.2. At the same time, the pipeline's limitations—niche-category misclassification, absence of primary-data sensitivity analysis, and no implementation-versus-manuscript reconciliation—required manual correction, reinforcing that the pipeline is a complement to, not a substitute for, human judgment.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">流水线辅助的设计研究。</span><i>research-agent</i> 流水线使文献综合可审计，并把对抗性界定推得比原本更深：矛盾评审识别出的五个焦点领域直接构成了 §7.2 的结构。与此同时，流水线的局限——小众类别误分类、缺少一手数据敏感性分析、没有实现与稿件的对账——都需要人工纠正，再次印证流水线是人类判断的补充而非替代。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">What the soft launch taught us.</span> The ~4-month soft launch on <code>www.campusgo.college</code> (§5.9) reshaped the manuscript in three ways that a design-without-deployment version could not have. First, inspecting the live <code>ratings</code>, <code>rides</code>, and <code>point_rules</code> tables against §5.8 surfaced the rating-mechanism overclaim corrected in §5.8.3: the implemented system enforces a 2-hour post-departure readiness delay, role-paired submission, and update-in-place revision, with neither a formal dispute window nor trend protection. Second, querying the Railway-backed production project exposed a deployment-versus-repo gap: the points subsystem (§5.8.4), fully specified in backend code, has zero <code>point_rules</code> rows and no <code>point_transactions</code> table in production, and all 184 user rows have <code>users.points = 0</code>. The gamification primitive is therefore a code-level affordance, not yet a behavioral lever. Third, the asymmetry between identity registration (184 verified <code>@cornell.edu</code> accounts) and module engagement (zero currently-live rides, activities, or ratings; 15 removed marketplace items; 5 single-member community groups) sharpens the cross-module framing: even a fully functional <code>.edu</code> gate does not spontaneously produce content on the other side. The WeChat notice bridge (82 pushes: 62 marketplace, 16 rideshare, 4 activity) is where the platform reaches back into the grassroots channels that the formative survey named, and is the surface where historical ride bookings left their most legible traces. These are formative observations, not deployment validations.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">软启动教给我们的。</span>在 <code>www.campusgo.college</code> 上约 4 个月的软启动（§5.9）以三种「无部署的纯设计版本」做不到的方式重塑了本稿。第一，将线上 <code>ratings</code>、<code>rides</code> 与 <code>point_rules</code> 表与 §5.8 对照检查，暴露出 §5.8.3 中已更正的评分机制夸大表述：已实现的系统强制执行出发后 2 小时的就绪延迟、角色配对提交与原地更新修订，既无正式争议窗口也无趋势保护。第二，查询 Railway 托管的生产项目暴露出部署与代码仓库之间的落差：在后端代码中完整定义的积分子系统（§5.8.4），在生产环境中 <code>point_rules</code> 为零行、<code>point_transactions</code> 表不存在，且全部 184 条用户记录 <code>users.points = 0</code>。因此游戏化基元只是代码层面的能力，尚非行为杠杆。第三，身份注册（184 个已验证 <code>@cornell.edu</code> 账号）与模块参与（零条当前有效的行程、活动或评分；15 件已下架的二手商品；5 个单人社区群组）之间的不对称，使跨模块的论述框架更加锐利：即便一个完全运转的 <code>.edu</code> 门槛，也不会在门内自发地产生内容。微信通知桥（82 条推送：62 二手市场、16 拼车、4 活动）是平台反向触达形成性调查所点名的草根渠道之处，也是历史行程预订留下最清晰痕迹的界面。这些都是形成性观察而非部署验证。</p></div>
+</div>
+
+<h3 class="sec" id="sec-7-2"><span class="num">7.2</span><span class="ten">Adversarial Scoping and Limitations</span><span class="tzh">对抗性界定与局限</span></h3>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Formalization risk.</span> Formalizing grassroots coordination practices into a platform may reproduce the opacity, autonomy loss, and asymmetrical oversight associated with algorithmic management <span class="cite">[Keegan2025; Kinowska2022; Weber2023]</span>. Our rating-fairness design (§5.8.3) is a <i>response</i> to this risk, not a <i>solution</i>; whether it prevents the emergence of platform-mediated harm remains untested.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">形式化风险。</span>将草根协调实践形式化为平台，可能复制算法管理所伴随的不透明、自主性丧失与不对称监督 <span class="cite">[Keegan2025; Kinowska2022; Weber2023]</span>。我们的评分公平性设计（§5.8.3）是对这一风险的「回应」，而非「解决方案」；它能否阻止平台中介伤害的出现，仍未经检验。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Three-layer sample skew.</span> Our findings are scope-limited by three layers of sample skew: (a) <i>Language skew</i>: 72 of 91 respondents reporting native language (79%) were Mandarin-native; only 15 (16%) were English-native. Any claim about English-speaking students—including that they do not use WeChat groups—carries substantial uncertainty. (b) <i>Driver-subset skew</i>: The <b class="fb">F5</b> rating-fairness asymmetry rests on the Driver/Both subset (<i>N</i>=19), which is methodologically preferred over the full-sample mix but still small and requires a dedicated driver-side survey to confirm. The Rider-only control (<i>N</i>=11–12) is reported for transparency, not because its weaker pattern invalidates the finding. (c) <i>Completion skew</i>: Only 44 of 111 eligible respondents (40%) completed the full survey; finishers may differ systematically from non-finishers in carpool salience or engagement.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">三层样本偏斜。</span>我们的发现受三层样本偏斜的范围限制：(a) <i>语言偏斜</i>：报告母语的 91 名受访者中 72 名（79%）为普通话母语，仅 15 名（16%）为英语母语。任何关于英语学生的主张——包括「他们不使用微信群」——都带有相当大的不确定性。(b) <i>司机子样本偏斜</i>：<b class="fb">F5</b> 评分公平性不对称依托于 Driver/Both 子样本（<i>N</i>=19），方法上优于全样本混合，但样本仍小，需要一项专门的司机侧调查予以确认。Rider-only 对照（<i>N</i>=11–12）的报告是出于透明，并非因为其较弱模式会推翻该发现。(c) <i>完成度偏斜</i>：111 名合格受访者中仅 44 名（40%）完成全部问卷；完成者在拼车关注度或参与度上可能与未完成者存在系统性差异。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">No deployment evaluation.</span> This paper stops at the design-case stage. The four carpool design decisions have not been compared in a deployed setting, and any claim about their relative effectiveness remains design-motivated rather than usage-validated <span class="cite">[Tushev2022; Fradkin2021]</span>.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">无部署评估。</span>本文止步于设计案例阶段。四项拼车设计决策未在已部署环境中进行比较，任何关于其相对有效性的主张都仍是设计驱动而非使用验证的 <span class="cite">[Tushev2022; Fradkin2021]</span>。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Scope boundary of <code>.edu</code>.</span> <code>.edu</code> verification confirms institutional affiliation; it does not verify driving competence, safe conduct, legal accountability, or governance quality <span class="cite">[Mufumbiro2026]</span>. Identity verification addresses identity problems but not behavior problems, and it does not substitute for platform governance.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel"><code>.edu</code> 的范围边界。</span><code>.edu</code> 验证确认机构隶属关系；它不验证驾驶能力、安全行为、法律可问责性或治理质量 <span class="cite">[Mufumbiro2026]</span>。身份验证解决身份问题而非行为问题，亦不能替代平台治理。</p></div>
+</div>
+
+<div class="pair">
+<div class="en" lang="en"><p><span class="plabel">Gamification risk.</span> Cross-module points may invite gaming rather than trustworthy participation: points can become targets in themselves, creating incentives for fake trips, strategic compliance, or pressure-inducing behavior <span class="cite">[Cheon2025; Zhang2025algo]</span>. Work-games and algorithmic-control studies make such gaming plausible <span class="cite">[Wu2026algo]</span>, but we do not claim measured abuse in <span class="sc">CampusRide</span> itself.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">游戏化风险。</span>跨模块积分可能招致刷分而非可信参与：积分本身可能成为目标，催生虚假行程、策略性应付或施压性行为的动机 <span class="cite">[Cheon2025; Zhang2025algo]</span>。劳动游戏（work-games）与算法控制研究使此类刷分具有现实可能性 <span class="cite">[Wu2026algo]</span>，但我们并不声称在 <span class="sc">CampusRide</span> 自身中观测到了已被度量的滥用。</p></div>
+</div>
+
+<h2 class="sec" id="sec-8"><span class="num">8</span><span class="ten">Conclusion</span><span class="tzh">结论</span></h2>
+
+<div class="pair">
+<div class="en" lang="en"><p>Small-town campuses present a multi-faceted coordination gap that extends beyond transportation; international students' grassroots practices give this gap a concrete shape. <span class="sc">CampusRide</span> formalizes these practices into a six-module identity-verified platform, sharing four design primitives across carpool, marketplace, activities, groups, messaging, and points modules. The five design decisions in the carpool deep-dive are specified against the deployed controllers, services, and schemas that back them, and are situated against a ~3.5-month soft launch on <code>www.campusgo.college</code> (184 verified Cornell users; zero currently-live rides, ratings, or points transactions) whose 2026-04-23 snapshot we report as formative implementation signal rather than as evaluation. The Driver/Both-subset rating-fairness observation (<b class="fb">F5</b>) remains the paper's most counterintuitive contribution: occasional campus drivers are least tolerant of rating-system unfairness, not of passenger behavioral misbehavior. The <i>research-agent</i> pipeline, contributed as an open-source methodology tool, provides an auditable evidence chain for design-research literature synthesis, including systematic contradiction surfacing for honest scoping, and its limits—including the absence of an implementation-versus-manuscript reconciliation—are reported alongside its use.</p></div>
+<div class="zh" lang="zh-Hans"><p>小城镇校园呈现出一个超越交通范畴的多面向协调缺口；国际学生的草根实践赋予了这一缺口具体形态。<span class="sc">CampusRide</span> 将这些实践形式化为一个六模块、身份验证的平台，在拼车、二手市场、活动、群组、消息与积分模块间共享四个设计基元。拼车深入剖析中的五项设计决策均对照支撑它们的已部署控制器、服务与数据结构加以表述，并置于 <code>www.campusgo.college</code> 上约 3.5 个月的软启动背景之下（184 名已验证 Cornell 用户；零条当前有效的行程、评分或积分流水），其 2026-04-23 快照作为形成性实现信号而非评估予以报告。Driver/Both 子样本的评分公平性观察（<b class="fb">F5</b>）仍是本文最反直觉的贡献：偶发性校园司机最不能容忍的是评分系统的不公，而非乘客的行为失当。作为开源方法学工具贡献的 <i>research-agent</i> 流水线，为设计研究的文献综合提供了可审计的证据链，包括服务于诚实界定的系统性矛盾揭示，而其局限——包括缺少实现与稿件的对账环节——也与其用途一并如实报告。</p></div>
+</div>
+
+<div class="pair refnote">
+<div class="en" lang="en"><p><span class="plabel">References.</span> Citations appear inline as BibTeX keys (e.g., <span class="cite">[Liu2023]</span>) because the manuscript's <code>bib</code> file was not included alongside the LaTeX source. Supply the bibliography file and the keys can be resolved into a full reference list.</p></div>
+<div class="zh" lang="zh-Hans"><p><span class="plabel">参考文献。</span>由于 LaTeX 源稿未附带 <code>bib</code> 文件，正文中的引用以 BibTeX 键的形式内联展示（如 <span class="cite">[Liu2023]</span>）。提供参考文献文件后即可将这些键解析为完整的文献列表。</p></div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+const setView = v => {
+  document.body.dataset.view = v;
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+};
+</script>
+</body>
+</html>
