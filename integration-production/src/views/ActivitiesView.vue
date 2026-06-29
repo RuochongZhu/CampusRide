@@ -263,7 +263,11 @@
             <!-- Radar Legend -->
             <div class="flex flex-wrap justify-between gap-2 text-xs text-[#666666]">
               <div class="flex items-center">
-                <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-red-500 mr-1"></div>
+                <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-amber-400 ring-2 ring-amber-300 mr-1"></div>
+                <span>Live now</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-pink-500 mr-1"></div>
                 <span>Activities</span>
               </div>
               <div class="flex items-center">
@@ -693,13 +697,15 @@ const {
   hideDotInfo,
   highlightRadarDot,
   resetRadarDot,
-  loadMyVisibility
+  loadMyVisibility,
+  setMapActivities
 } = useActivityMap({
   thoughtAPI,
   visibilityAPI,
   message,
   selectedGroupId,
-  handleUserMessage: (user) => handleUserMessage(user)
+  handleUserMessage: (user) => handleUserMessage(user),
+  onActivityClick: (id) => router.push(`/activities/${id}`)
 })
 
 const CATEGORY_LABELS = {
@@ -1000,6 +1006,7 @@ const loadActivities = async () => {
     const payload = response.data?.data || {}
     const fetched = payload.activities || []
     activities.value = fetched.map(formatActivity)
+    setMapActivities(fetched)
   } catch (error) {
     console.error('Failed to fetch activities:', error)
     activitiesError.value = error.response?.data?.error?.message || 'Failed to load activities'

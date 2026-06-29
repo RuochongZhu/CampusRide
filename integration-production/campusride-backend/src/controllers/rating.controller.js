@@ -227,6 +227,11 @@ export const createRating = async (req, res) => {
       result = newRating;
     }
 
+    // Refresh the ratee's cached avg_rating / total_ratings (union of trip + activity
+    // ratings) so the rating loop closes end-to-end — ride cards, profiles and the
+    // leaderboard read these cached columns. The activity-rating path already does this.
+    await updateUserAverageRating(rateeId);
+
     res.json({
       success: true,
       message: existingRating ? 'Rating updated successfully' : 'Rating created successfully',

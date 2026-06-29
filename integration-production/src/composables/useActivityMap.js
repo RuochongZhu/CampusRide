@@ -1,6 +1,6 @@
 import { ref, nextTick } from 'vue'
 
-export function useActivityMap({ thoughtAPI, visibilityAPI, message, selectedGroupId, handleUserMessage }) {
+export function useActivityMap({ thoughtAPI, visibilityAPI, message, selectedGroupId, handleUserMessage, onActivityClick }) {
   const isVisible = ref(true)
   const thoughts = ref([])
   const mapThoughts = ref([])
@@ -14,6 +14,114 @@ export function useActivityMap({ thoughtAPI, visibilityAPI, message, selectedGro
   let largeMap = null
   let thoughtMarkers = []
   let userMarkers = []
+  let activityMarkers = []
+  let activityCircles = []
+  let largeActivityMarkers = []
+  let largeActivityCircles = []
+  const mapActivities = ref([])
+
+  // Category -> brand color for activity markers
+  const CATEGORY_HEX = {
+    academic: '#2563EB', sports: '#16A34A', social: '#DB2777', volunteer: '#0D9488',
+    career: '#7C3AED', cultural: '#EA580C', technology: '#4F46E5'
+  }
+  const categoryHex = (cat) => CATEGORY_HEX[String(cat || '').toLowerCase()] || '#6B7280'
+  const activityCoords = (a) => a?.locationCoordinates || a?.location_coordinates || null
+
+  // "Ongoing" = explicitly ongoing, or now sits between start and end (and not cancelled/completed)
+  const isActivityOngoing = (a) => {
+    const s = String(a?.status || '').toLowerCase()
+    if (s === 'ongoing') return true
+    if (['cancelled', 'completed', 'draft'].includes(s)) return false
+    const st = a?.start_time ? new Date(a.start_time).getTime() : null
+    const et = a?.end_time ? new Date(a.end_time).getTime() : null
+    const now = Date.now()
+    return !!(st && et && now >= st && now <= et)
+  }
+
+  const escapeHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]))
+
+  const formatActivityWindow = (a) => {
+    try {
+      const s = a?.start_time ? new Date(a.start_time) : null
+      if (!s) return 'Time TBD'
+      return s.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    } catch {
+      return 'Time TBD'
+    }
+  }
+
+  // Draw activity markers on a given map; ongoing ones bounce with a gold ring + radius circle.
+  const drawActivityMarkers = (map, markerStore, circleStore, baseScale) => {
+    if (!map || !window.google) return
+    markerStore.forEach((m) => m.setMap(null))
+    circleStore.forEach((c) => c.setMap(null))
+    markerStore.length = 0
+    circleStore.length = 0
+
+    mapActivities.value.forEach((a) => {
+      const c = activityCoords(a)
+      if (!c || c.lat == null || c.lng == null) return
+      const color = categoryHex(a.category)
+      const live = isActivityOngoing(a)
+      const position = { lat: Number(c.lat), lng: Number(c.lng) }
+
+      if (live) {
+        circleStore.push(new window.google.maps.Circle({
+          map, center: position, radius: 75,
+          strokeColor: color, strokeOpacity: 0.5, strokeWeight: 2,
+          fillColor: color, fillOpacity: 0.15, clickable: false, zIndex: 1
+        }))
+      }
+
+      const marker = new window.google.maps.Marker({
+        position, map,
+        title: a.title || 'Activity',
+        zIndex: live ? 9999 : 50,
+        animation: live ? window.google.maps.Animation.BOUNCE : null,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: color,
+          fillOpacity: live ? 1 : 0.92,
+          strokeColor: live ? '#F59E0B' : '#FFFFFF',
+          strokeWeight: live ? 3.5 : 2,
+          scale: live ? baseScale + 5 : baseScale
+        }
+      })
+
+      const statusBadge = live
+        ? '<span style="background:#16A34A;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;">● LIVE NOW</span>'
+        : '<span style="background:#E5E7EB;color:#374151;padding:1px 6px;border-radius:8px;font-size:11px;">Upcoming</span>'
+      const cap = a.max_participants ? `${a.current_participants || 0}/${a.max_participants}` : `${a.current_participants || 0}`
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="padding:8px;max-width:230px;font-family:sans-serif;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;"></span>
+            <span style="font-weight:700;color:#111;">${escapeHtml(a.title || 'Activity')}</span>
+          </div>
+          <div style="margin-bottom:4px;">${statusBadge}</div>
+          <div style="font-size:12px;color:#555;line-height:1.5;">
+            📍 ${escapeHtml(a.location || a.locationLabel || 'Campus')}<br/>
+            🕒 ${formatActivityWindow(a)}<br/>
+            👥 ${cap} joined
+          </div>
+        </div>`
+      })
+      marker.addListener('mouseover', () => infoWindow.open(map, marker))
+      marker.addListener('mouseout', () => infoWindow.close())
+      marker.addListener('click', () => { if (a.id && onActivityClick) onActivityClick(a.id) })
+      markerStore.push(marker)
+    })
+  }
+
+  // Set the activity list and (re)draw markers on whichever maps are live.
+  const setMapActivities = (list) => {
+    mapActivities.value = Array.isArray(list) ? list : []
+    if (smallMap) drawActivityMarkers(smallMap, activityMarkers, activityCircles, 8)
+    if (largeMap) drawActivityMarkers(largeMap, largeActivityMarkers, largeActivityCircles, 10)
+  }
 
   const highlightRadarDot = (activityId) => {
     activeRadarDot.value = activityId
@@ -289,6 +397,8 @@ export function useActivityMap({ thoughtAPI, visibilityAPI, message, selectedGro
 
       userMarkers.push(marker)
     })
+
+    drawActivityMarkers(smallMap, activityMarkers, activityCircles, 8)
   }
 
   const updateLargeMapMarkers = () => {
@@ -361,6 +471,8 @@ export function useActivityMap({ thoughtAPI, visibilityAPI, message, selectedGro
         }
       })
     })
+
+    drawActivityMarkers(largeMap, largeActivityMarkers, largeActivityCircles, 10)
   }
 
   const toggleMapExpand = () => {
@@ -401,7 +513,9 @@ export function useActivityMap({ thoughtAPI, visibilityAPI, message, selectedGro
     hideDotInfo,
     highlightRadarDot,
     resetRadarDot,
-    loadMyVisibility
+    loadMyVisibility,
+    setMapActivities,
+    mapActivities
   }
 }
 
